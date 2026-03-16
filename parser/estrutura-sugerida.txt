@@ -1,0 +1,34 @@
+racket-scanner-generator/
+├── build.gradle            // Or pom.xml if you prefer Maven
+├── README.md
+├── src/
+│   ├── main/
+│   │   ├── java/
+│   │   │   └── /scanner/
+│   │   │       ├── Main.java                 // CLI entry point for the generator
+│   │   │       ├── generator/                // Core logic if generating a scanner from rules
+│   │   │       │   ├── RuleParser.java       // Parses regex/lexical rules
+│   │   │       │   ├── NfaDfaBuilder.java    // Automata logic (if building a true generator)
+│   │   │       │   └── CodeEmitter.java      // Generates the final .java scanner file
+│   │   │       ├── lexer/                    // The actual scanning logic (if hand-writing the scanner)
+│   │   │       │   ├── Scanner.java          // The core state machine reading characters
+│   │   │       │   └── LexicalError.java     // Custom exceptions for invalid Racket syntax
+│   │   │       ├── token/                    // Token representations
+│   │   │       │   ├── Token.java            // Stores Lexeme, TokenType, Line, Column
+│   │   │       │   └── TokenType.java        // Enum of Racket tokens (PAREN, IDENTIFIER, NUMBER, etc.)
+│   │   │       └── io/                       // Input/Output handling
+│   │   │           ├── SourceReader.java     // Reads the .rkt files character by character
+│   │   │           └── ReportWriter.java     // Outputs the generated tokens or errors
+│   │   └── resources/
+│   │       └── sample.rkt                    // A sample Racket file to test against
+│   └── test/
+│       ├── java/
+│       │   └── /scanner/
+│       │       ├── lexer/
+│       │       │   └── ScannerTest.java      // Unit tests for different token categories
+│       │       └── token/
+│       │           └── TokenTest.java
+│       └── resources/
+│           ├── test-identifiers.rkt          // Granular test files
+│           ├── test-numbers.rkt
+│           └── test-strings.rkt
