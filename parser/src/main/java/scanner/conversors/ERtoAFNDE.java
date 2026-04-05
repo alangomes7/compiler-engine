@@ -1,9 +1,9 @@
-package scanner;
+package scanner.conversors;
 import models.AFNDE;
 import models.State;
 import java.util.List;
 
-public class ErToAFNDE {
+public class ERtoAFNDE {
 
     public static final String EPSILON = "ε";
     private int stateCounter = 0;

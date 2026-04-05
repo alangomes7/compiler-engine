@@ -2,39 +2,23 @@ package scanner;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import models.AFNDE;
+import models.TokenRule;
 
 public class Main {
     public static void main(String[] args) {
-        System.out.println("Scanner starting...");
+        System.out.println("Initializing Lexical Analyzer System...\n");
 
-        // Factories
-        List<AFNDE> afndeList = new ArrayList<>();
-        ErToAFNDE afndeGenerator = new ErToAFNDE();
+        List<TokenRule> lexicalRules = new ArrayList<>();
+        
+        lexicalRules.add(new TokenRule("NUMBER", "[ - ]? [ [ 0-9 ]+ [ . [ 0-9 ]* ]? | [ . [ 0-9 ]+ ] ] [ [ e / E ] [ - ]? [ 0-9 ]+ ]?"));
+        lexicalRules.add(new TokenRule("STRING", "\" [ [ ^ \" \\ ] | [ \\ [ \" / \\ / n / r / t ] ] ]* \""));
+        lexicalRules.add(new TokenRule("IDENTIFIER", "[ a-zA-Z!$%&*\\/:<=>?^_~ ] [ a-zA-Z0-9!$%&*\\/:<=>?^_~+\\-.@ ]*"));
+        lexicalRules.add(new TokenRule("BOOLEAN", "# [ t / T / f / F ]"));
 
-        // ER to AFNDE
-        String er_numbers = "[ - ]? [ [ 0-9 ]+ [ . [ 0-9 ]* ]? | [ . [ 0-9 ]+ ] ] [ [ e / E ] [ - ]? [ 0-9 ]+ ]?";
-        AFNDE numbers_AFNDE = afndeGenerator.symbol(er_numbers);
-        afndeList.add(numbers_AFNDE);
+        Scanner lexer = new Scanner(lexicalRules);
 
-        String er_strings = "\" [ [ ^ \" \\ ] | [ \\ [ \" / \\ / n / r / t ] ] ]* \"";
-        AFNDE strings_AFNDE = afndeGenerator.symbol(er_strings);
-        afndeList.add(strings_AFNDE);
+        System.out.println("=== Final Minimized Master Automaton ===");
+        System.out.println(lexer.getMasterAutomaton().toString());
 
-        String er_identifiers = "[ a-zA-Z!$%&*\\/:<=>?^_~ ] [ a-zA-Z0-9!$%&*\\/:<=>?^_~+\\-.@ ]*";
-        AFNDE identifiers_AFNDE = afndeGenerator.symbol(er_identifiers);
-        afndeList.add(identifiers_AFNDE);
-
-        String er_boolean = "# [ t / T / f / F ]";
-        AFNDE boolean_AFNDE = afndeGenerator.symbol(er_boolean);
-        afndeList.add(boolean_AFNDE);
-
-        // Build
-        AFNDE master_AFNDE = afndeGenerator.buildMasterScanner(afndeList);
-
-        // TODO: master_AFNDE to master_AFND
-
-        System.out.println(master_AFNDE.toString());
     }
 }
