@@ -33,6 +33,8 @@ public class Main {
         // Build
         AFNDE master_AFNDE = afndeGenerator.buildMasterScanner(afndeList);
 
+        // TODO: master_AFNDE to master_AFND
+
         System.out.println(master_AFNDE.toString());
     }
 }
