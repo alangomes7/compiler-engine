@@ -1,4 +1,4 @@
-package scanner.generator;
+package scanner;
 import models.AFNDE;
 import models.State;
 import java.util.List;

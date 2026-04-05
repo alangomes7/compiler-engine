@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import models.AFNDE;
-import scanner.generator.ErToAFNDE;
 
 public class Main {
     public static void main(String[] args) {
