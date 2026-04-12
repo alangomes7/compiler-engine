@@ -6,9 +6,9 @@ import java.util.Queue;
 import java.util.Set;
 
 public class AFNDE {
-    private String tokenName;
-    private State startState;
-    private State finalState;
+    private final String tokenName;
+    private final State startState;
+    private final State finalState;
 
     public AFNDE(String tokenName, State startState, State finalState) {
         this.tokenName = tokenName;

@@ -6,9 +6,9 @@ import java.util.Queue;
 import java.util.Set;
 
 public class AFD {
-    private String tokenName;
-    private State startState;
-    private Set<State> finalStates;
+    private final String tokenName;
+    private final State startState;
+    private final Set<State> finalStates;
 
     public AFD(String tokenName, State startState, Set<State> finalStates) {
         this.tokenName = tokenName;

@@ -1,191 +1,211 @@
 package scanner.conversors;
 
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
 import models.AFD;
 import models.State;
 import models.Transition;
-
-import java.util.*;
 
 public class AFDMinimizer {
 
     private int minStateCounter = 0;
 
-    /**
-     * Minimizes a deterministic finite automaton (AFD) using Moore's Partition Refinement Algorithm.
-     * @param afd The deterministic automaton to minimize.
-     * @return A new AFD object representing the minimized DFA.
-     */
     public AFD minimize(AFD afd) {
         minStateCounter = 0;
 
-        // 1. Gather all reachable states and the alphabet
+        // 1. Collect states
         Set<State> allStates = getAllStates(afd.getStartState());
-        Set<String> alphabet = new HashSet<>();
+
+        // Build alphabet index (String -> int)
+        Map<String, Integer> symbolIndex = new HashMap<>();
+        List<String> alphabet = new ArrayList<>();
+
         for (State s : allStates) {
             for (Transition t : s.getTransitions()) {
-                alphabet.add(t.getSymbol());
+                String sym = t.getSymbol();
+                if (!symbolIndex.containsKey(sym)) {
+                    symbolIndex.put(sym, alphabet.size());
+                    alphabet.add(sym);
+                }
             }
         }
 
-        // 2. Initial Partition: P0 = { Final States, Non-Final States }
-        List<Set<State>> partitions = new ArrayList<>();
-        Set<State> finalStatesSet = new HashSet<>();
-        Set<State> nonFinalStatesSet = new HashSet<>();
+        int alphabetSize = alphabet.size();
+
+        // Build indexed transition table: State -> State[]
+        Map<State, State[]> transitionTable = new HashMap<>(allStates.size());
+
+        for (State s : allStates) {
+            State[] row = new State[alphabetSize];
+
+            for (Transition t : s.getTransitions()) {
+                int idx = symbolIndex.get(t.getSymbol());
+                row[idx] = t.getTarget();
+            }
+
+            transitionTable.put(s, row);
+        }
+
+        // 2. Initial partitions
+        List<List<State>> partitions = new ArrayList<>();
+        Map<State, Integer> stateToPartition = new HashMap<>(allStates.size());
+
+        Map<String, List<State>> finalGroups = new HashMap<>();
+        List<State> nonFinal = new ArrayList<>();
 
         for (State s : allStates) {
             if (isStateFinal(s, afd)) {
-                finalStatesSet.add(s);
+                String token = (s.getAcceptedToken() != null)
+                        ? s.getAcceptedToken()
+                        : "FINAL_NULL";
+
+                finalGroups.computeIfAbsent(token, k -> new ArrayList<>()).add(s);
             } else {
-                nonFinalStatesSet.add(s);
+                nonFinal.add(s);
             }
         }
 
-        if (!finalStatesSet.isEmpty()) partitions.add(finalStatesSet);
-        if (!nonFinalStatesSet.isEmpty()) partitions.add(nonFinalStatesSet);
+        int pid = 0;
 
-        // 3. Partition Refinement Loop
+        if (!nonFinal.isEmpty()) {
+            partitions.add(nonFinal);
+            for (State s : nonFinal) stateToPartition.put(s, pid);
+            pid++;
+        }
+
+        for (List<State> group : finalGroups.values()) {
+            partitions.add(group);
+            for (State s : group) stateToPartition.put(s, pid);
+            pid++;
+        }
+
+        // 3. Refinement loop
         boolean changed = true;
+
         while (changed) {
             changed = false;
-            List<Set<State>> newPartitions = new ArrayList<>();
 
-            for (Set<State> group : partitions) {
-                // Group states by their behavior (where their transitions lead)
-                // The "signature" maps a Symbol -> The Index of the target Partition
-                Map<Map<String, Integer>, Set<State>> splits = new HashMap<>();
+            List<List<State>> newPartitions = new ArrayList<>();
+            Map<State, Integer> newStateToPartition = new HashMap<>(allStates.size());
+
+            int newPid = 0;
+
+            for (List<State> group : partitions) {
+
+                Map<Long, List<State>> splits = new HashMap<>();
 
                 for (State s : group) {
-                    Map<String, Integer> signature = new HashMap<>();
-                    for (String sym : alphabet) {
-                        State target = getTarget(s, sym);
-                        int targetPartitionIdx = getPartitionIndex(partitions, target);
-                        signature.put(sym, targetPartitionIdx);
+                    State[] trans = transitionTable.get(s);
+
+                    // Faster hash (long reduces collisions)
+                    long hash = 1;
+
+                    for (int i = 0; i < alphabetSize; i++) {
+                        State target = trans[i];
+
+                        int targetPid = (target == null)
+                                ? -1
+                                : stateToPartition.get(target);
+
+                        hash = hash * 31 + targetPid;
                     }
 
-                    splits.putIfAbsent(signature, new HashSet<>());
-                    splits.get(signature).add(s);
+                    splits.computeIfAbsent(hash, k -> new ArrayList<>()).add(s);
                 }
 
-                // Add the newly formed sub-groups to our next iteration
-                newPartitions.addAll(splits.values());
+                for (List<State> sub : splits.values()) {
+                    newPartitions.add(sub);
 
-                // If a group was split into more than one piece, we must loop again
+                    for (State s : sub) {
+                        newStateToPartition.put(s, newPid);
+                    }
+                    newPid++;
+                }
+
                 if (splits.size() > 1) {
                     changed = true;
                 }
             }
+
             partitions = newPartitions;
+            stateToPartition = newStateToPartition;
         }
 
-        // 4. Construct the Minimized AFD
-        Map<Set<State>, State> partitionToNewState = new HashMap<>();
-        State minStart = null;
-        Set<State> minFinalStates = new HashSet<>();
+        // 4. Build minimized DFA
+        Map<Integer, State> newStates = new HashMap<>(partitions.size());
+        State newStart = null;
+        Set<State> newFinals = new HashSet<>();
 
-        // Create new states for each partition
-        for (Set<State> partition : partitions) {
+        for (int i = 0; i < partitions.size(); i++) {
+            List<State> group = partitions.get(i);
+
             State newState = new State(minStateCounter++);
-            
-            // A partition is final if it contains final states 
-            // (since we separated them in step 2, if one is final, all are)
-            boolean isFinal = false;
-            for (State s : partition) {
-                if (isStateFinal(s, afd)) {
-                    isFinal = true;
-                    break;
-                }
-            }
-            
+            State rep = group.get(0);
+
+            boolean isFinal = isStateFinal(rep, afd);
             newState.setFinal(isFinal);
+
             if (isFinal) {
-                minFinalStates.add(newState);
+                newState.setAcceptedToken(rep.getAcceptedToken());
+                newFinals.add(newState);
             }
 
-            partitionToNewState.put(partition, newState);
+            newStates.put(i, newState);
 
-            // Check if this partition contains the original start state
-            if (partition.contains(afd.getStartState())) {
-                minStart = newState;
+            if (group.contains(afd.getStartState())) {
+                newStart = newState;
             }
         }
 
-        // 5. Reconstruct Transitions
-        for (Set<State> partition : partitions) {
-            State newSource = partitionToNewState.get(partition);
-            // Pick any representative state from the partition (they all behave the same)
-            State representative = partition.iterator().next();
+        // 5. Rebuild transitions (indexed = fast)
+        for (int i = 0; i < partitions.size(); i++) {
+            State newSource = newStates.get(i);
+            State rep = partitions.get(i).get(0);
 
-            for (String sym : alphabet) {
-                State oldTarget = getTarget(representative, sym);
+            State[] trans = transitionTable.get(rep);
+
+            for (int j = 0; j < alphabetSize; j++) {
+                State oldTarget = trans[j];
+
                 if (oldTarget != null) {
-                    // Find which partition the target belongs to
-                    for (Set<State> targetPartition : partitions) {
-                        if (targetPartition.contains(oldTarget)) {
-                            State newTarget = partitionToNewState.get(targetPartition);
-                            newSource.addTransition(sym, newTarget);
-                            break;
-                        }
-                    }
+                    int targetPid = stateToPartition.get(oldTarget);
+                    newSource.addTransition(alphabet.get(j), newStates.get(targetPid));
                 }
             }
         }
 
-        return new AFD(afd.getTokenName() + "_MIN", minStart, minFinalStates);
+        return new AFD(afd.getTokenName() + "_MIN", newStart, newFinals);
     }
 
-    // --- Helper Methods ---
-
-    /**
-     * Traverses the graph to find all states reachable from the start state.
-     */
+    // BFS
     private Set<State> getAllStates(State start) {
         Set<State> visited = new HashSet<>();
-        Queue<State> queue = new LinkedList<>();
-        queue.add(start);
+        ArrayDeque<State> queue = new ArrayDeque<>();
+
         visited.add(start);
+        queue.add(start);
 
         while (!queue.isEmpty()) {
-            State current = queue.poll();
-            for (Transition t : current.getTransitions()) {
-                if (!visited.contains(t.getTarget())) {
-                    visited.add(t.getTarget());
+            State s = queue.poll();
+
+            for (Transition t : s.getTransitions()) {
+                if (visited.add(t.getTarget())) {
                     queue.add(t.getTarget());
                 }
             }
         }
+
         return visited;
     }
 
-    /**
-     * Checks if a state is final, either natively or via the AFD final states set.
-     */
-    private boolean isStateFinal(State state, AFD afd) {
-        return state.isFinal() || (afd.getFinalStates() != null && afd.getFinalStates().contains(state));
-    }
-
-    /**
-     * Returns the target state for a given symbol, or null if no transition exists.
-     */
-    private State getTarget(State state, String symbol) {
-        for (Transition t : state.getTransitions()) {
-            if (t.getSymbol().equals(symbol)) {
-                return t.getTarget();
-            }
-        }
-        return null;
-    }
-
-    /**
-     * Finds the index of the partition that contains the target state.
-     * Returns -1 if the target is null (representing a "dead state" or missing transition).
-     */
-    private int getPartitionIndex(List<Set<State>> partitions, State target) {
-        if (target == null) return -1;
-        for (int i = 0; i < partitions.size(); i++) {
-            if (partitions.get(i).contains(target)) {
-                return i;
-            }
-        }
-        return -1;
+    private boolean isStateFinal(State s, AFD afd) {
+        return s.isFinal() ||
+                (afd.getFinalStates() != null && afd.getFinalStates().contains(s));
     }
 }
