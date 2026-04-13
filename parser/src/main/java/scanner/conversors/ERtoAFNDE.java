@@ -5,6 +5,7 @@ import java.util.List;
 import models.AFNDE;
 import models.State;
 
+
 public class ERtoAFNDE {
 
     public static final String EPSILON = "ε";

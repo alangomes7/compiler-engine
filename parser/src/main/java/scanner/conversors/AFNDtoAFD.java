@@ -11,6 +11,7 @@ import models.AFND;
 import models.State;
 import models.Transition;
 
+
 public class AFNDtoAFD {
 
     private int dfaStateCounter = 0;

@@ -5,6 +5,7 @@ import java.util.List;
 
 import models.TokenRule;
 
+
 public class Main {
     public static void main(String[] args) {
         System.out.println("Initializing Lexical Analyzer System...\n");
