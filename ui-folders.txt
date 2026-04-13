@@ -1,0 +1,20 @@
+compiladores/
+├── pom.xml
+└── src/
+    ├── main/
+    │   ├── java/
+    │   │   ├── app/
+    │   │   │   ├── Main.java              <-- Standard entry point (Fat JAR launcher / CLI)
+    │   │   │   ├── MainApp.java           <-- JavaFX Application class (extends Application)
+    │   │   │   ├── controller/            <-- JavaFX Controllers (LexerUIController.java)
+    │   │   ├── core/
+    │   │   │   └── lexer/                 <-- Lexer logic & conversors
+    │   │   ├── models/                    <-- DFA, AFND, TokenRule, etc.
+    │   │   └── Utils/                     <-- Utility classes
+    │   └── resources/
+    │       ├── app/
+    │       │   └── LexerUI.fxml           <-- FXML Views
+    │       └── core/
+    │           └── lexer/                 <-- Text files (awk-bnf.txt, tokens, inputs)
+    └── test/
+        └── java/                          <-- Unit and integration tests
