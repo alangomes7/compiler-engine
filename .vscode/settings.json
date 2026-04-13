@@ -2,6 +2,7 @@
   "java.project.sourcePaths": ["src"],
   "java.project.outputPath": "out",
   "java.project.referencedLibraries": [
-    "lib/javafx-sdk-21.0.10/lib/*.jar"
-]
+    "lib/javafx-sdk-21.0.10/lib/**/*.jar"
+  ],
+  "java.configuration.updateBuildConfiguration": "interactive"
 }

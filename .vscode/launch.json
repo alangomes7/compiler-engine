@@ -3,25 +3,27 @@
   "configurations": [
     {
       "type": "java",
-      "name": "MainApp",
+      "name": "App CLI",
       "request": "launch",
-      "mainClass": "app.MainApp",
-      "projectName": ""
+      "mainClass": "app.Main",
+      "projectName": "compiler-app",
+      "console": "integratedTerminal"
     },
     {
       "type": "java",
-      "name": "MainApp",
+      "name": "App UI",
       "request": "launch",
       "mainClass": "app.MainApp",
-      "projectName": "compiladores_c14b8965"
+      "projectName": "compiler-app",
+      "console": "integratedTerminal",
+      "vmArgs": "--module-path \"C:/javafx-sdk-21/lib\" --add-modules javafx.controls,javafx.fxml"
     },
     {
       "type": "java",
-      "name": "Run JavaFX App",
-      "request": "launch",
-      "mainClass": "app.MainApp",
-      "projectName": "your-project",
-      "vmArgs": "--module-path \"${workspaceFolder}/lib/javafx-sdk-21.0.10/lib\" --add-modules javafx.controls,javafx.fxml"
+      "name": "Debug (Attach to Maven)",
+      "request": "attach",
+      "hostName": "localhost",
+      "port": 5005
     }
   ]
 }
