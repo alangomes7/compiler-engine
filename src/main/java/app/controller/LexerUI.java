@@ -7,54 +7,46 @@ import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextArea;
+import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.stage.FileChooser;
 import javafx.stage.Window;
-
+import models.FirstFollowRow;
+import models.Grammar;
 import models.Symbol;
 import models.TokenRule;
 import core.lexer.Lexer;
 import core.lexer.TokenReader;
+import core.parser.FirstFollowCalculator;
+import core.parser.GrammarBuilder;
 import Utils.Utils;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
+import java.io.PrintWriter;
 import java.util.List;
 
 public class LexerUI {
 
-    @FXML
-    private TextArea lineNumbersArea;
-
-    @FXML
-    private TextArea inputArea;
-
-    @FXML
-    private TextArea outputArea;
+    @FXML private TextArea lineNumbersArea;
+    @FXML private TextArea inputArea;
+    @FXML private TextArea outputArea;
+    @FXML private TextArea consoleArea;
+    @FXML private TableView<Symbol> symbolTableViewer;
+    @FXML private Label tokenFileLabel;
+    @FXML private Label inputFileLabel;
+    @FXML private Button loadTokenBtn;
+    @FXML private Button loadInputBtn;
+    @FXML private Button runLexerBtn;
     
-    @FXML
-    private TextArea consoleArea;
-
-    @FXML
-    private TableView<Symbol> symbolTableViewer;
-
-    @FXML
-    private Label tokenFileLabel;
-
-    @FXML
-    private Label inputFileLabel;
-
-    @FXML
-    private Button loadTokenBtn;
-
-    @FXML
-    private Button loadInputBtn;
-
-    @FXML
-    private Button runLexerBtn;
+    @FXML private TableView<FirstFollowRow> firstFollowTable;
+    @FXML private TableColumn<FirstFollowRow, String> nonTerminalCol;
+    @FXML private TableColumn<FirstFollowRow, String> firstSetCol;
+    @FXML private TableColumn<FirstFollowRow, String> followSetCol;
 
     private Lexer lexer;
 
@@ -71,6 +63,8 @@ public class LexerUI {
         // Update line numbers whenever the text changes
         inputArea.textProperty().addListener((obs, oldVal, newVal) -> updateLineNumbers());
         updateLineNumbers(); // Initialize line numbers to 1
+
+        setupFirstFollowTable();
     }
 
     private void updateLineNumbers() {
@@ -80,6 +74,41 @@ public class LexerUI {
             numbers.append(i).append("\n");
         }
         lineNumbersArea.setText(numbers.toString());
+    }
+
+    private void setupFirstFollowTable() {
+        nonTerminalCol.setCellValueFactory(new PropertyValueFactory<>("nonTerminal"));
+        firstSetCol.setCellValueFactory(new PropertyValueFactory<>("firstSet"));
+        followSetCol.setCellValueFactory(new PropertyValueFactory<>("followSet"));
+    }
+
+    @FXML
+    private void handleExportCSV(ActionEvent event) {
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Export Tables to CSV");
+        fileChooser.setInitialFileName("analysis_export.csv");
+        File file = fileChooser.showSaveDialog(inputArea.getScene().getWindow());
+
+        if (file != null) {
+            try (PrintWriter writer = new PrintWriter(file)) {
+                // Export Symbol Table
+                writer.println("--- SYMBOL TABLE ---");
+                writer.println("Lexeme,Token Type");
+                for (Symbol s : symbolTableViewer.getItems()) {
+                    writer.println(s.getLexeme() + "," + s.getTokenType());
+                }
+
+                // Export First/Follow Table
+                writer.println("\n--- FIRST AND FOLLOW SETS ---");
+                writer.println("Non-Terminal,First,Follow");
+                for (FirstFollowRow row : firstFollowTable.getItems()) {
+                    writer.println(row.getNonTerminal() + ",\"" + row.getFirstSet() + "\",\"" + row.getFollowSet() + "\"");
+                }
+                outputArea.setText("✅ Data exported to CSV.");
+            } catch (IOException e) {
+                outputArea.setText("❌ Export Error: " + e.getMessage());
+            }
+        }
     }
 
     @FXML
@@ -167,7 +196,7 @@ public class LexerUI {
         }
 
         try {
-            // Run the analysis
+            // Run the Lexer analysis
             String result = lexer.scan(input);
             outputArea.setText(result);
 
@@ -178,6 +207,27 @@ public class LexerUI {
                 );
                 symbolTableViewer.setItems(symbols);
             }
+
+            // Run Parser calculations
+            try {
+                Grammar grammar = GrammarBuilder.buildFromBnfFile("src/main/resources/core/lexer/awk-bnf.txt"); 
+                FirstFollowCalculator calculator = new FirstFollowCalculator(grammar);
+                calculator.computeSets();
+
+                ObservableList<FirstFollowRow> rows = FXCollections.observableArrayList();
+                
+                // Populate rows dynamically using the calculator
+                for (String nt : grammar.getNonTerminals()) {
+                    String firstStr = calculator.getFirstSets().get(nt).toString();
+                    String followStr = calculator.getFollowSets().get(nt).toString();
+                    rows.add(new FirstFollowRow(nt, firstStr, followStr));
+                }
+                
+                firstFollowTable.setItems(rows);
+            } catch (Exception e) {
+                System.err.println("Parser Error: " + e.getMessage());
+            }
+
         } catch (Exception e) {
             outputArea.setText("❌ Analysis Error: " + e.getMessage());
         }
