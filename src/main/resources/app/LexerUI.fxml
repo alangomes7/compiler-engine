@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Tab?>
+<?import javafx.scene.control.TabPane?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.control.cell.PropertyValueFactory?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox spacing="10" xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml" 
+      fx:controller="app.controller.LexerUI">
+    
+    <padding>
+        <Insets top="10" right="10" bottom="10" left="10"/>
+    </padding>
+
+    <HBox spacing="10" alignment="CENTER_LEFT">
+        <Button fx:id="loadTokenBtn" text="1. Load Lexer RE &amp; Tokens" onAction="#handleLoadTokenFile" />
+        <Label fx:id="tokenFileLabel" text="No file selected" textFill="gray"/>
+    </HBox>
+
+    <HBox spacing="10" alignment="CENTER_LEFT">
+        <Button fx:id="loadInputBtn" text="2. Load Input File (.txt)" onAction="#handleLoadInputFile" />
+        <Label fx:id="inputFileLabel" text="No file selected" textFill="gray"/>
+    </HBox>
+
+    <Label text="Source Code Input:" />
+    
+    <HBox VBox.vgrow="ALWAYS" spacing="0">
+        <TextArea fx:id="lineNumbersArea" editable="false" prefWidth="50" style="-fx-font-family: monospace; -fx-control-inner-background: #e8e8e8; -fx-text-fill: #555555;" />
+        <TextArea fx:id="inputArea" promptText="Load a .txt file or paste source code here..." HBox.hgrow="ALWAYS" style="-fx-font-family: monospace;" />
+    </HBox>
+    
+    <HBox spacing="10" alignment="CENTER_LEFT">
+        <Button fx:id="runLexerBtn" text="3. Run Lexer Analysis" onAction="#handleRunLexer" style="-fx-font-weight: bold;"/>
+        <Button text="Save Console Log" onAction="#handleSaveConsoleLog"/>
+    </HBox>
+    
+    <TabPane VBox.vgrow="ALWAYS" tabClosingPolicy="UNAVAILABLE">
+        <tabs>
+            <Tab text="Console Log">
+                <TextArea fx:id="consoleArea" editable="false" style="-fx-font-family: monospace;"/>
+            </Tab>
+            <Tab text="Symbol Table">
+                <TableView fx:id="symbolTableViewer">
+                    <columns>
+                        <TableColumn text="Lexeme" prefWidth="250">
+                            <cellValueFactory>
+                                <PropertyValueFactory property="lexeme" />
+                            </cellValueFactory>
+                        </TableColumn>
+                        <TableColumn text="Token Type" prefWidth="250">
+                            <cellValueFactory>
+                                <PropertyValueFactory property="tokenType" />
+                            </cellValueFactory>
+                        </TableColumn>
+                    </columns>
+                </TableView>
+            </Tab>
+            <Tab text="Output">
+                <TextArea fx:id="outputArea" editable="false" />
+            </Tab>
+        </tabs>
+    </TabPane>
+
+</VBox>

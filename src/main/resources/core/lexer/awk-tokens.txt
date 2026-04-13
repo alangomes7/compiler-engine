@@ -1,0 +1,100 @@
+# =========================
+# Keywords (Static Literals)
+# =========================
+FUNCTION  : function
+BEGIN_KW  : BEGIN
+END_KW    : END
+CASE      : case
+DEFAULT   : default
+DELETE    : delete
+BREAK     : break
+CONTINUE  : continue
+NEXT      : next
+RETURN    : return
+SWITCH    : switch
+IF        : if
+ELSE      : else
+WHILE     : while
+DO        : do
+FOR       : for
+PRINTF    : printf
+PRINT     : print
+IN        : in
+GETLINE   : getline
+
+
+# =========================
+# Operators (Longest First!)
+# =========================
+ASSIGN_EXP : ^=
+ASSIGN_MOD : %=
+ASSIGN_MUL : *=
+ASSIGN_DIV : /=
+ASSIGN_ADD : +=
+ASSIGN_SUB : -=
+
+LOGICAL_OR : ||
+LOGICAL_AND: &&
+
+MATCH_NOT  : !~
+RELOP_EQ   : ==
+RELOP_NE   : !=
+RELOP_GE   : >=
+RELOP_LE   : <=
+INC        : ++
+DEC        : --
+
+MATCH      : ~
+RELOP_GT   : >
+RELOP_LT   : <
+
+PLUS       : +
+MINUS      : -
+MULT       : *
+DIV        : /
+MOD        : %
+EXP        : ^
+NOT        : !
+DOLLAR     : $
+ASSIGN     : =
+
+
+# =========================
+# Delimiters
+# =========================
+APPEND     : >>
+REDIRECT   : >
+PIPE       : |
+
+LPAREN     : (
+RPAREN     : )
+LBRACE     : {
+RBRACE     : }
+LBRACKET   : [
+RBRACKET   : ]
+
+COMMA      : ,
+SEMICOLON  : ;
+COLON      : :
+QUESTION   : ?
+
+
+# =========================
+# Lexical Elements (Dynamic)
+# =========================
+ID         : [A-Za-z_][A-Za-z0-9_]*
+HEX        : 0[xX][0-9a-fA-F]+
+OCT        : 0[oO][0-7]+
+BIN        : 0[bB][01]+
+FLOAT      : [0-9]*\.[0-9]+
+INT        : [0-9]+
+STR        : "([^"\\]|\\["nrt\\])*"|'([^'\\]|\\['nrt\\])*'
+REGEX      : \/[^\n\/]+\/
+
+
+# =========================
+# Ignored Tokens
+# =========================
+WHITESPACE : [ \t]+     -> skip
+COMMENT    : #[^\n]* -> skip
+NEWLINE    : [\r\n]+    -> skip
