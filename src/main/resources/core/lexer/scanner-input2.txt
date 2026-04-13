@@ -1,0 +1,27 @@
+# ========================================================
+# Advanced Lexical Analysis Test
+# Tests escaped strings, booleans, floats, and comments
+# ========================================================
+
+function advanced_test() {
+    max_iters = 50
+    pi_val = 3.1415
+    
+    message = "Result is:\n\t\"SUCCESS\""
+    flag = 1
+    counter = 0
+    
+    while (counter < max_iters) {
+        if (flag == 1) {
+            counter = counter + 1
+            pi_val = pi_val * 2.0
+        } else {
+            # Toggle the boolean value
+            flag = 0
+        }
+    }
+}
+
+BEGIN {
+    advanced_test()
+    message = "Process terminated.\
