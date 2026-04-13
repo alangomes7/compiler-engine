@@ -1,0 +1,18 @@
+# This is a sample program to test the Lexical Analyzer
+procedure calculate_sum is
+    limit : Integer := 100;
+    current_value : Float := 0.5;
+    greeting : String := "Starting loop\n";
+    is_valid : Boolean := #t;
+begin
+    if limit >= 10 then
+        limit := limit - 1;
+    else
+        limit := limit + 2 * 5;
+    end if;
+
+    while limit /= 0 loop
+        current_value := current_value / 2.0;
+        limit := limit - 1;
+    end loop;
+end calculate_sum;

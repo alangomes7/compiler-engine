@@ -1,0 +1,30 @@
+# ========================================================
+# Advanced Lexical Analysis Test
+# Tests escaped strings, booleans, floats, and comments
+# ========================================================
+
+procedure advanced_test is
+    # Declarations with various data types
+    max_iters : Integer := 50;
+    pi_val    : Float := 3.1415;
+    
+    # Testing strings with new line, tab, and escaped quotes
+    message   : String := "Result is:\n\t\"SUCCESS\"";
+    
+    flag      : Boolean := #t;
+    counter   : Integer := 0; 
+begin
+    while counter < max_iters loop
+        if flag = #t then
+            counter := counter + 1;
+            pi_val := pi_val * 2.0;
+        else
+            # Toggle the boolean value
+            flag := #f;
+        end if;
+    end loop;
+    
+    # Testing escaped backslash at the end of a string
+    message := "Process terminated.\\";
+    
+end advanced_test;

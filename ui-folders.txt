@@ -1,0 +1,33 @@
+your-project/
+│
+├── .vscode/
+│   ├── launch.json
+│   └── settings.json
+│
+├── lib/                      # JavaFX SDK here
+│
+├── src/
+│   ├── app/
+│   │   ├── MainApp.java     # JavaFX entry point
+│   │   └── LexerUI.java     # UI layout
+│   │
+│   ├── service/
+│   │   └── LexerService.java
+│   │
+│   ├── scanner/
+│   │   ├── Scanner.java
+│   │   └── TokenReader.java
+│   │
+│   ├── models/
+│   │   └── TokenRule.java
+│   │
+│   ├── utils/
+│   │   └── Utils.java
+│
+├── resources/
+│   ├── ada-tokens.txt
+│   ├── scanner-input1.txt
+│   ├── scanner-input2.txt
+│   └── scanner-input3.txt
+│
+└── README.md

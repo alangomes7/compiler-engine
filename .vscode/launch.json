@@ -1,0 +1,27 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "java",
+      "name": "MainApp",
+      "request": "launch",
+      "mainClass": "app.MainApp",
+      "projectName": ""
+    },
+    {
+      "type": "java",
+      "name": "MainApp",
+      "request": "launch",
+      "mainClass": "app.MainApp",
+      "projectName": "compiladores_c14b8965"
+    },
+    {
+      "type": "java",
+      "name": "Run JavaFX App",
+      "request": "launch",
+      "mainClass": "app.MainApp",
+      "projectName": "your-project",
+      "vmArgs": "--module-path \"${workspaceFolder}/lib/javafx-sdk-21.0.10/lib\" --add-modules javafx.controls,javafx.fxml"
+    }
+  ]
+}

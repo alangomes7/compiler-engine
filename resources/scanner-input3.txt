@@ -1,0 +1,12 @@
+procedure advanced_test is
+    max_iters : Integer := 50;
+    pi_val    : Float := 3.14.15;
+
+    message   : String := "Broken string \q
+
+    flag      : Boolean := #true;
+    1counter  : Integer := 0;
+
+begin
+    counter := counter + 1 @;
+end advanced_test;

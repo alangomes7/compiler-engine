@@ -1,0 +1,29 @@
+# Lexical Elements
+identifier ::= letter { letter | digit | "_" }
+integer_literal ::= digit { digit }
+string_literal ::= '"' { character } '"'
+letter ::= "A" | ... | "Z" | "a" | ... | "z"
+digit ::= "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9"
+
+# Program Structure
+compilation_unit ::= procedure_decl
+procedure_decl ::= "procedure" identifier "is" declarative_part "begin" sequence_of_statements "end" identifier ";"
+
+# Declarations
+declarative_part ::= { object_decl }
+object_decl ::= identifier ":" type_name ":=" expression ";"
+type_name ::= "Integer" | "Float" | "String"
+
+# Statements
+sequence_of_statements ::= statement { statement }
+statement ::= assignment_statement | if_statement | loop_statement
+
+# Expressions and Logic
+assignment_statement ::= identifier ":=" expression ";"
+if_statement ::= "if" condition "then" sequence_of_statements [ "else" sequence_of_statements ] "end" "if" ";"
+loop_statement ::= "while" condition "loop" sequence_of_statements "end" "loop" ";"
+expression ::= term { ("+" | "-") term }
+term ::= factor { ("*" | "/") factor }
+factor ::= identifier | integer_literal | "(" expression ")"
+condition ::= expression relational_operator expression
+relational_operator ::= "=" | "/=" | "<" | "<=" | ">" | ">="
