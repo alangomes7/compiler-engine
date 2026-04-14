@@ -8,9 +8,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import models.AFD;
-import models.State;
-import models.Transition;
+import models.atomic.State;
+import models.atomic.Transition;
+import models.automata.AFD;
 
 public class AFDMinimizer {
 

@@ -1,9 +1,10 @@
-package core.lexer;
+package core.lexer.translators;
 
 import core.lexer.conversors.ReToAFNDE;
-import models.AFNDE;
+import models.atomic.Token;
+import models.automata.AFNDE;
 
-public class RuleParser {
+public class StandardRuleParser {
 
     private final ReToAFNDE generator;
 
@@ -11,12 +12,12 @@ public class RuleParser {
     private int pos;
     private int length;
 
-    public RuleParser(ReToAFNDE generator) {
+    public StandardRuleParser(ReToAFNDE generator) {
         this.generator = generator;
     }
 
-    public AFNDE parse(String regex, String tokenName) {
-        this.input = regex.toCharArray();
+    public AFNDE parse(Token rule) {
+        this.input = rule.getRegex().toCharArray();
         this.pos = 0;
         this.length = input.length;
 
@@ -24,11 +25,11 @@ public class RuleParser {
 
         if (pos < length) {
             throw new RuntimeException(
-                "Unexpected '" + input[pos] + "' at pos " + pos
+                "Standard Parser: Unexpected '" + input[pos] + "' at pos " + pos + " in rule " + rule.getTokenType()
             );
         }
 
-        return generator.nameToken(tokenName, nfa);
+        return generator.nameToken(rule.getTokenType(), nfa);
     }
 
     // ========================================================================
@@ -179,10 +180,6 @@ public class RuleParser {
         AFNDE nfa = generator.symbol(String.valueOf(c));
         return (acc == null) ? nfa : generator.union(acc, nfa);
     }
-
-    // ========================================================================
-    // ERROR
-    // ========================================================================
 
     private RuntimeException error(String expected) {
         return new RuntimeException(

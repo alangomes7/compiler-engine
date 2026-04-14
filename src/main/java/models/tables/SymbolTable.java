@@ -1,7 +1,9 @@
-package models;
+package models.tables;
 
 import java.util.HashMap;
 import java.util.Map;
+
+import models.atomic.Symbol;
 
 public class SymbolTable {
     private final Map<String, Symbol> table;

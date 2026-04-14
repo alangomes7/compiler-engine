@@ -2,15 +2,10 @@ package core.lexer.conversors;
 
 import java.util.List;
 
-import models.AFNDE;
-import models.State;
+import models.atomic.State;
+import models.automata.AFNDE;
 
-<<<<<<< HEAD:parser/src/main/java/scanner/conversors/ERtoAFNDE.java
-
-public class ERtoAFNDE {
-=======
 public class ReToAFNDE {
->>>>>>> 97dd241de50200b29d64d306b0d861c7abd0597b:src/main/java/core/lexer/conversors/ReToAFNDE.java
 
     public static final String EPSILON = "ε";
 

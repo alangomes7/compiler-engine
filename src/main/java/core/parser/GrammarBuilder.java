@@ -7,7 +7,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import models.Grammar;
+import models.others.Grammar;
 
 public class GrammarBuilder {
 

@@ -1,9 +1,12 @@
-package models;
+package models.automata;
 
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Queue;
 import java.util.Set;
+
+import models.atomic.State;
+import models.atomic.Transition;
 
 public class AFD {
     private final String tokenName;

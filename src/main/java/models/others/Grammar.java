@@ -1,4 +1,4 @@
-package models;
+package models.others;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;

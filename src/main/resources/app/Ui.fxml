@@ -8,12 +8,15 @@
 <?import javafx.scene.control.TableColumn?>
 <?import javafx.scene.control.TableView?>
 <?import javafx.scene.control.TextArea?>
+<?import javafx.scene.control.TreeView?>
 <?import javafx.scene.control.cell.PropertyValueFactory?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.TreeView?>
 
 <VBox spacing="10" xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml" 
-      fx:controller="app.controller.LexerUI">
+      fx:controller="app.Ui">
     
     <padding>
         <Insets top="10" right="10" bottom="10" left="10"/>
@@ -36,17 +39,24 @@
         <TextArea fx:id="inputArea" promptText="Load a .txt file or paste source code here..." HBox.hgrow="ALWAYS" style="-fx-font-family: monospace;" />
     </HBox>
     
-    <HBox spacing="10" alignment="CENTER_LEFT">
-        <Button fx:id="runLexerBtn" text="3. Run Lexer Analysis" onAction="#handleRunLexer" style="-fx-font-weight: bold;"/>
-        <Button text="Save Console Log" onAction="#handleSaveConsoleLog"/>
-        <Button text="Export Tables (.csv)" onAction="#handleExportCSV" /> 
-    </HBox>
-    
     <TabPane VBox.vgrow="ALWAYS" tabClosingPolicy="UNAVAILABLE">
         <tabs>
             <Tab text="Console Log">
                 <TextArea fx:id="consoleArea" editable="false" style="-fx-font-family: monospace;"/>
             </Tab>
+
+            <Tab text="Automata Viewer">
+                <ScrollPane fitToWidth="true" fitToHeight="true">
+                    <VBox alignment="TOP_CENTER" spacing="20">
+                        <padding>
+                            <Insets top="20" right="20" bottom="20" left="20"/>
+                        </padding>
+                        <Label text="Master Lexer DFA Visualization" style="-fx-font-weight: bold; -fx-font-size: 16;"/>
+                        <TextArea fx:id="automataDetailsArea" editable="false" style="-fx-font-family: monospace;" VBox.vgrow="ALWAYS" />
+                    </VBox>
+                </ScrollPane>
+            </Tab>
+            
             <Tab text="Symbol Table">
                 <TableView fx:id="symbolTableViewer">
                     <columns>
@@ -63,9 +73,11 @@
                     </columns>
                 </TableView>
             </Tab>
+            
             <Tab text="Output">
                 <TextArea fx:id="outputArea" editable="false" />
             </Tab>
+            
             <Tab text="First &amp; Follow Sets">
                 <TableView fx:id="firstFollowTable">
                     <columns>
@@ -75,6 +87,16 @@
                     </columns>
                 </TableView>
             </Tab>
+            <Tab text="Syntax Tree Viewer">
+                <TreeView fx:id="syntaxTreeView" VBox.vgrow="ALWAYS" />
+            </Tab>
         </tabs>
     </TabPane>
+
+    <HBox spacing="10" alignment="CENTER_LEFT">
+        <Button fx:id="runLexerBtn" text="3. Run Lexer Analysis" onAction="#handleRunLexer" style="-fx-font-weight: bold;"/>
+        <Button text="Clear Tables" onAction="#handleClearTables" style="-fx-text-fill: red;"/>
+        <Button text="Save Console Log" onAction="#handleSaveConsoleLog"/>
+        <Button text="Export Tables (.csv)" onAction="#handleExportCSV" /> 
+    </HBox>
 </VBox>

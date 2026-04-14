@@ -1,0 +1,221 @@
+# =========================
+# Keywords (Static Literals)
+# =========================
+FUNCTION  : function
+BEGIN_KW  : BEGIN
+END_KW    : END
+CASE      : case
+DEFAULT   : default
+DELETE    : delete
+BREAK     : break
+CONTINUE  : continue
+NEXT      : next
+RETURN    : return
+SWITCH    : switch
+IF        : if
+ELSE      : else
+WHILE     : while
+DO        : do
+FOR       : for
+PRINTF    : printf
+PRINT     : print
+IN        : in
+GETLINE   : getline
+
+
+# =========================
+# Operators (Longest First!)
+# =========================
+ASSIGN_EXP : ^=
+ASSIGN_MOD : %=
+ASSIGN_MUL : *=
+ASSIGN_DIV : /=
+ASSIGN_ADD : +=
+ASSIGN_SUB : -=
+
+LOGICAL_OR : ||
+LOGICAL_AND: &&
+
+MATCH_NOT  : !~
+RELOP_EQ   : ==
+RELOP_NE   : !=
+RELOP_GE   : >=
+RELOP_LE   : <=
+INC        : ++
+DEC        : --
+
+MATCH      : ~
+RELOP_GT   : >
+RELOP_LT   : <
+
+PLUS       : +
+MINUS      : -
+MULT       : *
+DIV        : /
+MOD        : %
+EXP        : ^
+NOT        : !
+DOLLAR     : $
+ASSIGN     : =
+
+
+# =========================
+# Delimiters
+# =========================
+APPEND     : >>
+REDIRECT   : >
+PIPE       : |
+
+LPAREN     : (
+RPAREN     : )
+LBRACE     : {
+RBRACE     : }
+LBRACKET   : [
+RBRACKET   : ]
+
+COMMA      : ,
+SEMICOLON  : ;
+COLON      : :
+QUESTION   : ?
+
+# =========================
+# Explicit Primitive Sets
+# =========================
+DIGIT      : [0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9]
+
+LOWER      : [a | b | c | d | e | f | g | h | i | j | k | l | m |
+              n | o | p | q | r | s | t | u | v | w | x | y | z]
+
+UPPER      : [A | B | C | D | E | F | G | H | I | J | K | L | M |
+              N | O | P | Q | R | S | T | U | V | W | X | Y | Z]
+
+LETTER     : [LOWER | UPPER]
+
+UNDERSCORE : [_]
+
+HEX_LOWER  : [a | b | c | d | e | f]
+HEX_UPPER  : [A | B | C | D | E | F]
+
+OCT_DIGIT  : [0 | 1 | 2 | 3 | 4 | 5 | 6 | 7]
+BIN_DIGIT  : [0 | 1]
+
+SPACE      : [ ]
+TAB        : [\t]
+
+NEWLINE_CH : [\r | \n]
+
+DQUOTE     : ["]
+SQUOTE     : [']
+
+SLASH      : [/]
+BACKSLASH  : [\\]
+HASH       : [#]
+DOT        : [.]
+
+# --- Universal Set (Abstract) ---
+ANY_CHAR   : [/* full character universe */]
+
+=========================
+Derived Sets (Explicit Negation)
+=========================
+@DER NOT_NEWLINE        : [ANY_CHAR ^ [NEWLINE_CH]]
+@DER NOT_DQUOTE_BSLASH  : [ANY_CHAR ^ [DQUOTE | BACKSLASH]]
+@DER NOT_SQUOTE_BSLASH  : [ANY_CHAR ^ [SQUOTE | BACKSLASH]]
+@DER NOT_NEWLINE_SLASH  : [ANY_CHAR ^ [NEWLINE_CH | SLASH]]
+
+=========================
+Escape Handling
+=========================
+@DER ESCAPE_CHAR : [n | r | t | " | ' | BACKSLASH]
+
+@DER ESCAPE_SEQ  : [BACKSLASH][ESCAPE_CHAR]
+
+# =========================
+# Lexical Elements (Dynamic)
+# =========================
+@DER ID : [LETTER | UNDERSCORE][LETTER | DIGIT | UNDERSCORE]*
+
+@DER HEX : [0][x | X][DIGIT | HEX_LOWER | HEX_UPPER]+
+
+@DER OCT : [0][o | O][OCT_DIGIT]+
+
+@DER BIN : [0][b | B][BIN_DIGIT]+
+
+@DER FLOAT : [DIGIT]*[DOT][DIGIT]+
+
+@DER INT : [DIGIT]+
+
+@DER STR :
+    [DQUOTE](
+        [NOT_DQUOTE_BSLASH] |
+        [ESCAPE_SEQ]
+    )*[DQUOTE]
+  |
+    [SQUOTE](
+        [NOT_SQUOTE_BSLASH] |
+        [ESCAPE_SEQ]
+    )*[SQUOTE]
+
+@DER REGEX :
+    [SLASH][NOT_NEWLINE_SLASH]+[SLASH]
+
+# =========================
+# Ignored Tokens
+# =========================
+@DER WHITESPACE : [SPACE | TAB]+ -> skip
+
+@DER COMMENT : [HASH][NOT_NEWLINE]* -> skip
+
+@DER NEWLINE : [NEWLINE_CH]+ -> skip
+
+=========================
+Notation Dictionary
+=========================
+# --- Derivation Flag ---
+@DER           : indicates if the expression is derivated
+
+# --- Grouping ---
+( ... )        : grouping
+[ ... ]        : explicit set
+
+# --- Set Operations ---
+|              : union (OR)
+^              : set subtraction (negation)
+               : Example: [ANY_CHAR ^ [DQUOTE]]
+
+# --- Quantifiers ---
+*              : zero or more
++              : one or more
+
+# --- Concatenation ---
+AB             : A followed by B
+
+# --- Literals ---
+a              : literal character
+"              : double quote
+'              : single quote
+
+# --- Escaping ---
+\              : escape prefix
+\n             : newline
+\r             : carriage return
+\t             : tab
+\\             : backslash
+\"             : double quote
+\'             : single quote
+
+# --- Character Universe ---
+ANY_CHAR       : full set of valid input characters
+
+# --- Token Rules ---
+TOKEN : pattern
+
+# --- Directives ---
+-> skip        : ignore token
+
+# --- Matching Rules ---
+# Longest match wins (maximal munch)
+
+# --- Priority ---
+# If same length match:
+# earlier rule wins

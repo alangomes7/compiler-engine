@@ -9,26 +9,26 @@ import core.lexer.conversors.AFDMinimizer;
 import core.lexer.conversors.AFNDEtoAFND;
 import core.lexer.conversors.AFNDtoAFD;
 import core.lexer.conversors.ReToAFNDE;
-import models.AFD;
-import models.AFND;
-import models.AFNDE;
-import models.State;
-import models.SymbolTable;
-import models.TokenRule;
-
-
+import core.lexer.translators.RuleParser;
+import models.atomic.State;
+import models.atomic.Token;
+import models.automata.AFD;
+import models.automata.AFND;
+import models.automata.AFNDE;
+import models.tables.SymbolTable;
 
 public class Lexer {
     
     private AFD masterAutomaton;
-    private final List<TokenRule> rules;
+    private final List<Token> rules;
     private final SymbolTable symbolTable;
     
     // Converted to a dynamic instance variable
     private final Set<String> symbolTableTokens;
 
-    public Lexer(List<TokenRule> rules) {
+    public Lexer(List<Token> rules) {
         this.rules = rules;
+        System.out.println("--- Building Scanner For: " + rules.size() + " Tokens ---");
         this.symbolTable = new SymbolTable();
         this.symbolTableTokens = determineSymbolTableTokens(rules);
         
@@ -39,13 +39,13 @@ public class Lexer {
      * Evaluates the regular expressions to differentiate between static literals 
      * and dynamic patterns that require symbol table storage.
      */
-    private Set<String> determineSymbolTableTokens(List<TokenRule> rules) {
+    private Set<String> determineSymbolTableTokens(List<Token> rules) {
         Set<String> dynamicTokens = new HashSet<>();
         
         // Regex to detect common regex metacharacters: \ [ ] ( ) * + ? |
         String metacharacterPattern = ".*[\\\\\\[\\]\\(\\)\\*\\+\\?\\|].*";
 
-        for (TokenRule rule : rules) {
+        for (Token rule : rules) {
             if (rule.getRegex().matches(metacharacterPattern)) {
                 dynamicTokens.add(rule.getTokenType());
             }
@@ -65,8 +65,8 @@ public class Lexer {
         RuleParser parser = new RuleParser(afndeGenerator);
         List<AFNDE> afndeList = new ArrayList<>();
 
-        for (TokenRule rule : rules) {
-            AFNDE partialAutomaton = parser.parse(rule.getRegex(), rule.getTokenType());
+        for (Token rule : rules) {
+            AFNDE partialAutomaton = parser.parse(rule);
             afndeList.add(partialAutomaton);
         }
 
@@ -204,7 +204,7 @@ public class Lexer {
 
                 // Determine if this token should be ignored (e.g., WHITESPACE, COMMENT)
                 boolean isSkipToken = false;
-                for (TokenRule rule : rules) {
+                for (Token rule : rules) {
                     if (rule.getTokenType().equals(lastAcceptingToken)) {
                         isSkipToken = rule.isSkip();
                         break;

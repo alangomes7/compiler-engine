@@ -5,11 +5,11 @@ import java.util.List;
 
 import Utils.Utils;
 import core.lexer.Lexer;
-import core.lexer.TokenReader;
+import core.lexer.translators.TokenReader;
 import core.parser.FirstFollowCalculator;
 import core.parser.GrammarBuilder;
-import models.Grammar;
-import models.TokenRule;
+import models.atomic.Token;
+import models.others.Grammar;
 
 public class Main {
 
@@ -48,7 +48,7 @@ public class Main {
      * Loads rules and initializes the Lexer instance.
      */
     private static Lexer initializeLexer() throws IOException {
-        List<TokenRule> rules = TokenReader.readTokens(TOKENS_PATH);
+        List<Token> rules = TokenReader.readTokens(TOKENS_PATH);
         return new Lexer(rules);
     }
 

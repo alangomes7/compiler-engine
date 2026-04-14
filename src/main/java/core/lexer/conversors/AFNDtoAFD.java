@@ -6,10 +6,10 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import models.AFD;
-import models.AFND;
-import models.State;
-import models.Transition;
+import models.atomic.State;
+import models.atomic.Transition;
+import models.automata.AFD;
+import models.automata.AFND;
 
 
 public class AFNDtoAFD {

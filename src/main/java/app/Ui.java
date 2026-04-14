@@ -1,4 +1,4 @@
-package app.controller;
+package app;
 
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
@@ -7,20 +7,27 @@ import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextArea;
+import javafx.scene.control.TreeItem;
+import javafx.scene.control.TreeView;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.stage.FileChooser;
 import javafx.stage.Window;
-import models.FirstFollowRow;
-import models.Grammar;
-import models.Symbol;
-import models.TokenRule;
+
+import models.atomic.Symbol;
+import models.atomic.Token;
+import models.others.FirstFollowRow;
+import models.others.Grammar;
+import models.tree.SyntaxTreeNode;
 import core.lexer.Lexer;
-import core.lexer.TokenReader;
+import core.lexer.translators.TokenReader;
+
 import core.parser.FirstFollowCalculator;
 import core.parser.GrammarBuilder;
+
 import Utils.Utils;
 
 import java.io.File;
@@ -29,8 +36,9 @@ import java.io.OutputStream;
 import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.util.List;
+import java.util.stream.Collectors;
 
-public class LexerUI {
+public class Ui {
 
     @FXML private TextArea lineNumbersArea;
     @FXML private TextArea inputArea;
@@ -42,11 +50,15 @@ public class LexerUI {
     @FXML private Button loadTokenBtn;
     @FXML private Button loadInputBtn;
     @FXML private Button runLexerBtn;
+    @FXML private TextArea automataDetailsArea;
+    @FXML private TreeView<String> syntaxTreeView;
     
     @FXML private TableView<FirstFollowRow> firstFollowTable;
-    @FXML private TableColumn<FirstFollowRow, String> nonTerminalCol;
-    @FXML private TableColumn<FirstFollowRow, String> firstSetCol;
-    @FXML private TableColumn<FirstFollowRow, String> followSetCol;
+    
+    // Updated generics to match the new FirstFollowRow data types
+    @FXML private TableColumn<FirstFollowRow, Symbol> nonTerminalCol;
+    @FXML private TableColumn<FirstFollowRow, List<Symbol>> firstSetCol;
+    @FXML private TableColumn<FirstFollowRow, List<Symbol>> followSetCol;
 
     private Lexer lexer;
 
@@ -77,9 +89,45 @@ public class LexerUI {
     }
 
     private void setupFirstFollowTable() {
+        // 1. Bind columns to the properties in FirstFollowRow
         nonTerminalCol.setCellValueFactory(new PropertyValueFactory<>("nonTerminal"));
         firstSetCol.setCellValueFactory(new PropertyValueFactory<>("firstSet"));
         followSetCol.setCellValueFactory(new PropertyValueFactory<>("followSet"));
+
+        // 2. Set Custom Cell Factories to format the Symbol objects nicely
+        nonTerminalCol.setCellFactory(column -> new TableCell<FirstFollowRow, Symbol>() {
+            @Override
+            protected void updateItem(Symbol item, boolean empty) {
+                super.updateItem(item, empty);
+                setText(empty || item == null ? "" : item.getLexeme());
+            }
+        });
+
+        firstSetCol.setCellFactory(column -> new TableCell<FirstFollowRow, List<Symbol>>() {
+            @Override
+            protected void updateItem(List<Symbol> item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null || item.isEmpty()) {
+                    setText("");
+                } else {
+                    String text = item.stream().map(Symbol::getLexeme).collect(Collectors.joining(", "));
+                    setText("{ " + text + " }");
+                }
+            }
+        });
+
+        followSetCol.setCellFactory(column -> new TableCell<FirstFollowRow, List<Symbol>>() {
+            @Override
+            protected void updateItem(List<Symbol> item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null || item.isEmpty()) {
+                    setText("");
+                } else {
+                    String text = item.stream().map(Symbol::getLexeme).collect(Collectors.joining(", "));
+                    setText("{ " + text + " }");
+                }
+            }
+        });
     }
 
     @FXML
@@ -102,7 +150,12 @@ public class LexerUI {
                 writer.println("\n--- FIRST AND FOLLOW SETS ---");
                 writer.println("Non-Terminal,First,Follow");
                 for (FirstFollowRow row : firstFollowTable.getItems()) {
-                    writer.println(row.getNonTerminal() + ",\"" + row.getFirstSet() + "\",\"" + row.getFollowSet() + "\"");
+                    // Extracting the pure text out of the Symbol lists
+                    String nt = row.getNonTerminal().getLexeme();
+                    String firstStr = row.getFirstSet().stream().map(Symbol::getLexeme).collect(Collectors.joining(", "));
+                    String followStr = row.getFollowSet().stream().map(Symbol::getLexeme).collect(Collectors.joining(", "));
+                    
+                    writer.println(nt + ",\"{ " + firstStr + " }\",\"{ " + followStr + " }\"");
                 }
                 outputArea.setText("✅ Data exported to CSV.");
             } catch (IOException e) {
@@ -123,24 +176,23 @@ public class LexerUI {
             tokenFileLabel.setText(file.getName());
             consoleArea.clear(); // Clear console for new build
             
-            // 1. Notify user and disable buttons
             outputArea.setText("⏳ Building Lexer... Please wait.");
             setButtonsDisabled(true);
 
-            // 2. Run the heavy build process on a background thread
             new Thread(() -> {
                 try {
-                    List<TokenRule> rules = TokenReader.readTokens(file.getAbsolutePath());
+                    List<Token> rules = TokenReader.readTokens(file.getAbsolutePath());
                     Lexer newLexer = new Lexer(rules);
 
-                    // 3. Update UI back on the JavaFX Application Thread on success
                     Platform.runLater(() -> {
                         this.lexer = newLexer;
+                        if (lexer.getMasterAutomaton() != null) {
+                            automataDetailsArea.setText(lexer.getMasterAutomaton().toString());
+                        }
                         outputArea.setText("✅ Lexer successfully built from: " + file.getName());
                         setButtonsDisabled(false);
                     });
                 } catch (Exception e) {
-                    // 3. Update UI back on the JavaFX Application Thread on failure
                     Platform.runLater(() -> {
                         outputArea.setText("❌ Error building Lexer: " + e.getMessage());
                         this.lexer = null;
@@ -151,9 +203,6 @@ public class LexerUI {
         }
     }
 
-    /**
-     * Helper method to toggle the disabled state of main action buttons.
-     */
     private void setButtonsDisabled(boolean disabled) {
         if(loadTokenBtn != null) loadTokenBtn.setDisable(disabled);
         if(loadInputBtn != null) loadInputBtn.setDisable(disabled);
@@ -181,7 +230,7 @@ public class LexerUI {
         }
     }
 
-    @FXML
+   @FXML
     private void handleRunLexer(ActionEvent event) {
         if (lexer == null) {
             outputArea.setText("⚠️ Please load a Lexer RE and Tokens file first.");
@@ -196,11 +245,11 @@ public class LexerUI {
         }
 
         try {
-            // Run the Lexer analysis
+            // 1. Run the Lexer analysis
             String result = lexer.scan(input);
             outputArea.setText(result);
 
-            // Populate the Symbol Table View
+            // 2. Populate the Symbol Table View
             if (lexer.getSymbolTable() != null) {
                 ObservableList<Symbol> symbols = FXCollections.observableArrayList(
                         lexer.getSymbolTable().getTable().values()
@@ -208,24 +257,23 @@ public class LexerUI {
                 symbolTableViewer.setItems(symbols);
             }
 
-            // Run Parser calculations
+            // 3. Run Parser calculations and update First/Follow Table
             try {
+                // Re-build grammar and calculate sets
                 Grammar grammar = GrammarBuilder.buildFromBnfFile("src/main/resources/core/lexer/awk-bnf.txt"); 
                 FirstFollowCalculator calculator = new FirstFollowCalculator(grammar);
                 calculator.computeSets();
 
-                ObservableList<FirstFollowRow> rows = FXCollections.observableArrayList();
-                
-                // Populate rows dynamically using the calculator
-                for (String nt : grammar.getNonTerminals()) {
-                    String firstStr = calculator.getFirstSets().get(nt).toString();
-                    String followStr = calculator.getFollowSets().get(nt).toString();
-                    rows.add(new FirstFollowRow(nt, firstStr, followStr));
-                }
+                // Retrieve the computed rows directly from the calculator's results table
+                // This replaces the broken getFirstSets() and getFollowSets() logic
+                var tableData = calculator.getResultsTable().getTable();
+                ObservableList<FirstFollowRow> rows = FXCollections.observableArrayList(tableData.values());
                 
                 firstFollowTable.setItems(rows);
+                
             } catch (Exception e) {
-                System.err.println("Parser Error: " + e.getMessage());
+                System.err.println("Parser Error during UI update: " + e.getMessage());
+                e.printStackTrace();
             }
 
         } catch (Exception e) {
@@ -252,9 +300,6 @@ public class LexerUI {
         }
     }
 
-    /**
-     * Inner class to redirect output streams to the JavaFX TextArea
-     */
     private static class TextAreaOutputStream extends OutputStream {
         private final TextArea console;
 
@@ -271,6 +316,68 @@ public class LexerUI {
         public void write(byte[] b, int off, int len) {
             String text = new String(b, off, len);
             Platform.runLater(() -> console.appendText(text));
+        }
+    }
+
+    @FXML
+    private void handleClearTables(ActionEvent event) {
+        // 1. Clear the Symbol Table View
+        if (symbolTableViewer != null) {
+            symbolTableViewer.getItems().clear();
+        }
+
+        // 2. Clear the First & Follow Table View
+        if (firstFollowTable != null) {
+            firstFollowTable.getItems().clear();
+        }
+
+        // 3. Optional: Clear the backend SymbolTable in the lexer if it exists
+        if (lexer != null && lexer.getSymbolTable() != null) {
+            lexer.getSymbolTable().clearTable();
+        }
+
+        // 4. Clear the UI Output areas
+        outputArea.setText("Tables cleared.");
+        consoleArea.appendText("\n[UI] Tables and internal symbol cache have been cleared.\n");
+    }
+
+    /**
+     * Converte recursivamente um SyntaxTreeNode para um TreeItem do JavaFX.
+     * @param node O nó da árvore sintática do seu modelo.
+     * @return Um TreeItem formatado para exibição na UI.
+     */
+    private TreeItem<String> convertToTreeItem(SyntaxTreeNode node) {
+        if (node == null) return null;
+
+        // Cria o item da árvore com o rótulo (label) do nó
+        TreeItem<String> item = new TreeItem<>(node.getLabel());
+
+        // Percorre recursivamente todos os filhos e os adiciona ao item atual
+        for (SyntaxTreeNode child : node.getChildren()) {
+            item.getChildren().add(convertToTreeItem(child));
+        }
+
+        // Define o item como expandido por padrão para facilitar a visualização
+        item.setExpanded(true);
+        return item;
+    }
+
+    private void updateSyntaxTree(SyntaxTreeNode root) {
+        if (root != null) {
+            syntaxTreeView.setRoot(convertToTreeItem(root));
+        }
+    }
+
+    /**
+     * Método para ser chamado após o Parser gerar a árvore sintática.
+     * @param root O nó raiz da árvore sintática gerada.
+     */
+    private void displaySyntaxTree(SyntaxTreeNode root) {
+        if (root != null) {
+            // Converte o modelo e define como raiz do componente visual
+            syntaxTreeView.setRoot(convertToTreeItem(root));
+        } else {
+            syntaxTreeView.setRoot(null);
         }
     }
 }

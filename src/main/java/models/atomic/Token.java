@@ -1,24 +1,25 @@
-package models;
+package models.atomic;
 
-public class TokenRule {
+import java.util.HashMap;
+import java.util.Map;
+
+public class Token {
     private final String tokenType;
     private final String regex;
     private final boolean skip;
+    private final boolean extended;
+    private final Map<String, String> macros;
 
-    /**
-     * Backward-compatible constructor (default: not skipped)
-     */
-    public TokenRule(String tokenType, String regex) {
-        this(tokenType, regex, false);
-    }
-
-    /**
-     * New constructor with skip support
-     */
-    public TokenRule(String tokenType, String regex, boolean skip) {
+    public Token(String tokenType, String regex, boolean skip, boolean extended, Map<String, String> macros) {
         this.tokenType = tokenType;
         this.regex = regex;
         this.skip = skip;
+        this.extended = extended;
+        this.macros = macros != null ? new HashMap<>(macros) : new HashMap<>();
+    }
+
+    public boolean isExtended() {
+        return extended;
     }
 
     public String getTokenType() { 
@@ -33,12 +34,17 @@ public class TokenRule {
         return skip; 
     }
 
+    public Map<String, String> getMacros() {
+        return macros;
+    }
+
     @Override
     public String toString() {
         return "TokenRule{" +
                 "type='" + tokenType + '\'' +
                 ", regex='" + regex + '\'' +
                 ", skip=" + skip +
+                ", extended=" + extended +
                 '}';
     }
 }

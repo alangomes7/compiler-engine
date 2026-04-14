@@ -1,4 +1,4 @@
-package models;
+package models.atomic;
 
 public class Transition {
     private final String symbol;
