@@ -16,9 +16,9 @@ public class SymbolTable {
      * Inserts a new symbol into the table if it doesn't already exist.
      * Returns the existing or newly created symbol.
      */
-    public Symbol insert(String lexeme, String tokenType) {
+    public Symbol insert(String lexeme, String tokenType, int line, int col) {
         if (!table.containsKey(lexeme)) {
-            Symbol symbol = new Symbol(lexeme, tokenType);
+            Symbol symbol = new Symbol(lexeme, tokenType, line, col);
             table.put(lexeme, symbol);
             return symbol;
         }

@@ -53,12 +53,18 @@ public class ExtendedRuleParser {
     private String resolveExtendedSyntax(String pattern, Map<String, String> macros) {
         String result = pattern;
 
-        result = result.replace("[ANY_CHAR ^ [NEWLINE_CH]]", "!!NOT_NL!!");
-        result = result.replace("[ANY_CHAR ^ [DQUOTE | BACKSLASH]]", "!!NOT_DQ!!");
-        result = result.replace("[ANY_CHAR ^ [SQUOTE | BACKSLASH]]", "!!NOT_SQ!!");
-        result = result.replace("[ANY_CHAR ^ [NEWLINE_CH | SLASH]]", "!!NOT_NL_SL!!");
-
+        // 1. Pre-process explicitly negated patterns INSIDE the macros map before expansion
         if (macros != null && !macros.isEmpty()) {
+            for (Map.Entry<String, String> m : macros.entrySet()) {
+                String val = m.getValue();
+                val = val.replace("[ANY_CHAR ^ [NEWLINE_CH]]", "!!NOT_NL!!");
+                val = val.replace("[ANY_CHAR ^ [DQUOTE | BACKSLASH]]", "!!NOT_DQ!!");
+                val = val.replace("[ANY_CHAR ^ [SQUOTE | BACKSLASH]]", "!!NOT_SQ!!");
+                val = val.replace("[ANY_CHAR ^ [NEWLINE_CH | SLASH]]", "!!NOT_NL_SL!!");
+                m.setValue(val);
+            }
+
+            // 2. Expand macros iteratively
             boolean changed = true;
             while (changed) {
                 changed = false;
@@ -73,6 +79,12 @@ public class ExtendedRuleParser {
                 }
             }
         }
+
+        // 3. Fallback for inline uses (in case rules use raw syntax instead of macros)
+        result = result.replace("[ANY_CHAR ^ [NEWLINE_CH]]", "!!NOT_NL!!");
+        result = result.replace("[ANY_CHAR ^ [DQUOTE | BACKSLASH]]", "!!NOT_DQ!!");
+        result = result.replace("[ANY_CHAR ^ [SQUOTE | BACKSLASH]]", "!!NOT_SQ!!");
+        result = result.replace("[ANY_CHAR ^ [NEWLINE_CH | SLASH]]", "!!NOT_NL_SL!!");
 
         result = result.replace("[\\\\]", "(\\\\)");
         result = result.replace("\\]", "!!RBRACKET!!");

@@ -2,12 +2,11 @@ package core.lexer.conversors;
 
 import java.util.List;
 
+import models.atomic.Constants;
 import models.atomic.State;
 import models.automata.AFNDE;
 
 public class ReToAFNDE {
-
-    public static final String EPSILON = "ε";
 
     // Reused labels (avoid repeated string creation)
     private static final String CONCAT = "Concat";
@@ -46,7 +45,7 @@ public class ReToAFNDE {
             aFinal.setFinal(false);
         }
 
-        aFinal.addTransition(EPSILON, bStart);
+        aFinal.addTransition(Constants.EPSILON, bStart);
 
         return new AFNDE(CONCAT, aStart, bFinal);
     }
@@ -65,11 +64,11 @@ public class ReToAFNDE {
         if (aFinal.isFinal()) aFinal.setFinal(false);
         if (bFinal.isFinal()) bFinal.setFinal(false);
 
-        start.addTransition(EPSILON, aStart);
-        start.addTransition(EPSILON, bStart);
+        start.addTransition(Constants.EPSILON, aStart);
+        start.addTransition(Constants.EPSILON, bStart);
 
-        aFinal.addTransition(EPSILON, accept);
-        bFinal.addTransition(EPSILON, accept);
+        aFinal.addTransition(Constants.EPSILON, accept);
+        bFinal.addTransition(Constants.EPSILON, accept);
 
         return new AFNDE(UNION, start, accept);
     }
@@ -88,12 +87,12 @@ public class ReToAFNDE {
         }
 
         // Enter or bypass
-        start.addTransition(EPSILON, aStart);
-        start.addTransition(EPSILON, accept);
+        start.addTransition(Constants.EPSILON, aStart);
+        start.addTransition(Constants.EPSILON, accept);
 
         // Loop + exit
-        aFinal.addTransition(EPSILON, aStart);
-        aFinal.addTransition(EPSILON, accept);
+        aFinal.addTransition(Constants.EPSILON, aStart);
+        aFinal.addTransition(Constants.EPSILON, accept);
 
         return new AFNDE(STAR, start, accept);
     }
@@ -111,10 +110,10 @@ public class ReToAFNDE {
             aFinal.setFinal(false);
         }
 
-        start.addTransition(EPSILON, aStart);
-        start.addTransition(EPSILON, accept);
+        start.addTransition(Constants.EPSILON, aStart);
+        start.addTransition(Constants.EPSILON, accept);
 
-        aFinal.addTransition(EPSILON, accept);
+        aFinal.addTransition(Constants.EPSILON, accept);
 
         return new AFNDE(OPTIONAL, start, accept);
     }
@@ -132,8 +131,8 @@ public class ReToAFNDE {
             aFinal.setFinal(false);
         }
 
-        aFinal.addTransition(EPSILON, aStart);
-        aFinal.addTransition(EPSILON, accept);
+        aFinal.addTransition(Constants.EPSILON, aStart);
+        aFinal.addTransition(Constants.EPSILON, accept);
 
         return new AFNDE(PLUS, aStart, accept);
     }
@@ -155,7 +154,7 @@ public class ReToAFNDE {
         // Avoid repeated lookups
         for (int i = 0, size = tokenRules.size(); i < size; i++) {
             AFNDE tokenNfa = tokenRules.get(i);
-            masterStart.addTransition(EPSILON, tokenNfa.getStartState());
+            masterStart.addTransition(Constants.EPSILON, tokenNfa.getStartState());
         }
 
         return new AFNDE(MASTER, masterStart, null);

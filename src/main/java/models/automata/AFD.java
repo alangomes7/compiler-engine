@@ -1,10 +1,6 @@
 package models.automata;
 
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.Queue;
-import java.util.Set;
-
+import java.util.*;
 import models.atomic.State;
 import models.atomic.Transition;
 
@@ -12,11 +8,51 @@ public class AFD {
     private final String tokenName;
     private final State startState;
     private final Set<State> finalStates;
+    
+    // Cache de transições para acesso O(1)
+    // Map<ID_do_Estado, Map<Simbolo, Estado_Destino>>
+    private final Map<Integer, Map<String, State>> fastTransitionTable = new HashMap<>();
 
     public AFD(String tokenName, State startState, Set<State> finalStates) {
         this.tokenName = tokenName;
         this.startState = startState;
         this.finalStates = finalStates;
+        precomputeTransitions();
+    }
+
+    /**
+     * Pré-processa as transições de todos os estados alcançáveis
+     * para garantir que getNextState seja O(1).
+     */
+    private void precomputeTransitions() {
+        Queue<State> queue = new LinkedList<>();
+        Set<Integer> visited = new HashSet<>();
+
+        queue.add(startState);
+        visited.add(startState.getId());
+
+        while (!queue.isEmpty()) {
+            State current = queue.poll();
+            Map<String, State> stateMap = new HashMap<>();
+            
+            for (Transition t : current.getTransitions()) {
+                stateMap.put(t.getSymbol(), t.getTarget());
+                
+                if (visited.add(t.getTarget().getId())) {
+                    queue.add(t.getTarget());
+                }
+            }
+            fastTransitionTable.put(current.getId(), stateMap);
+        }
+    }
+
+    // Otimizado: Busca no mapa em vez de iterar na lista
+    public State getNextState(State current, char c) {
+        Map<String, State> transitions = fastTransitionTable.get(current.getId());
+        if (transitions != null) {
+            return transitions.get(String.valueOf(c));
+        }
+        return null;
     }
 
     public String getTokenName() {
@@ -29,16 +65,6 @@ public class AFD {
 
     public Set<State> getFinalStates() {
         return finalStates;
-    }
-
-    public State getNextState(State current, char c) {
-        String symbol = String.valueOf(c);
-        for (Transition t : current.getTransitions()) {
-            if (t.getSymbol().equals(symbol)) {
-                return t.getTarget();
-            }
-        }
-        return null;
     }
 
     @Override

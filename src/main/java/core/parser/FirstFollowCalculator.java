@@ -1,19 +1,18 @@
 package core.parser;
 
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.HashSet;
 
+import models.atomic.Constants;
 import models.atomic.Symbol;
+import models.others.FirstFollowRow;
 import models.others.Grammar;
 import models.tables.FirstFollowTable;
-import models.others.FirstFollowRow;
 
 public class FirstFollowCalculator {
-    public static final String EPSILON = "ε";
-    public static final String EOF = "$";
 
     private final Grammar grammar;
     private final FirstFollowTable resultsTable;
@@ -31,21 +30,20 @@ public class FirstFollowCalculator {
     }
 
     private void initializeSets() {
-        // Initialize rows for all Non-Terminals in the Symbol-based table
-        for (String ntLexeme : grammar.getNonTerminals()) {
-            Symbol ntSymbol = new Symbol(ntLexeme, "NON_TERMINAL");
+        // Iterate over Symbols directly!
+        for (Symbol ntSymbol : grammar.getNonTerminals()) {
             resultsTable.initializeRow(ntSymbol);
         }
 
         // Identify and initialize terminals
-        for (List<List<String>> rhsList : grammar.getRules().values()) {
-            for (List<String> rhs : rhsList) {
-                for (String symbolLexeme : rhs) {
-                    if (!grammar.getNonTerminals().contains(symbolLexeme) && !symbolLexeme.equals(EPSILON)) {
-                        grammar.getTerminals().add(symbolLexeme);
-                        
-                        Symbol termSymbol = new Symbol(symbolLexeme, "TERMINAL");
-                        terminalFirstSets.computeIfAbsent(termSymbol, k -> new HashSet<>(Collections.singleton(termSymbol)));
+        for (List<List<Symbol>> rhsList : grammar.getRules().values()) {
+            for (List<Symbol> rhs : rhsList) {
+                for (Symbol currentSymbol : rhs) {
+                    if (!grammar.getNonTerminals().contains(currentSymbol) && !currentSymbol.getLexeme().equals(Constants.EPSILON)) {
+                        grammar.getTerminals().add(currentSymbol);
+                        // Make sure to mark it as a terminal
+                        currentSymbol.setTokenType("TERMINAL"); 
+                        terminalFirstSets.computeIfAbsent(currentSymbol, k -> new HashSet<>(Collections.singleton(currentSymbol)));
                     }
                 }
             }
@@ -61,18 +59,19 @@ public class FirstFollowCalculator {
         boolean changed = true;
         while (changed) {
             changed = false;
-            for (String lhsLexeme : grammar.getNonTerminals()) {
-                Symbol lhsSymbol = new Symbol(lhsLexeme, "NON_TERMINAL");
+            
+            // Loop over Symbols instead of Strings
+            for (Symbol lhsSymbol : grammar.getNonTerminals()) {
                 FirstFollowRow row = resultsTable.getRow(lhsSymbol);
 
-                for (List<String> rhs : grammar.getRules().get(lhsLexeme)) {
+                for (List<Symbol> rhs : grammar.getRules().get(lhsSymbol)) {
                     boolean allEpsilon = true;
                     
-                    for (String symbolLexeme : rhs) {
-                        Set<Symbol> symbolFirst = getFirstOfSymbol(symbolLexeme);
+                    for (Symbol rhsSymbol : rhs) {
+                        Set<Symbol> symbolFirst = getFirstOfSymbol(rhsSymbol);
                         
                         for (Symbol f : symbolFirst) {
-                            if (!f.getLexeme().equals(EPSILON)) {
+                            if (!f.getLexeme().equals(Constants.EPSILON)) {
                                 int sizeBefore = row.getFirstSet().size();
                                 row.addFirst(f);
                                 if (row.getFirstSet().size() > sizeBefore) changed = true;
@@ -87,7 +86,8 @@ public class FirstFollowCalculator {
 
                     if (allEpsilon) {
                         int sizeBefore = row.getFirstSet().size();
-                        row.addFirst(new Symbol(EPSILON, "SPECIAL"));
+                        // Epsilon synthesized, line 0, col 0
+                        row.addFirst(new Symbol(Constants.EPSILON, "SPECIAL", 0, 0));
                         if (row.getFirstSet().size() > sizeBefore) changed = true;
                     }
                 }
@@ -97,25 +97,27 @@ public class FirstFollowCalculator {
 
     private void computeFollowSets() {
         // Rule 1: Place $ in Follow(Start)
-        Symbol startSymbol = new Symbol(grammar.getStartSymbol(), "NON_TERMINAL");
-        resultsTable.getRow(startSymbol).addFollow(new Symbol(EOF, "SPECIAL"));
+        Symbol startSymbol = grammar.getStartSymbol();
+        if (startSymbol != null && resultsTable.getRow(startSymbol) != null) {
+            resultsTable.getRow(startSymbol).addFollow(new Symbol(Constants.EOF, "SPECIAL", 0, 0));
+        }
 
         boolean changed = true;
         while (changed) {
             changed = false;
 
-            for (String lhsLexeme : grammar.getNonTerminals()) {
-                Symbol lhsSymbol = new Symbol(lhsLexeme, "NON_TERMINAL");
+            for (Symbol lhsSymbol : grammar.getNonTerminals()) {
                 List<Symbol> lhsFollow = resultsTable.getRow(lhsSymbol).getFollowSet();
 
-                for (List<String> rhs : grammar.getRules().get(lhsLexeme)) {
+                for (List<Symbol> rhs : grammar.getRules().get(lhsSymbol)) {
                     for (int i = 0; i < rhs.size(); i++) {
-                        String currentLexeme = rhs.get(i);
+                        Symbol currentSymbol = rhs.get(i);
                         
-                        if (!grammar.getNonTerminals().contains(currentLexeme)) continue;
+                        if (!grammar.getNonTerminals().contains(currentSymbol)) continue;
 
-                        Symbol currentSymbol = new Symbol(currentLexeme, "NON_TERMINAL");
                         FirstFollowRow currentRow = resultsTable.getRow(currentSymbol);
+                        if (currentRow == null) continue; // Safety check
+
                         boolean nextDerivesEpsilon = true;
 
                         // Rule 2: If A -> α B β, then everything in FIRST(β) except ε is in FOLLOW(B)
@@ -123,7 +125,7 @@ public class FirstFollowCalculator {
                             Set<Symbol> nextFirst = getFirstOfSymbol(rhs.get(j));
                             
                             for (Symbol f : nextFirst) {
-                                if (!f.getLexeme().equals(EPSILON)) {
+                                if (!f.getLexeme().equals(Constants.EPSILON)) {
                                     int sizeBefore = currentRow.getFollowSet().size();
                                     currentRow.addFollow(f);
                                     if (currentRow.getFollowSet().size() > sizeBefore) changed = true;
@@ -150,22 +152,22 @@ public class FirstFollowCalculator {
         }
     }
 
-    private Set<Symbol> getFirstOfSymbol(String lexeme) {
-        if (grammar.getNonTerminals().contains(lexeme)) {
-            FirstFollowRow row = resultsTable.getRow(new Symbol(lexeme, "NON_TERMINAL"));
+    // Changed signature to take a Symbol instead of a String
+    private Set<Symbol> getFirstOfSymbol(Symbol symbol) {
+        if (grammar.getNonTerminals().contains(symbol)) {
+            FirstFollowRow row = resultsTable.getRow(symbol);
             return (row != null) ? new HashSet<>(row.getFirstSet()) : new HashSet<>();
-        } else if (lexeme.equals(EPSILON)) {
-            return new HashSet<>(Collections.singleton(new Symbol(EPSILON, "SPECIAL")));
+        } else if (symbol.getLexeme().equals(Constants.EPSILON)) {
+            return new HashSet<>(Collections.singleton(symbol)); // return the symbol instance representing EPSILON
         } else {
-            return terminalFirstSets.getOrDefault(new Symbol(lexeme, "TERMINAL"), new HashSet<>());
+            return terminalFirstSets.getOrDefault(symbol, new HashSet<>());
         }
     }
 
     private boolean containsEpsilon(Set<Symbol> set) {
-        return set.stream().anyMatch(s -> s.getLexeme().equals(EPSILON));
+        return set.stream().anyMatch(s -> s.getLexeme().equals(Constants.EPSILON));
     }
 
-    // Add these to FirstFollowCalculator.java
     public Map<Symbol, FirstFollowRow> getFirstFollowRows() {
         return resultsTable.getTable();
     }

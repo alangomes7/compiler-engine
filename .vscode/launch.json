@@ -1,19 +1,23 @@
 {
-    "version": "0.2.0",
-    "configurations": [
-        {
-            "type": "java",
-            "name": "Run Lexer UI (JavaFX)",
-            "request": "launch",
-            "mainClass": "app.MainApp",
-            "vmArgs": "--module-path \"${workspaceFolder}/lib/javafx-sdk-21.0.10/lib\" --add-modules javafx.controls,javafx.fxml"
-        },
-        {
-            "type": "java",
-            "name": "Run Lexer CLI",
-            "request": "launch",
-            "mainClass": "app.Main",
-            "vmArgs": "--module-path \"${workspaceFolder}/lib/javafx-sdk-21.0.10/lib\" --add-modules javafx.controls,javafx.fxml"
-        }
-    ]
+  "configurations": [
+    {
+        "type": "java",
+        "name": "MainApp",
+        "request": "launch",
+        "mainClass": "compiler.app/app.MainApp",
+        "projectName": "compiler-engine"
+    },
+    {
+        "name": "Run JavaFX (UI)",
+        "type": "node-terminal",
+        "request": "launch",
+        "command": "mvn javafx:run"
+    },
+    {
+        "name": "Run CLI",
+        "type": "java",
+        "request": "launch",
+        "mainClass": "app.Main"
+    }
+]
 }

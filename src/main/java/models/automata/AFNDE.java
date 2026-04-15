@@ -1,17 +1,13 @@
 package models.automata;
 
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.Queue;
-import java.util.Set;
-
+import java.util.*;
 import models.atomic.State;
 import models.atomic.Transition;
 
 public class AFNDE {
     private final String tokenName;
     private final State startState;
-    private final State finalState;
+    private final State finalState; // Pode ser nulo em scanners mestres
 
     public AFNDE(String tokenName, State startState, State finalState) {
         this.tokenName = tokenName;
@@ -19,60 +15,76 @@ public class AFNDE {
         this.finalState = finalState;
     }
 
-    public String getTokenName() {
-        return tokenName;
-    }
+    // Getters básicos
+    public String getTokenName() { return tokenName; }
+    public State getStartState() { return startState; }
+    public State getFinalState() { return finalState; }
 
-    public State getStartState() {
-        return startState;
-    }
+    /**
+     * Retorna todos os estados do autômato de forma eficiente.
+     * Útil para conversores e minimizadores.
+     */
+    public Set<State> getAllStates() {
+        Set<State> visited = new LinkedHashSet<>();
+        Deque<State> stack = new ArrayDeque<>();
+        
+        stack.push(startState);
+        visited.add(startState);
 
-    public State getFinalState() {
-        return finalState;
+        while (!stack.isEmpty()) {
+            State current = stack.pop();
+            for (Transition t : current.getTransitions()) {
+                if (visited.add(t.getTarget())) {
+                    stack.push(t.getTarget());
+                }
+            }
+        }
+        return visited;
     }
 
     @Override
     public String toString() {
-        StringBuilder sb = new StringBuilder();
+        // Capacidade inicial estimada para evitar redimensionamento do buffer
+        StringBuilder sb = new StringBuilder(1024);
         sb.append("=== AFNDE: ").append(tokenName).append(" ===\n");
         sb.append("Start State: q").append(startState.getId()).append("\n");
         
-        // Handle the master scanner which passes 'null' for the final state
+        sb.append("Final State: ");
         if (finalState != null) {
-            sb.append("Final State: q").append(finalState.getId()).append("\n");
+            sb.append("q").append(finalState.getId()).append("\n");
         } else {
-            sb.append("Final State: Multiple (Master Scanner)\n");
+            sb.append("Multiple (Master Scanner)\n");
         }
         
         sb.append("Transitions:\n");
 
-        // BFS traversal to prevent infinite loops from cyclic transitions (like Kleene Star)
-        Queue<State> queue = new LinkedList<>();
-        Set<Integer> visited = new HashSet<>();
+        // Usar Set de objetos evita o autoboxing de Integer id
+        Set<State> visited = new HashSet<>();
+        Deque<State> queue = new ArrayDeque<>();
 
         queue.add(startState);
-        visited.add(startState.getId());
+        visited.add(startState);
 
         while (!queue.isEmpty()) {
             State current = queue.poll();
             
             sb.append("  q").append(current.getId());
-            if (current.isFinal()) {
+            if (current.isFinal() || current == finalState) {
                 sb.append(" [FINAL]");
             }
             sb.append(":\n");
 
-            if (current.getTransitions().isEmpty()) {
+            List<Transition> transitions = current.getTransitions();
+            if (transitions.isEmpty()) {
                 sb.append("    (no transitions)\n");
-            }
-
-            for (Transition t : current.getTransitions()) {
-                sb.append("    --(").append(t.getSymbol()).append(")--> q").append(t.getTarget().getId()).append("\n");
-                
-                // Add unvisited target states to the queue
-                if (!visited.contains(t.getTarget().getId())) {
-                    visited.add(t.getTarget().getId());
-                    queue.add(t.getTarget());
+            } else {
+                for (Transition t : transitions) {
+                    sb.append("    --(").append(t.getSymbol()).append(")--> q")
+                      .append(t.getTarget().getId()).append("\n");
+                    
+                    if (visited.add(t.getTarget())) {
+                        queue.add(t.getTarget());
+                    }
                 }
             }
         }

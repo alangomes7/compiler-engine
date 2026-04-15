@@ -1,22 +1,26 @@
 package models.automata;
 
+import java.util.ArrayDeque;
+import java.util.Collections;
+import java.util.Deque;
 import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.Queue;
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
 
 import models.atomic.State;
 import models.atomic.Transition;
 
 public class AFND {
-    private String tokenName;
-    private State startState;
-    private Set<State> finalStates;
+    private final String tokenName;
+    private final State startState;
+    private final Set<State> finalStates;
 
     public AFND(String tokenName, State startState, Set<State> finalStates) {
         this.tokenName = tokenName;
         this.startState = startState;
-        this.finalStates = finalStates;
+        // Otimização: Garante que o set nunca seja nulo, simplificando checagens futuras
+        this.finalStates = finalStates != null ? finalStates : Collections.emptySet();
     }
 
     public String getTokenName() {
@@ -31,14 +35,36 @@ public class AFND {
         return finalStates;
     }
 
+    /**
+     * Retorna todos os estados alcançáveis.
+     * Facilita a vida das classes de conversão (AFNDtoAFD).
+     */
+    public Set<State> getAllStates() {
+        Set<State> visited = new LinkedHashSet<>(); // Mantém previsibilidade na ordem
+        Deque<State> queue = new ArrayDeque<>();
+        
+        queue.add(startState);
+        visited.add(startState);
+
+        while (!queue.isEmpty()) {
+            State current = queue.poll();
+            for (Transition t : current.getTransitions()) {
+                if (visited.add(t.getTarget())) {
+                    queue.add(t.getTarget());
+                }
+            }
+        }
+        return visited;
+    }
+
     @Override
     public String toString() {
-        StringBuilder sb = new StringBuilder();
+        // Capacidade inicial para evitar cópias de array interno do StringBuilder
+        StringBuilder sb = new StringBuilder(1024);
         sb.append("=== AFND: ").append(tokenName).append(" ===\n");
         sb.append("Start State: q").append(startState.getId()).append("\n");
         
-        // Handle final states display
-        if (finalStates != null && !finalStates.isEmpty()) {
+        if (!finalStates.isEmpty()) {
             sb.append("Final States: ");
             for (State s : finalStates) {
                 sb.append("q").append(s.getId()).append(" ");
@@ -50,35 +76,36 @@ public class AFND {
         
         sb.append("Transitions:\n");
 
-        // BFS traversal to prevent infinite loops from cyclic transitions
-        Queue<State> queue = new LinkedList<>();
-        Set<Integer> visited = new HashSet<>();
+        // Uso de State no lugar de Integer evita Autoboxing
+        Set<State> visited = new HashSet<>();
+        Deque<State> queue = new ArrayDeque<>();
 
         queue.add(startState);
-        visited.add(startState.getId());
+        visited.add(startState);
 
         while (!queue.isEmpty()) {
             State current = queue.poll();
             
             sb.append("  q").append(current.getId());
             
-            // Check if current state is in the set of final states or natively marked as final
-            if (current.isFinal() || (finalStates != null && finalStates.contains(current))) {
+            // Checagem simplificada (finalStates nunca é nulo aqui)
+            if (current.isFinal() || finalStates.contains(current)) {
                 sb.append(" [FINAL]");
             }
             sb.append(":\n");
 
-            if (current.getTransitions().isEmpty()) {
+            List<Transition> transitions = current.getTransitions();
+            if (transitions.isEmpty()) {
                 sb.append("    (no transitions)\n");
-            }
-
-            for (Transition t : current.getTransitions()) {
-                sb.append("    --(").append(t.getSymbol()).append(")--> q").append(t.getTarget().getId()).append("\n");
-                
-                // Add unvisited target states to the queue
-                if (!visited.contains(t.getTarget().getId())) {
-                    visited.add(t.getTarget().getId());
-                    queue.add(t.getTarget());
+            } else {
+                for (Transition t : transitions) {
+                    State target = t.getTarget();
+                    sb.append("    --(").append(t.getSymbol()).append(")--> q").append(target.getId()).append("\n");
+                    
+                    // Condicional combinada com a inserção no Set (operação O(1))
+                    if (visited.add(target)) {
+                        queue.add(target);
+                    }
                 }
             }
         }

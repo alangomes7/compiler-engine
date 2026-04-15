@@ -1,34 +1,32 @@
 package models.others;
 
+import models.atomic.Symbol;
 import java.util.ArrayList;
 import java.util.List;
 
-import models.atomic.Symbol;
-
 public class FirstFollowRow {
-    private final Symbol nonTerminal;
-    private final List<Symbol> firstSet;
-    private final List<Symbol> followSet;
+    private Symbol nonTerminal;
+    private List<Symbol> firstSet;
+    private List<Symbol> followSet;
 
-    // Constructor for when you already have the lists built
-    public FirstFollowRow(Symbol nonTerminal, List<Symbol> firstSet, List<Symbol> followSet) {
-        this.nonTerminal = nonTerminal;
-        this.firstSet = firstSet;
-        this.followSet = followSet;
-    }
-
-    // Convenience constructor that initializes empty lists
     public FirstFollowRow(Symbol nonTerminal) {
         this.nonTerminal = nonTerminal;
+        // Initialize the sets to prevent null pointer exceptions inside the row
         this.firstSet = new ArrayList<>();
         this.followSet = new ArrayList<>();
     }
 
+    // --- Getters and Setters ---
     public Symbol getNonTerminal() { return nonTerminal; }
+    public void setNonTerminal(Symbol nonTerminal) { this.nonTerminal = nonTerminal; }
+
     public List<Symbol> getFirstSet() { return firstSet; }
+    public void setFirstSet(List<Symbol> firstSet) { this.firstSet = firstSet; }
+
     public List<Symbol> getFollowSet() { return followSet; }
-    
-    // Helper methods to add to the sets easily
+    public void setFollowSet(List<Symbol> followSet) { this.followSet = followSet; }
+
+    // --- Helper Methods used by Calculator ---
     public void addFirst(Symbol symbol) {
         if (!firstSet.contains(symbol)) {
             firstSet.add(symbol);
@@ -39,22 +37,5 @@ public class FirstFollowRow {
         if (!followSet.contains(symbol)) {
             followSet.add(symbol);
         }
-    }
-
-    @Override
-    public String toString() {
-        return String.format(
-            "%-15s | FIRST: %-25s | FOLLOW: %-25s",
-            nonTerminal.toString(),
-            firstSet.toString(),
-            followSet.toString()
-        );
-    }
-
-    /**
-     * Prints the row directly to the console.
-     */
-    public void print() {
-        System.out.println(this.toString());
     }
 }

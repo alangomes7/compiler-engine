@@ -1,63 +1,55 @@
 package core.lexer.conversors;
 
-import java.util.ArrayDeque;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-
+import java.util.*;
+import models.atomic.Constants;
 import models.atomic.State;
 import models.atomic.Transition;
 import models.automata.AFND;
 import models.automata.AFNDE;
 
-
 public class AFNDEtoAFND {
 
-    public static final String EPSILON = "ε";
-
+    // Cache local para evitar hit no Map global se houver reuso da classe
     private final Map<State, Set<State>> closureCache = new HashMap<>();
 
     public AFND convert(AFNDE afnde) {
         closureCache.clear();
-
-        // 1. Reachable states
+        
+        // 1. Coleta estados originais
         Set<State> allOldStates = getAllReachableStates(afnde.getStartState());
-
-        // 2. Mapping
+        
+        // 2. Mapeamento e Pré-cálculo de Closures (Crucial para performance)
         Map<State, State> oldToNew = new HashMap<>(allOldStates.size());
         for (State oldState : allOldStates) {
             oldToNew.put(oldState, new State(oldState.getId()));
+            getEpsilonClosure(oldState); 
         }
 
-        // Reusable sets (avoid GC pressure)
-        Set<String> activeSymbols = new HashSet<>();
-        Set<State> moveResult = new HashSet<>();
-        Set<State> targetClosure = new HashSet<>();
-
-        // 3. Build transitions
+        // 3. Construção de Transições Otimizada
         for (State oldState : allOldStates) {
             State newState = oldToNew.get(oldState);
+            Set<State> closureQ = closureCache.get(oldState);
 
-            Set<State> closureQ = getEpsilonClosure(oldState);
-
+            // Mapa temporário para agrupar destinos por símbolo: evita loops repetitivos
+            Map<String, Set<State>> transitionsBySymbol = new HashMap<>();
+            
             boolean isFinal = false;
             String acceptedToken = null;
 
-            activeSymbols.clear();
-
             for (State cState : closureQ) {
+                // Define se o novo estado é final
                 if (cState.isFinal()) {
                     isFinal = true;
-                    if (acceptedToken == null) {
-                        acceptedToken = cState.getAcceptedToken();
-                    }
+                    if (acceptedToken == null) acceptedToken = cState.getAcceptedToken();
                 }
 
+                // Agrupa transições que não são Epsilon
                 for (Transition t : cState.getTransitions()) {
                     String symbol = t.getSymbol();
-                    if (symbol != EPSILON) { // faster than equals
-                        activeSymbols.add(symbol);
+                    if (symbol != Constants.EPSILON && !symbol.equals(Constants.EPSILON)) {
+                        transitionsBySymbol
+                            .computeIfAbsent(symbol, k -> new HashSet<>())
+                            .add(t.getTarget());
                     }
                 }
             }
@@ -65,59 +57,44 @@ public class AFNDEtoAFND {
             newState.setFinal(isFinal);
             newState.setAcceptedToken(acceptedToken);
 
-            for (String symbol : activeSymbols) {
+            // Adiciona transições ao novo estado
+            for (Map.Entry<String, Set<State>> entry : transitionsBySymbol.entrySet()) {
+                String symbol = entry.getKey();
+                Set<State> targets = entry.getValue();
+                
+                Set<State> fullTargetClosure = new HashSet<>();
+                for (State t : targets) {
+                    fullTargetClosure.addAll(closureCache.get(t));
+                }
 
-                moveResult.clear();
-
-                // inline getMove (faster)
-                for (State s : closureQ) {
-                    for (Transition t : s.getTransitions()) {
-                        if (t.getSymbol().equals(symbol)) {
-                            moveResult.add(t.getTarget());
-                        }
+                for (State targetOld : fullTargetClosure) {
+                    State newTarget = oldToNew.get(targetOld);
+                    if (newTarget != null) {
+                        newState.addTransition(symbol, newTarget);
                     }
-                }
-
-                targetClosure.clear();
-
-                for (State ms : moveResult) {
-                    targetClosure.addAll(getEpsilonClosure(ms));
-                }
-
-                for (State targetOld : targetClosure) {
-                    newState.addTransition(symbol, oldToNew.get(targetOld));
                 }
             }
         }
 
-        // 4. Build final AFND
         State newStart = oldToNew.get(afnde.getStartState());
-
-        Set<State> reachableInNew = getAllReachableStates(newStart);
-
+        
+        // Coleta estados finais apenas dos que restaram no novo mapeamento
         Set<State> finalStates = new HashSet<>();
-        for (State s : reachableInNew) {
-            if (s.isFinal()) {
-                finalStates.add(s);
-            }
+        for (State s : oldToNew.values()) {
+            if (s.isFinal()) finalStates.add(s);
         }
 
         return new AFND(afnde.getTokenName() + "_AFND", newStart, finalStates);
     }
 
-    // ========================================================================
-    // BFS (optimized)
-    // ========================================================================
     private Set<State> getAllReachableStates(State start) {
-        Set<State> visited = new HashSet<>();
+        Set<State> visited = new LinkedHashSet<>(); // Linked garante ordem de inserção se necessário
         ArrayDeque<State> queue = new ArrayDeque<>();
-
         visited.add(start);
         queue.add(start);
 
         while (!queue.isEmpty()) {
             State current = queue.poll();
-
             for (Transition t : current.getTransitions()) {
                 State target = t.getTarget();
                 if (target != null && visited.add(target)) {
@@ -128,32 +105,25 @@ public class AFNDEtoAFND {
         return visited;
     }
 
-    // ========================================================================
-    // EPSILON CLOSURE (cached)
-    // ========================================================================
     private Set<State> getEpsilonClosure(State state) {
-        Set<State> cached = closureCache.get(state);
-        if (cached != null) return cached;
+        if (closureCache.containsKey(state)) return closureCache.get(state);
 
         Set<State> closure = new HashSet<>();
         ArrayDeque<State> queue = new ArrayDeque<>();
-
         closure.add(state);
         queue.add(state);
 
         while (!queue.isEmpty()) {
             State current = queue.poll();
-
             for (Transition t : current.getTransitions()) {
-                if (t.getSymbol() == EPSILON) { // reference compare
-                    State target = t.getTarget();
-                    if (closure.add(target)) {
-                        queue.add(target);
+                // Otimização: comparação de referência primeiro
+                if (t.getSymbol() == Constants.EPSILON || t.getSymbol().equals(Constants.EPSILON)) {
+                    if (closure.add(t.getTarget())) {
+                        queue.add(t.getTarget());
                     }
                 }
             }
         }
-
         closureCache.put(state, closure);
         return closure;
     }

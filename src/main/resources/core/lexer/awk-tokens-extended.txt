@@ -83,11 +83,9 @@ QUESTION   : ?
 # =========================
 DIGIT      : [0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9]
 
-LOWER      : [a | b | c | d | e | f | g | h | i | j | k | l | m |
-              n | o | p | q | r | s | t | u | v | w | x | y | z]
+LOWER      : [a | b | c | d | e | f | g | h | i | j | k | l | m | n | o | p | q | r | s | t | u | v | w | x | y | z]
 
-UPPER      : [A | B | C | D | E | F | G | H | I | J | K | L | M |
-              N | O | P | Q | R | S | T | U | V | W | X | Y | Z]
+UPPER      : [A | B | C | D | E | F | G | H | I | J | K | L | M | N | O | P | Q | R | S | T | U | V | W | X | Y | Z]
 
 LETTER     : [LOWER | UPPER]
 
@@ -112,27 +110,32 @@ BACKSLASH  : [\\]
 HASH       : [#]
 DOT        : [.]
 
-# --- Universal Set (Abstract) ---
-ANY_CHAR   : [/* full character universe */]
+# --- Universal Set (Explicit) ---
+# Expand this to include all valid ASCII characters your lexer should process
+ANY_CHAR   : [LETTER | DIGIT | SPACE | TAB | NEWLINE_CH | DQUOTE | SQUOTE | SLASH | BACKSLASH | HASH | DOT | UNDERSCORE | COMMA | SEMICOLON | COLON | QUESTION | PIPE | LPAREN | RPAREN | LBRACE | RBRACE | LBRACKET | RBRACKET | PLUS | MINUS | MULT | DIV | MOD | EXP | NOT | DOLLAR | ASSIGN | MATCH | RELOP_GT | RELOP_LT | & | | | ^ | ~ | ` | @]
 
-=========================
-Derived Sets (Explicit Negation)
-=========================
-@DER NOT_NEWLINE        : [ANY_CHAR ^ [NEWLINE_CH]]
+# =========================
+# Derived Sets (Explicit Negation) (Longest First!)
+# =========================
 @DER NOT_DQUOTE_BSLASH  : [ANY_CHAR ^ [DQUOTE | BACKSLASH]]
 @DER NOT_SQUOTE_BSLASH  : [ANY_CHAR ^ [SQUOTE | BACKSLASH]]
 @DER NOT_NEWLINE_SLASH  : [ANY_CHAR ^ [NEWLINE_CH | SLASH]]
+@DER NOT_NEWLINE        : [ANY_CHAR ^ [NEWLINE_CH]]
 
-=========================
-Escape Handling
-=========================
-@DER ESCAPE_CHAR : [n | r | t | " | ' | BACKSLASH]
+# =========================
+# Escape Handling (Longest First!)
+# =========================
+@DER ESCAPE_CHAR : [n | r | t | DQUOTE | SQUOTE | BACKSLASH]
 
 @DER ESCAPE_SEQ  : [BACKSLASH][ESCAPE_CHAR]
 
 # =========================
-# Lexical Elements (Dynamic)
+# Lexical Elements (Dynamic) (Longest First!)
 # =========================
+@DER STR : [DQUOTE]([NOT_DQUOTE_BSLASH] | [ESCAPE_SEQ])*[DQUOTE] | [SQUOTE]([NOT_SQUOTE_BSLASH] | [ESCAPE_SEQ])*[SQUOTE]
+
+@DER REGEX : [SLASH][NOT_NEWLINE_SLASH]+[SLASH]
+
 @DER ID : [LETTER | UNDERSCORE][LETTER | DIGIT | UNDERSCORE]*
 
 @DER HEX : [0][x | X][DIGIT | HEX_LOWER | HEX_UPPER]+
@@ -144,20 +147,6 @@ Escape Handling
 @DER FLOAT : [DIGIT]*[DOT][DIGIT]+
 
 @DER INT : [DIGIT]+
-
-@DER STR :
-    [DQUOTE](
-        [NOT_DQUOTE_BSLASH] |
-        [ESCAPE_SEQ]
-    )*[DQUOTE]
-  |
-    [SQUOTE](
-        [NOT_SQUOTE_BSLASH] |
-        [ESCAPE_SEQ]
-    )*[SQUOTE]
-
-@DER REGEX :
-    [SLASH][NOT_NEWLINE_SLASH]+[SLASH]
 
 # =========================
 # Ignored Tokens
