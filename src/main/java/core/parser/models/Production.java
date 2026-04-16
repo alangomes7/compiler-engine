@@ -1,47 +1,46 @@
 package core.parser.models;
 
-import java.util.Objects;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 import core.parser.models.atomic.Symbol;
 
 public class Production {
-    private final Symbol leftHandSide;
-    private final Symbol rightHandSide;
+    private final Symbol lhs; // Left-Hand Side (Must be a Non-Terminal)
+    private final List<Symbol> rhs; // Right-Hand Side
 
-    public Production(Symbol leftHandSide, Symbol rightHandSide) {
-        // Enforce that the left-hand side of a production MUST be a Non-Terminal
-        if (leftHandSide.isTerminal()) {
-            throw new IllegalArgumentException("Left-hand side of a production must be a Non-Terminal.");
+    public Production(Symbol lhs, List<Symbol> rhs) {
+        if (lhs.isTerminal()) {
+            throw new IllegalArgumentException("LHS of a production must be a Non-Terminal.");
         }
-        
-        this.leftHandSide = Objects.requireNonNull(leftHandSide, "Left side cannot be null");
-        this.rightHandSide = Objects.requireNonNull(rightHandSide, "Right side cannot be null");
+        this.lhs = lhs;
+        this.rhs = new ArrayList<>(rhs);
     }
 
-    public Symbol getLeftHandSide() {
-        return leftHandSide;
+    public Symbol getLhs() {
+        return lhs;
     }
 
-    public Symbol getRightHandSide() {
-        return rightHandSide;
+    public List<Symbol> getRhs() {
+        return Collections.unmodifiableList(rhs);
+    }
+
+    public boolean isEpsilonProduction() {
+        return rhs.size() == 1 && rhs.get(0).equals(Symbol.EPSILON);
     }
 
     @Override
     public String toString() {
-        return leftHandSide.toString() + " -> " + rightHandSide.toString();
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        Production that = (Production) o;
-        return leftHandSide.equals(that.leftHandSide) && 
-               rightHandSide.equals(that.rightHandSide);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(leftHandSide, rightHandSide);
+        StringBuilder sb = new StringBuilder();
+        sb.append(lhs.getName()).append(" -> ");
+        if (rhs.isEmpty()) {
+            sb.append(Symbol.EPSILON.getName());
+        } else {
+            for (Symbol s : rhs) {
+                sb.append(s.getName()).append(" ");
+            }
+        }
+        return sb.toString().trim();
     }
 }

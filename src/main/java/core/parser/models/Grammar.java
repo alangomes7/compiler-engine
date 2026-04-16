@@ -1,60 +1,56 @@
 package core.parser.models;
 
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
+import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import core.parser.models.atomic.Symbol;
 
 public class Grammar {
-    // Change all String generics and types to Symbol
-    private Symbol startSymbol;
-    private Map<Symbol, List<List<Symbol>>> rules = new LinkedHashMap<>();
-    private Set<Symbol> nonTerminals = new LinkedHashSet<>();
-    private Set<Symbol> terminals = new LinkedHashSet<>();
+    private final Symbol startSymbol;
+    private final Set<Symbol> terminals;
+    private final Set<Symbol> nonTerminals;
+    private final List<Production> productions;
 
-    public void addRule(Symbol lhs, List<Symbol> rhs) {
-        nonTerminals.add(lhs);
-        if (startSymbol == null) {
-            startSymbol = lhs; // First rule is the start symbol
-        }
-        rules.computeIfAbsent(lhs, k -> new ArrayList<>()).add(rhs);
-    }
-
-    // --- Getters and Setters ---
-
-    public Symbol getStartSymbol() {
-        return startSymbol;
-    }
-
-    public void setStartSymbol(Symbol startSymbol) {
+    public Grammar(Symbol startSymbol) {
         this.startSymbol = startSymbol;
+        this.terminals = new HashSet<>();
+        this.nonTerminals = new HashSet<>();
+        this.productions = new ArrayList<>();
+        
+        // The start symbol is always a non-terminal
+        this.nonTerminals.add(startSymbol);
     }
 
-    public Map<Symbol, List<List<Symbol>>> getRules() {
-        return rules;
+    public void addProduction(Production production) {
+        this.productions.add(production);
+        this.nonTerminals.add(production.getLhs());
+        
+        for (Symbol symbol : production.getRhs()) {
+            if (symbol.isTerminal() && !symbol.equals(Symbol.EPSILON)) {
+                this.terminals.add(symbol);
+            } else if (!symbol.isTerminal()) {
+                this.nonTerminals.add(symbol);
+            }
+        }
     }
 
-    public void setRules(Map<Symbol, List<List<Symbol>>> rules) {
-        this.rules = rules;
-    }
+    public Symbol getStartSymbol() { return startSymbol; }
+    public Set<Symbol> getTerminals() { return terminals; }
+    public Set<Symbol> getNonTerminals() { return nonTerminals; }
+    public List<Production> getProductions() { return productions; }
 
-    public Set<Symbol> getNonTerminals() {
-        return nonTerminals;
-    }
-
-    public void setNonTerminals(Set<Symbol> nonTerminals) {
-        this.nonTerminals = nonTerminals;
-    }
-
-    public Set<Symbol> getTerminals() {
-        return terminals;
-    }
-
-    public void setTerminals(Set<Symbol> terminals) {
-        this.terminals = terminals;
+    /**
+     * Helper to get all productions for a specific Non-Terminal
+     */
+    public List<Production> getProductionsFor(Symbol nonTerminal) {
+        List<Production> result = new ArrayList<>();
+        for (Production p : productions) {
+            if (p.getLhs().equals(nonTerminal)) {
+                result.add(p);
+            }
+        }
+        return result;
     }
 }

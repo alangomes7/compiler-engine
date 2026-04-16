@@ -1,549 +1,401 @@
 package ui;
 
 import java.io.File;
-import java.io.IOException;
-import java.io.OutputStream;
 import java.io.PrintStream;
-import java.io.PrintWriter;
-import javafx.util.Duration;
-import parser.RecursiveDescentParser;
-import parser.grammar.FirstFollowCalculator;
-import parser.grammar.GrammarBuilder;
-import parser.models.FirstFollowRow;
-import parser.models.Grammar;
-import parser.models.SyntaxTreeNode;
-import parser.models.atomic.Symbol;
-
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.Callable;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-import Utils.Utils;
-import core.lexer.Lexer;
-import core.lexer.models.SymbolTable;
 import core.lexer.models.atomic.Token;
-import core.lexer.translators.RuleReader;
-import graph.AutomataVisualizer;
-import graph.InteractiveAutomataView;
-import javafx.animation.KeyFrame;
-import javafx.animation.Timeline;
+import core.lexer.models.automata.AFD;
+import core.parser.models.FirstFollowTable;
+import core.parser.models.atomic.Symbol;
+import core.parser.models.tree.Node;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
-import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextArea;
+import javafx.scene.control.TreeItem;
 import javafx.scene.control.TreeView;
 import javafx.scene.layout.VBox;
-import javafx.stage.DirectoryChooser;
-import javafx.stage.FileChooser;
-import javafx.stage.Window;
+import javafx.util.Callback;
+import lombok.Getter;
+import ui.core.graph.AutomataVisualizer;
+import ui.core.graph.InteractiveAutomataView;
+import ui.core.services.FileService;
+import ui.core.services.LexerService;
+import ui.core.services.ParserService;
+import ui.utils.UiUtils;
 
 public class Ui {
 
+    // --- FXML UI Components ---
     @FXML private VBox loadingOverlay;
     @FXML private Label loadingLabel;
-    @FXML private Label timerLabel;
+    @FXML private Label loadingTimeLabel;
     
     @FXML private TextArea lineNumbersArea;
     @FXML private TextArea inputArea;
     @FXML private TextArea outputArea;
     @FXML private TextArea consoleArea;
+    
     @FXML private Label tokenFileLabel;
-    @FXML private Label inputFileLabel;
-    @FXML private Button loadGrammarBtn;
     @FXML private Label grammarFileLabel;
-    @FXML private Button loadTokenBtn;
-    @FXML private Button loadInputBtn;
-    @FXML private Button runLexerBtn;
-    @FXML private Button runSyntaxBtn;
+
+    @Getter
     @FXML private TextArea automataDetailsArea;
+
+    @Getter
     @FXML private javafx.scene.layout.BorderPane interactiveGraphContainer;
     
-    @FXML private TableView<Symbol> symbolTableViewer;
-    @FXML private TableColumn<Symbol, Integer> lineColumn;
-    @FXML private TableColumn<Symbol, Integer> colColumn;
-    @FXML private TableColumn<Symbol, String> lexemeColumn;
-    @FXML private TableColumn<Symbol, String> tokenTypeColumn;
+    @FXML private TableView<Token> symbolTableViewer;
+    @FXML private TableColumn<Token, Integer> lineColumn;
+    @FXML private TableColumn<Token, Integer> colColumn;
+    @FXML private TableColumn<Token, String> lexemeColumn;
+    @FXML private TableColumn<Token, String> tokenTypeColumn;
 
-    @FXML private TableView<FirstFollowRow> firstFollowTable;
-    @FXML private TableColumn<FirstFollowRow, Integer> ffLineCol;
-    @FXML private TableColumn<FirstFollowRow, Symbol> nonTerminalCol;
-    @FXML private TableColumn<FirstFollowRow, List<Symbol>> firstSetCol;
-    @FXML private TableColumn<FirstFollowRow, List<Symbol>> followSetCol;
+    @FXML private TableView<Symbol> firstFollowTable;
+    @FXML private TableColumn<Symbol, String> nonTerminalCol;
+    @FXML private TableColumn<Symbol, Set<Symbol>> firstSetCol;
+    @FXML private TableColumn<Symbol, Set<Symbol>> followSetCol;
+    
+    // Store a reference to the current table to resolve sets in cell factories
+    private FirstFollowTable currentFirstFollowTable;
 
     @FXML private TreeView<String> syntaxTreeView;
 
-    private Lexer lexer;
-    private Grammar currentGrammar;
+    // --- Services ---
+    private final LexerService lexerService = new LexerService();
+    private final ParserService parserService = new ParserService();
 
     @FXML
     public void initialize() {
-        PrintStream ps = new PrintStream(new TextAreaOutputStream(consoleArea), true);
+        // Redirect System.out/err to the console TextArea using utility class
+        PrintStream ps = new PrintStream(new UiUtils.TextAreaOutputStream(consoleArea), true);
         System.setOut(ps);
         System.setErr(ps);
 
-        lineNumbersArea.scrollTopProperty().bindBidirectional(inputArea.scrollTopProperty());
-
-        inputArea.textProperty().addListener((obs, oldVal, newVal) -> updateLineNumbers());
-        updateLineNumbers(); 
-
+        // Synchronize line numbers
+        inputArea.textProperty().addListener((obs, old, newVal) -> 
+            UiUtils.updateLineNumbers(inputArea, lineNumbersArea));
+        
         setupFirstFollowTable();
         setupSymbolTable();
     }
 
-    private <T> void executeHeavyTask(String loadingMsg, 
-                                      Callable<T> backgroundTask, 
-                                      Consumer<T> onSuccess, 
-                                      Consumer<Exception> onError) {
-        loadingLabel.setText(loadingMsg);
-        timerLabel.setText("0.000s");
-        loadingOverlay.setVisible(true);
-        setButtonsDisabled(true);
+    // --- Action Handlers ---
 
-        long startTime = System.currentTimeMillis();
-
-        Timeline timeline = new Timeline(
-            new KeyFrame(Duration.millis(50), e -> {
-                long elapsed = System.currentTimeMillis() - startTime;
-                timerLabel.setText(String.format("%.3fs", elapsed / 1000.0));
-            })
-        );
-        timeline.setCycleCount(Timeline.INDEFINITE);
-        timeline.play();
-
-        new Thread(() -> {
-            try {
-                T result = backgroundTask.call();
-                Platform.runLater(() -> {
-                    try {
-                        onSuccess.accept(result);
-                    } finally {
-                        timeline.stop(); 
-                        loadingOverlay.setVisible(false);
-                        setButtonsDisabled(false);
-                        long totalTime = System.currentTimeMillis() - startTime;
-                        consoleArea.appendText(String.format("\n[%s] completed in %d ms\n", loadingMsg, totalTime));
-                    }
-                });
-            } catch (Exception e) {
-                Platform.runLater(() -> {
-                    try {
-                        onError.accept(e);
-                    } finally {
-                        timeline.stop(); 
-                        loadingOverlay.setVisible(false);
-                        setButtonsDisabled(false);
-                    }
-                });
-            }
-        }).start();
-    }
-    
-    private void updateLineNumbers() {
-        int lines = inputArea.getText().split("\n", -1).length;
-        StringBuilder numbers = new StringBuilder();
-        for (int i = 1; i <= lines; i++) {
-            numbers.append(i).append("\n");
-        }
-        lineNumbersArea.setText(numbers.toString());
-    }
-
-    private void setupFirstFollowTable() {
-        nonTerminalCol.setCellValueFactory(cellData ->
-            new SimpleObjectProperty<>(cellData.getValue().getNonTerminal()));
-            
-        ffLineCol.setCellValueFactory(cellData -> 
-            new SimpleIntegerProperty(cellData.getValue().getNonTerminal().getLine()).asObject());
-            
-        firstSetCol.setCellValueFactory(cellData ->
-            new SimpleObjectProperty<>(cellData.getValue().getFirstSet()));
-            
-        followSetCol.setCellValueFactory(cellData -> 
-            new SimpleObjectProperty<>(cellData.getValue().getFollowSet()));
-
-        nonTerminalCol.setCellFactory(column -> new TableCell<FirstFollowRow, Symbol>() {
-            @Override protected void updateItem(Symbol item, boolean empty) {
-                super.updateItem(item, empty);
-                setText(empty || item == null ? "" : item.getLexeme());
-            }
-        });
-
-        firstSetCol.setCellFactory(column -> new TableCell<FirstFollowRow, List<Symbol>>() {
-            @Override protected void updateItem(List<Symbol> item, boolean empty) {
-                super.updateItem(item, empty);
-                if (empty || item == null || item.isEmpty()) setText("");
-                else setText("{ " + item.stream().map(Symbol::getLexeme).collect(Collectors.joining(", ")) + " }");
-            }
-        });
-
-        followSetCol.setCellFactory(column -> new TableCell<FirstFollowRow, List<Symbol>>() {
-            @Override protected void updateItem(List<Symbol> item, boolean empty) {
-                super.updateItem(item, empty);
-                if (empty || item == null || item.isEmpty()) setText("");
-                else setText("{ " + item.stream().map(Symbol::getLexeme).collect(Collectors.joining(", ")) + " }");
-            }
-        });
-    }
-
-    @FXML
+   @FXML
     private void handleLoadTokenFile() {
-        FileChooser fileChooser = new FileChooser();
-        fileChooser.setTitle("Select Lexer RE and Tokens File");
-        Window stage = inputArea.getScene().getWindow();
-        File file = fileChooser.showOpenDialog(stage);
+        File file = FileService.selectFile(
+            inputArea.getScene().getWindow(),
+            "Select Lexer Rules",
+            "*.txt",
+            "*.lexer"
+        );
 
-        if (file != null) {
-            tokenFileLabel.setText(file.getName());
-            consoleArea.clear(); 
+        if (file == null) return;
 
-            executeHeavyTask(
-                "Building Lexer & Automata Graph...",
-                () -> {
-                    List<Token> rules = RuleReader.readTokens(file.getAbsolutePath());
-                    Lexer newLexer = new Lexer(rules);
-                    AutomataVisualizer.exportToImage(newLexer.getMasterAutomaton(), "master_lexer_automata.png");
-                    return newLexer;
-                },
-                (newLexer) -> {
-                    this.lexer = newLexer;
-                    if (lexer.getMasterAutomaton() != null) {
-                        automataDetailsArea.setText(lexer.getMasterAutomaton().toString());
-                        InteractiveAutomataView graphView = new InteractiveAutomataView(lexer.getMasterAutomaton());
-                        interactiveGraphContainer.setCenter(graphView);
-                    } else {
-                        interactiveGraphContainer.setCenter(new Label("No Automaton Generated."));
-                    }
-                    outputArea.setText("✅ Lexer successfully built from: " + file.getName());
-                },
-                (error) -> {
-                    outputArea.setText("❌ Error building Lexer: " + error.getMessage());
-                    this.lexer = null;
-                    interactiveGraphContainer.setCenter(new Label("Failed to load graph."));
+        tokenFileLabel.setText(file.getName());
+
+        executeHeavyTask(
+            "Building Lexer...",
+            log -> {
+
+                AFD automaton;
+                try {
+                    automaton = lexerService.buildLexer(file.getAbsolutePath(), log);
+                } catch (Exception e) {
+                    System.getLogger(Ui.class.getName()).log(System.Logger.Level.ERROR, "Lexer build failed", e);
+                    throw new RuntimeException("Failed to build lexer: " + e.getMessage(), e);
                 }
-            );
-        }
-    }
+                
+                log.accept("Creating Lexer Automaton Image...");
+                
+                // Assuming exportToImage just writes to disk, it is safe here.
+                AutomataVisualizer.exportToImage(automaton, "lexer_automata.png");
 
-    @FXML
-    private void handleLoadInputFile() {
-        FileChooser fileChooser = new FileChooser();
-        fileChooser.setTitle("Select Input Text File");
-        Window stage = inputArea.getScene().getWindow();
-        File file = fileChooser.showOpenDialog(stage);
+                // Return the automaton so it gets passed to the onSuccess block
+                return automaton;
+            },
+            automaton -> {
 
-        if (file != null) {
-            inputFileLabel.setText(file.getName());
-
-            executeHeavyTask(
-                "Loading Input File...",
-                () -> Utils.readTextFile(file.getAbsolutePath()),
-                (content) -> {
-                    inputArea.setText(content);
-                    outputArea.setText("✅ Input file loaded. Ready for analysis.");
-                },
-                (error) -> outputArea.setText("❌ Error reading input file: " + error.getMessage())
-            );
-        }
+                automataDetailsArea.setText(automaton.toString());
+                interactiveGraphContainer.setCenter(new InteractiveAutomataView(automaton));
+                outputArea.setText("Lexer successfully built.");
+            },
+            err -> outputArea.setText("Error: " + err.getMessage())
+        );
     }
 
     @FXML
     private void handleLoadGrammarFile() {
-        FileChooser fileChooser = new FileChooser();
-        fileChooser.setTitle("Select Grammar File (BNF/EBNF)");
-        Window stage = inputArea.getScene().getWindow();
-        File file = fileChooser.showOpenDialog(stage);
+        File file = FileService.selectFile(inputArea.getScene().getWindow(), "Select Grammar", "*.txt", "*.grammar");
+        if (file == null) return;
 
-        if (file != null) {
-            grammarFileLabel.setText(file.getName());
+        grammarFileLabel.setText(file.getName());
+        
+        executeHeavyTask(
+            "Loading Grammar...",
+            log -> {
+                log.accept("📥 Reading grammar file...");
 
-            executeHeavyTask(
-                "Loading Grammar...",
-                () -> GrammarBuilder.buildFromBnfFile(file.getAbsolutePath()),
-                (grammar) -> {
-                    this.currentGrammar = grammar;
-                    outputArea.setText("✅ Grammar loaded successfully. Ready for Syntax Analysis.");
-                },
-                (error) -> {
-                    outputArea.setText("❌ Error parsing grammar: " + error.getMessage());
-                    this.currentGrammar = null;
+                try {
+                    parserService.loadGrammar(file.getAbsolutePath());
+                } catch (Exception ex) {
+                    System.getLogger(Ui.class.getName())
+                        .log(System.Logger.Level.ERROR, "Grammar load failed", ex);
+
+                    throw new RuntimeException("Failed to load grammar: " + ex.getMessage(), ex);
                 }
-            );
-        }
+
+                log.accept("✅ Grammar loaded.");
+                return null;
+            },
+            res -> outputArea.setText("✅ Grammar loaded."),
+            err -> outputArea.setText("❌ Error: " + err.getMessage())
+        );
     }
 
-    private static class AnalysisResult {
-        String scanOutput;
-        List<Symbol> symbols;
-        List<FirstFollowRow> firstFollowRows;
+    @FXML
+    private void handleLoadInputFile() {
+        File file = FileService.selectFile(inputArea.getScene().getWindow(), "Select Input File");
+        if (file == null) return;
+
+        executeHeavyTask(
+            "Loading File...",
+            log -> {
+                log.accept("📂 Reading input file...");
+                String content;
+                try {
+                    content = FileService.readFileContent(file);
+                } catch (Exception ex) {
+                    // 1. Log the error
+                    System.getLogger(Ui.class.getName()).log(System.Logger.Level.ERROR, "Input file load failed", ex);
+                    
+                    // 2. Rethrow to trigger the onError consumer
+                    throw new RuntimeException("Failed to read input file: " + ex.getMessage(), ex);
+                }
+                
+                log.accept("✅ File loaded.");
+                return content;
+            },
+            content -> inputArea.setText(content),
+            err -> outputArea.setText("❌ Load Error: " + err.getMessage())
+        );
     }
 
     @FXML
     private void handleRunLexer() {
-        if (lexer == null) {
-            outputArea.setText("⚠️ Please load a Lexer RE and Tokens file first.");
+        if (!lexerService.isInitialized()) {
+            outputArea.setText("⚠️ Load a token file first.");
             return;
         }
 
-        String input = inputArea.getText();
-        if (input == null || input.trim().isEmpty()) {
-            outputArea.setText("⚠️ No input code found to analyze.");
-            return;
-        }
+        // Extract text on the JavaFX Main Thread FIRST
+        final String inputText = inputArea.getText();
 
         executeHeavyTask(
-            "Running Analysis (Lexical & Syntax)...",
-            () -> {
-                AnalysisResult result = new AnalysisResult();
+            "Scanning...",
+            log -> {
+                log.accept("🔍 Scanning input...");
                 
-                result.scanOutput = lexer.scan(input);
-                if (lexer.getSymbolTable() != null) {
-                    result.symbols = new ArrayList<>(lexer.getSymbolTable().getTable());
-                }
+                // Pass the extracted string into the background task
+                String result = lexerService.scan(inputText); 
                 
+                log.accept("✅ Scan complete.");
                 return result;
             },
-            (result) -> {
-                outputArea.setText(result.scanOutput);
-                
-                if (result.symbols != null) {
-                    symbolTableViewer.setItems(FXCollections.observableArrayList(result.symbols));
-                    symbolTableViewer.refresh();
-                }
-                if (result.firstFollowRows != null) {
-                    firstFollowTable.setItems(FXCollections.observableArrayList(result.firstFollowRows));
-                    firstFollowTable.refresh();
-                }
+            msg -> {
+                outputArea.setText(msg);
+                symbolTableViewer.setItems(
+                    FXCollections.observableArrayList(lexerService.getSymbolTable())
+                );
             },
-            (error) -> {
-                outputArea.setText("❌ Analysis Error: " + error.getMessage());
-            }
+            err -> outputArea.setText("❌ Lexical Error: " + err.getMessage())
         );
     }
 
     @FXML
     private void handleRunSyntaxAnalysis() {
-        if (currentGrammar == null) {
-            outputArea.setText("⚠️ Please load a Grammar file (BNF/EBNF) first.");
-            return;
-        }
-
-        if (lexer == null || lexer.getSymbolTable() == null || lexer.getSymbolTable().getTable().isEmpty()) {
-            outputArea.setText("⚠️ Please run Lexer Analysis first to generate tokens.");
+        if (!parserService.isGrammarLoaded() || !lexerService.isInitialized()) {
+            outputArea.setText("⚠️ Load Grammar and run Lexer first.");
             return;
         }
 
         executeHeavyTask(
-            "Running Syntax Analysis (FIRST/FOLLOW & Syntax Tree)...",
-            () -> {
-                // 1. Calculate FIRST and FOLLOW sets
-                FirstFollowCalculator calculator = new FirstFollowCalculator(currentGrammar);
-                calculator.computeSets();
-                List<FirstFollowRow> firstFollowData = new ArrayList<>(calculator.getResultsTable().getTable().values());
-
-                // 2. Build the Syntax Tree (AST) using the Recursive Descent Parser
-                RecursiveDescentParser parser = new RecursiveDescentParser(lexer.getSymbolTable().getTable());
-                SyntaxTreeNode astRoot = parser.parse();
-
-                if (parser.hasErrors()) {
-                    throw new RuntimeException(String.join("\n", parser.getErrors()));
-                }
-
-                // Return a combined result object
-                return new SyntaxAnalysisResult(firstFollowData, astRoot);
+            "Analyzing Syntax...",
+            log -> {
+                log.accept("📊 Computing FIRST/FOLLOW...");
+                var result = parserService.runAnalysis(lexerService.getSymbolTable());
+                log.accept("🌳 Building syntax tree...");
+                return result;
             },
-            (result) -> {
-                // 1. Populate the First & Follow UI Table
-                firstFollowTable.setItems(FXCollections.observableArrayList(result.firstFollowRows));
-                firstFollowTable.refresh();
+            result -> {
+                this.currentFirstFollowTable = result.firstFollowTable;
 
-                // 2. Populate the Syntax Tree View
-                if (result.astRoot != null && syntaxTreeView != null) {
-                    syntaxTreeView.setRoot(buildTreeItem(result.astRoot));
-                }
+                List<Symbol> nonTerminals =
+                    List.copyOf(currentFirstFollowTable.getAllFirstSets().keySet());
 
-                outputArea.setText("✅ Syntax Analysis complete. FIRST/FOLLOW sets and AST updated.");
+                firstFollowTable.setItems(
+                    FXCollections.observableArrayList(nonTerminals)
+                );
+
+                syntaxTreeView.setRoot(buildTreeItem(result.parseTree.getRoot()));
+                outputArea.setText("✅ Syntax Analysis complete.");
             },
-            (error) -> {
-                outputArea.setText("❌ Syntax Analysis Error:\n" + error.getMessage());
-            }
+            err -> outputArea.setText("❌ Syntax Error:\n" + err.getMessage())
         );
-    }
-
-    // --- HELPER CLASSES AND METHODS ---
-
-    // Temporary object to pass both sets of data out of the background thread safely
-    private static class SyntaxAnalysisResult {
-        List<FirstFollowRow> firstFollowRows;
-        SyntaxTreeNode astRoot;
-
-        SyntaxAnalysisResult(List<FirstFollowRow> firstFollowRows, SyntaxTreeNode astRoot) {
-            this.firstFollowRows = firstFollowRows;
-            this.astRoot = astRoot;
-        }
-    }
-
-    // Recursively converts your custom AST nodes into JavaFX TreeItems for the UI
-    private javafx.scene.control.TreeItem<String> buildTreeItem(SyntaxTreeNode node) {
-        javafx.scene.control.TreeItem<String> item = new javafx.scene.control.TreeItem<>(node.getLabel());
-        item.setExpanded(true); // Expand tree by default so it's readable immediately
-        
-        for (SyntaxTreeNode child : node.getChildren()) {
-            item.getChildren().add(buildTreeItem(child));
-        }
-        
-        return item;
-    }
-
-    private void setButtonsDisabled(boolean disabled) {
-        if(loadTokenBtn != null) loadTokenBtn.setDisable(disabled);
-        if(loadInputBtn != null) loadInputBtn.setDisable(disabled);
-        if(runLexerBtn != null) runLexerBtn.setDisable(disabled);
-        if(loadGrammarBtn != null) loadGrammarBtn.setDisable(disabled);
-        if(runSyntaxBtn != null) runSyntaxBtn.setDisable(disabled); 
-    }
-
-    @FXML
-    private void handleExportCSV() {
-        DirectoryChooser directoryChooser = new DirectoryChooser();
-        directoryChooser.setTitle("Select Folder to Export CSVs");
-        File dir = directoryChooser.showDialog(inputArea.getScene().getWindow());
-
-        if (dir != null) {
-            File symbolsFile = new File(dir, "symbol_table.csv");
-            File firstFollowFile = new File(dir, "first_follow_sets.csv");
-
-            try {
-                // Export Symbol Table
-                try (PrintWriter writer = new PrintWriter(symbolsFile, "UTF-8")) {
-                    writer.println("Lexeme,Token Type,Line,Column");
-                    if (symbolTableViewer.getItems() != null) {
-                        for (Symbol s : symbolTableViewer.getItems()) {
-                            // Properly escape to avoid breaking columns
-                            String lexeme = escapeCSV(s.getLexeme());
-                            String tokenType = escapeCSV(s.getTokenType());
-                            writer.println(lexeme + "," + tokenType + "," + s.getLine() + "," + s.getCol());
-                        }
-                    }
-                }
-
-                // Export First and Follow Sets
-                try (PrintWriter writer = new PrintWriter(firstFollowFile, "UTF-8")) {
-                    writer.println("Non-Terminal,First,Follow");
-                    if (firstFollowTable.getItems() != null) {
-                        for (FirstFollowRow row : firstFollowTable.getItems()) {
-                            String nt = escapeCSV(row.getNonTerminal() != null ? row.getNonTerminal().getLexeme() : "");
-                            
-                            // Safe stream mapping with null checks
-                            String firstStr = row.getFirstSet() != null ? 
-                                row.getFirstSet().stream().map(Symbol::getLexeme).collect(Collectors.joining(", ")) : "";
-                            String followStr = row.getFollowSet() != null ? 
-                                row.getFollowSet().stream().map(Symbol::getLexeme).collect(Collectors.joining(", ")) : "";
-                            
-                            // Wrap the sets in curly braces and escape them securely
-                            writer.println(nt + "," + escapeCSV("{ " + firstStr + " }") + "," + escapeCSV("{ " + followStr + " }"));
-                        }
-                    }
-                }
-
-                outputArea.setText("✅ Data exported successfully to: " + dir.getAbsolutePath());
-            } catch (Exception e) {
-                outputArea.setText("❌ Export Error: " + e.getMessage());
-                e.printStackTrace(); // Helpful for debugging console
-            }
-        }
-    }
-
-    /**
-     * Helper method to securely format strings for CSVs.
-     * Prevents commas, newlines, and quotes inside lexemes from breaking the CSV layout.
-     */
-    private String escapeCSV(String data) {
-        if (data == null) {
-            return "";
-        }
-        // Remove line breaks to keep data confined to a single row
-        String escapedData = data.replaceAll("\\R", " ");
-        
-        // If data contains commas or quotes, it must be wrapped in double-quotes
-        if (escapedData.contains(",") || escapedData.contains("\"") || escapedData.contains("'")) {
-            escapedData = escapedData.replace("\"", "\"\""); // Escape internal double quotes
-            escapedData = "\"" + escapedData + "\""; // Wrap the whole field in quotes
-        }
-        return escapedData;
-    }
-
-    @FXML
-    private void handleSaveConsoleLog() {
-        FileChooser fileChooser = new FileChooser();
-        fileChooser.setTitle("Save Console Log");
-        fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Text Files", "*.txt"));
-        Window stage = consoleArea.getScene().getWindow();
-        File file = fileChooser.showSaveDialog(stage);
-
-        if (file != null) {
-            try {
-                Utils.writeTextFile(file.getAbsolutePath(), consoleArea.getText());
-                outputArea.setText("✅ Console log successfully saved to: " + file.getName());
-            } catch (IOException e) {
-                outputArea.setText("❌ Error saving console log: " + e.getMessage());
-            }
-        }
     }
 
     @FXML
     private void handleClearTables() {
-        if (symbolTableViewer != null) symbolTableViewer.getItems().clear();
-        if (firstFollowTable != null) firstFollowTable.getItems().clear();
-        if (lexer != null && lexer.getSymbolTable() != null) lexer.getSymbolTable().clearTable();
-        
-        outputArea.setText("Tables cleared.");
-        consoleArea.appendText("\n[UI] Tables and internal symbol cache have been cleared.\n");
+        symbolTableViewer.getItems().clear();
+        firstFollowTable.getItems().clear();
+        syntaxTreeView.setRoot(null);
+        outputArea.clear();
+        consoleArea.clear();
     }
+
+    // --- UI Logic & Helpers ---
 
     private void setupSymbolTable() {
-        if (lexemeColumn != null && tokenTypeColumn != null && lineColumn != null && colColumn != null) {
-            lexemeColumn.setCellValueFactory(cellData -> 
-                new SimpleStringProperty(cellData.getValue().getLexeme()));
-                
-            tokenTypeColumn.setCellValueFactory(cellData -> 
-                new SimpleStringProperty(cellData.getValue().getTokenType()));
-                
-            lineColumn.setCellValueFactory(cellData -> 
-                new SimpleIntegerProperty(cellData.getValue().getLine()).asObject());
-
-            colColumn.setCellValueFactory(cellData -> 
-                new SimpleIntegerProperty(cellData.getValue().getCol()).asObject());
-        } else {
-            System.err.println("ERROR: Symbol Table columns failed to inject! Check FXML fx:id matches.");
-        }
+        lexemeColumn.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getLexeme()));
+        tokenTypeColumn.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getTokenType()));
+        lineColumn.setCellValueFactory(data -> new SimpleIntegerProperty(data.getValue().getLine()).asObject());
+        colColumn.setCellValueFactory(data -> new SimpleIntegerProperty(data.getValue().getCol()).asObject());
     }
 
-    private static class TextAreaOutputStream extends OutputStream {
-        private final TextArea console;
+    private void setupFirstFollowTable() {
+        // Non-terminal column just shows the symbol name
+        nonTerminalCol.setCellValueFactory(data -> 
+            new SimpleStringProperty(data.getValue().getName()));
+            
+        // First set column fetches data from the currentFirstFollowTable reference
+        firstSetCol.setCellValueFactory(data -> {
+            if (currentFirstFollowTable == null) return new SimpleObjectProperty<>(null);
+            return new SimpleObjectProperty<>(currentFirstFollowTable.getFirst(data.getValue()));
+        });
+            
+        followSetCol.setCellValueFactory(data -> {
+            if (currentFirstFollowTable == null) return new SimpleObjectProperty<>(null);
+            return new SimpleObjectProperty<>(currentFirstFollowTable.getFollow(data.getValue()));
+        });
 
-        public TextAreaOutputStream(TextArea console) {
-            this.console = console;
-        }
+        // Set formatter for displaying sets as strings
+        Callback<TableColumn<Symbol, Set<Symbol>>, TableCell<Symbol, Set<Symbol>>> setCellFactory = 
+            column -> new TableCell<>() {
+                @Override protected void updateItem(Set<Symbol> item, boolean empty) {
+                    super.updateItem(item, empty);
+                    if (empty || item == null) setText("");
+                    else setText("{ " + item.stream().map(Symbol::getName).collect(Collectors.joining(", ")) + " }");
+                }
+            };
 
-        @Override
-        public void write(int b) {
-            Platform.runLater(() -> console.appendText(String.valueOf((char) b)));
-        }
+        firstSetCol.setCellFactory(setCellFactory);
+        followSetCol.setCellFactory(setCellFactory);
+    }
 
-        @Override
-        public void write(byte[] b, int off, int len) {
-            String text = new String(b, off, len);
-            Platform.runLater(() -> console.appendText(text));
+    private TreeItem<String> buildTreeItem(Node node) {
+        String label = node.getSymbol().getName();
+        if (node.getLexeme() != null) {
+            label += " (\"" + node.getLexeme() + "\")";
         }
+        
+        TreeItem<String> item = new TreeItem<>(label);
+        item.setExpanded(true);
+        for (Node child : node.getChildren()) {
+            item.getChildren().add(buildTreeItem(child));
+        }
+        return item;
+    }
+
+    @FXML
+    private void handleSaveConsoleLog() {
+        // Implementation for saving the consoleArea content to a file
+        System.out.println("Saving console log... (Feature not yet implemented)");
+    }
+
+    @FXML
+    private void handleExportCSV() {
+        // Implementation for exporting symbol tables or sets to CSV
+        System.out.println("Exporting to CSV... (Feature not yet implemented)");
+    }
+
+    private void appendLog(String message) {
+        Platform.runLater(() -> {
+            String time = java.time.LocalTime.now().withNano(0).toString();
+            consoleArea.appendText("[" + time + "] " + message + "\n");
+            consoleArea.setScrollTop(Double.MAX_VALUE);
+            
+            if (loadingOverlay.isVisible()) {
+                loadingLabel.setText(message);
+            }
+        });
+    }
+
+    private <T> void executeHeavyTask(
+        String msg,
+        java.util.function.Function<Consumer<String>, T> task,
+        Consumer<T> onSuccess,
+        Consumer<Exception> onError
+    ) {
+        // 1. Capture start time and define the UI timer
+        final long startTime = System.currentTimeMillis();
+        
+        javafx.animation.AnimationTimer timer = new javafx.animation.AnimationTimer() {
+            @Override
+            public void handle(long now) {
+                // Calculate elapsed time
+                long elapsedMillis = System.currentTimeMillis() - startTime;
+                long seconds = (elapsedMillis / 1000) % 60;
+                long millis = (elapsedMillis % 1000) / 10; // get 2 digits for milliseconds
+                
+                // Safely update the UI (AnimationTimer inherently runs on the FX Thread)
+                if (loadingTimeLabel != null) {
+                    loadingTimeLabel.setText(String.format("processing... %02d.%02ds", seconds, millis));
+                }
+            }
+        };
+
+        Platform.runLater(() -> {
+            loadingLabel.setText(msg);
+            loadingOverlay.setVisible(true);
+            
+            // 2. Start the timer precisely when the overlay becomes visible
+            timer.start();
+        });
+
+        Thread thread = new Thread(() -> {
+            try {
+                T result = task.apply(this::appendLog);
+
+                Platform.runLater(() -> {
+                    // 3. Stop the timer on success
+                    timer.stop(); 
+                    onSuccess.accept(result);
+                    loadingOverlay.setVisible(false);
+                });
+
+            } catch (Exception e) {
+                Platform.runLater(() -> {
+                    // 4. Stop the timer on failure
+                    timer.stop(); 
+                    onError.accept(e);
+                    loadingOverlay.setVisible(false);
+                });
+            }
+        });
+
+        thread.setDaemon(true);
+        thread.start();
     }
 }

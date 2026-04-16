@@ -1,104 +1,50 @@
 package core.parser.models;
 
-import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
-import java.util.stream.Collectors;
+import java.util.Set;
 
 import core.parser.models.atomic.Symbol;
 
-import java.util.Collection;
-
-/**
- * Represents the FIRST and FOLLOW sets for all non-terminals in a grammar.
- */
 public class FirstFollowTable {
-
-    // Key: Non-Terminal Symbol
-    // Value: Row containing the FIRST and FOLLOW sets
-    private final Map<Symbol, FirstFollowRow> table;
+    private final Map<Symbol, Set<Symbol>> firstSets;
+    private final Map<Symbol, Set<Symbol>> followSets;
 
     public FirstFollowTable() {
-        this.table = new HashMap<>();
+        this.firstSets = new HashMap<>();
+        this.followSets = new HashMap<>();
     }
 
-    /**
-     * Initializes a row for a non-terminal if it doesn't already exist.
-     */
-    public void initializeRow(Symbol nonTerminal) {
-        if (nonTerminal == null) return;
-        table.putIfAbsent(nonTerminal, new FirstFollowRow(nonTerminal));
+    public void addFirst(Symbol nonTerminal, Symbol terminal) {
+        firstSets.computeIfAbsent(nonTerminal, k -> new HashSet<>()).add(terminal);
     }
 
-    /**
-     * Returns the specific row for a non-terminal.
-     */
-    public FirstFollowRow getRow(Symbol nonTerminal) {
-        return table.get(nonTerminal);
+    public void addFollow(Symbol nonTerminal, Symbol terminal) {
+        followSets.computeIfAbsent(nonTerminal, k -> new HashSet<>()).add(terminal);
     }
 
-    /**
-     * Returns an unmodifiable view of the table to maintain encapsulation.
-     */
-    public Map<Symbol, FirstFollowRow> getTable() {
-        return Collections.unmodifiableMap(table);
+    public Set<Symbol> getFirst(Symbol symbol) {
+        return firstSets.getOrDefault(symbol, new HashSet<>());
     }
 
-    /**
-     * Clears all entries from the table.
-     */
-    public void clearTable() {
-        this.table.clear();
-        System.out.println("\n=== Symbol First Follow Table: cleaned ===");
+    public Set<Symbol> getFollow(Symbol nonTerminal) {
+        return followSets.getOrDefault(nonTerminal, new HashSet<>());
+    }
+    
+    public Map<Symbol, Set<Symbol>> getAllFirstSets() {
+        return firstSets;
     }
 
-    /**
-     * Formats the table into a human-readable ASCII representation.
-     */
-    @Override
-    public String toString() {
-        if (table.isEmpty()) {
-            return "\n=== FIRST & FOLLOW TABLE ===\n(Table is empty)\n";
-        }
-
-        StringBuilder sb = new StringBuilder();
-        sb.append("\n=== FIRST & FOLLOW TABLE ===\n");
-        // Adjusted padding for better visibility in console
-        sb.append(String.format("%-25s | %-40s | %-40s\n", 
-                "Non-Terminal", "FIRST Set", "FOLLOW Set"));
-        sb.append("-".repeat(110)).append("\n");
-
-        table.values().forEach(row -> 
-            sb.append(String.format("%-25s | %-40s | %-40s\n",
-                    row.getNonTerminal().getLexeme(),
-                    formatSet(row.getFirstSet()),
-                    formatSet(row.getFollowSet())
-            ))
-        );
-
-        return sb.toString();
+    public Map<Symbol, Set<Symbol>> getAllFollowSets() {
+        return followSets;
     }
 
-    /**
-     * Prints the table to standard output.
-     */
-    public void printTable() {
-        System.out.print(this.toString());
-    }
-
-    /**
-     * Helper to transform a collection of symbols into a clean string: { a, b, c }
-     */
-    private String formatSet(Collection<Symbol> symbols) {
-        if (symbols == null || symbols.isEmpty()) {
-            return "{ }";
-        }
+    public void printSets() {
+        System.out.println("=== First Sets ===");
+        firstSets.forEach((k, v) -> System.out.println("FIRST(" + k + ") = " + v));
         
-        String content = symbols.stream()
-                .map(Symbol::getLexeme)
-                .distinct() // Ensures no visual duplicates if the Set implementation differs
-                .collect(Collectors.joining(", "));
-        
-        return "{ " + content + " }";
+        System.out.println("\n=== Follow Sets ===");
+        followSets.forEach((k, v) -> System.out.println("FOLLOW(" + k + ") = " + v));
     }
 }

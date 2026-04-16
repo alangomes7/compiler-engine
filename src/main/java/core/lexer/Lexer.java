@@ -8,17 +8,17 @@ import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import core.lexer.conversors.AFDMinimizer;
-import core.lexer.conversors.AFNDEtoAFND;
-import core.lexer.conversors.AFNDtoAFD;
-import core.lexer.conversors.ReToAFNDE;
+import core.lexer.core.conversors.AFDMinimizer;
+import core.lexer.core.conversors.AFNDEtoAFND;
+import core.lexer.core.conversors.AFNDtoAFD;
+import core.lexer.core.conversors.ReToAFNDE;
+import core.lexer.core.translators.RuleParser;
 import core.lexer.models.SymbolTable;
 import core.lexer.models.atomic.Rule;
 import core.lexer.models.atomic.State;
 import core.lexer.models.automata.AFD;
 import core.lexer.models.automata.AFND;
 import core.lexer.models.automata.AFNDE;
-import core.lexer.translators.RuleParser;
 
 public class Lexer {
     

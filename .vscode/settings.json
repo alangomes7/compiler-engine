@@ -4,5 +4,8 @@
         "src/main/resources"
     ],
     "java.compile.nullAnalysis.mode": "automatic",
-    "java.configuration.updateBuildConfiguration": "automatic"
+    "java.configuration.updateBuildConfiguration": "automatic",
+    "java.jdt.ls.lombokSupport.enabled": true,
+
+    "java.jdt.ls.vmargs": "-javaagent:C:/Users/alang/.m2/repository/org/projectlombok/lombok/1.18.44/lombok-1.18.44.jar"
 }
