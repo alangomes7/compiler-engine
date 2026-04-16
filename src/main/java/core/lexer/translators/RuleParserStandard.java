@@ -1,10 +1,10 @@
 package core.lexer.translators;
 
 import core.lexer.conversors.ReToAFNDE;
-import models.atomic.Token;
-import models.automata.AFNDE;
+import core.lexer.models.atomic.Rule;
+import core.lexer.models.automata.AFNDE;
 
-public class StandardRuleParser {
+public class RuleParserStandard {
 
     private final ReToAFNDE generator;
 
@@ -12,11 +12,11 @@ public class StandardRuleParser {
     private int pos;
     private int length;
 
-    public StandardRuleParser(ReToAFNDE generator) {
+    public RuleParserStandard(ReToAFNDE generator) {
         this.generator = generator;
     }
 
-    public AFNDE parse(Token rule) {
+    public AFNDE parse(Rule rule) { 
         this.input = rule.getRegex().toCharArray();
         this.pos = 0;
         this.length = input.length;
@@ -31,10 +31,6 @@ public class StandardRuleParser {
 
         return generator.nameToken(rule.getTokenType(), nfa);
     }
-
-    // ========================================================================
-    // CORE PARSER
-    // ========================================================================
 
     private AFNDE parseExpression() {
         AFNDE nfa = parseTerm();
@@ -114,12 +110,8 @@ public class StandardRuleParser {
         return generator.symbol(String.valueOf(c));
     }
 
-    // ========================================================================
-    // CHARACTER CLASS (OPTIMIZED)
-    // ========================================================================
-
     private AFNDE parseCharacterClass() {
-        pos++; // [
+        pos++; 
 
         boolean negate = false;
         if (input[pos] == '^') {
@@ -127,13 +119,13 @@ public class StandardRuleParser {
             pos++;
         }
 
-        boolean[] table = new boolean[128]; // ASCII fast lookup
+        boolean[] table = new boolean[128]; 
 
         while (pos < length && input[pos] != ']') {
             char start = readChar();
 
             if (pos < length - 1 && input[pos] == '-' && input[pos + 1] != ']') {
-                pos++; // skip '-'
+                pos++; 
                 char end = readChar();
 
                 for (int c = start; c <= end; c++) {
@@ -144,7 +136,7 @@ public class StandardRuleParser {
             }
         }
 
-        pos++; // ]
+        pos++; 
 
         AFNDE result = null;
 
@@ -171,10 +163,6 @@ public class StandardRuleParser {
         }
         return input[pos++];
     }
-
-    // ========================================================================
-    // FAST UNION BUILDER
-    // ========================================================================
 
     private AFNDE unionFast(AFNDE acc, char c) {
         AFNDE nfa = generator.symbol(String.valueOf(c));

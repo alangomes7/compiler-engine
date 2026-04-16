@@ -79,7 +79,8 @@
                                 <columns>
                                     <TableColumn fx:id="lexemeColumn" text="Lexeme" prefWidth="250"/>
                                     <TableColumn fx:id="tokenTypeColumn" text="Token Type" prefWidth="150"/>
-                                    <TableColumn fx:id="lineColumn" text="Line" prefWidth="75"/>
+                                    <TableColumn fx:id="colColumn" text="Line" prefWidth="75"/>
+                                    <TableColumn fx:id="lineColumn" text="Column" prefWidth="75"/>
                                 </columns>
                             </TableView>
                         </Tab>

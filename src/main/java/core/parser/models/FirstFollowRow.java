@@ -1,8 +1,9 @@
-package models.others;
+package core.parser.models;
 
-import models.atomic.Symbol;
 import java.util.ArrayList;
 import java.util.List;
+
+import core.parser.models.atomic.Symbol;
 
 public class FirstFollowRow {
     private Symbol nonTerminal;

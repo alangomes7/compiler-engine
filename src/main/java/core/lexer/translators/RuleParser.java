@@ -1,28 +1,24 @@
 package core.lexer.translators;
 
 import core.lexer.conversors.ReToAFNDE;
-import models.atomic.Token;
-import models.automata.AFNDE;
+import core.lexer.models.atomic.Rule;
+import core.lexer.models.automata.AFNDE;
 
 public class RuleParser {
 
-    private final StandardRuleParser standardParser;
-    private final ExtendedRuleParser extendedParser;
+    private final RuleParserStandard ruleParserStandard;
+    private final ExtendedRuleParser extendedRuleParser;
 
     public RuleParser(ReToAFNDE generator) {
-        this.standardParser = new StandardRuleParser(generator);
-        this.extendedParser = new ExtendedRuleParser(generator);
+        this.ruleParserStandard = new RuleParserStandard(generator);
+        this.extendedRuleParser = new ExtendedRuleParser(generator);
     }
 
-    /**
-     * Master evaluation method. Routes the TokenRule to the appropriate 
-     * underlying parser based on the extended file flag.
-     */
-    public AFNDE parse(Token rule) {
+    public AFNDE parse(Rule rule) {
         if (rule.isExtended()) {
-            return extendedParser.parse(rule);
+            return extendedRuleParser.parse(rule);
         } else {
-            return standardParser.parse(rule);
+            return ruleParserStandard.parse(rule);
         }
     }
 }

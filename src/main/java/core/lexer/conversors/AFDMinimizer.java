@@ -1,9 +1,19 @@
 package core.lexer.conversors;
 
-import java.util.*;
-import models.atomic.State;
-import models.atomic.Transition;
-import models.automata.AFD;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import core.lexer.models.atomic.State;
+import core.lexer.models.atomic.Symbol;
+import core.lexer.models.atomic.Transition;
+import core.lexer.models.automata.AFD;
 
 public class AFDMinimizer {
 
@@ -13,15 +23,14 @@ public class AFDMinimizer {
         minStateCounter = 0;
         Set<State> allStatesSet = getAllStates(afd.getStartState());
         int numStates = allStatesSet.size();
-        State[] states = allStatesSet.toArray(new State[0]);
+        State[] states = allStatesSet.toArray(State[]::new);
         
-        // 1. Mapeamento de IDs para índices 0...N
         Map<State, Integer> stateToIndex = new HashMap<>(numStates);
         for (int i = 0; i < numStates; i++) stateToIndex.put(states[i], i);
 
-        // 2. Alfabeto indexado
-        Map<String, Integer> symbolToIndex = new HashMap<>();
-        List<String> alphabet = new ArrayList<>();
+        Map<Symbol, Integer> symbolToIndex = new HashMap<>();
+        List<Symbol> alphabet = new ArrayList<>();
+        
         for (State s : states) {
             for (Transition t : s.getTransitions()) {
                 if (!symbolToIndex.containsKey(t.getSymbol())) {
@@ -32,8 +41,6 @@ public class AFDMinimizer {
         }
         int alphabetSize = alphabet.size();
 
-        // 3. Tabela de transição usando IDs primitivos (O(1) access)
-        // -1 indica transição para estado de erro
         int[][] transitions = new int[numStates][alphabetSize];
         for (int i = 0; i < numStates; i++) {
             Arrays.fill(transitions[i], -1);
@@ -42,13 +49,10 @@ public class AFDMinimizer {
             }
         }
 
-        // 4. Particionamento Inicial
         int[] partition = new int[numStates];
         Map<String, Integer> finalGroups = new HashMap<>();
         int pidCounter = 0;
 
-        // Grupo 0 reservado para não-finais
-        boolean hasNonFinal = false;
         for (int i = 0; i < numStates; i++) {
             if (isStateFinal(states[i], afd)) {
                 String token = states[i].getAcceptedToken() != null ? states[i].getAcceptedToken() : "FINAL_DEFAULT";
@@ -58,12 +62,10 @@ public class AFDMinimizer {
                 partition[i] = finalGroups.get(token);
             } else {
                 partition[i] = 0;
-                hasNonFinal = true;
             }
         }
         int numPartitions = pidCounter + 1;
 
-        // 5. Refinamento Iterativo (Algoritmo de Moore O(n^2) ou O(kn log n))
         boolean changed = true;
         while (changed) {
             changed = false;
@@ -90,7 +92,6 @@ public class AFDMinimizer {
             }
         }
 
-        // 6. Reconstrução do AFD
         State[] representative = new State[numPartitions];
         int[] repIndices = new int[numPartitions];
         Arrays.fill(repIndices, -1);
@@ -122,36 +123,6 @@ public class AFDMinimizer {
         }
 
         return new AFD(afd.getTokenName() + "_MIN", minimizedStart, minimizedFinals);
-    }
-
-    // Classe leve para identificar grupos de equivalência
-    private static class Signature {
-        final int currentPartition;
-        final int[] targets;
-        final int hashCode;
-
-        Signature(int currentPartition, int[] stateTransitions, int[] partitionMap) {
-            this.currentPartition = currentPartition;
-            this.targets = new int[stateTransitions.length];
-            int h = currentPartition;
-            for (int i = 0; i < stateTransitions.length; i++) {
-                int t = stateTransitions[i];
-                int targetPid = (t == -1) ? -1 : partitionMap[t];
-                this.targets[i] = targetPid;
-                h = h * 31 + targetPid;
-            }
-            this.hashCode = h;
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            Signature other = (Signature) o;
-            if (currentPartition != other.currentPartition) return false;
-            return Arrays.equals(targets, other.targets);
-        }
-
-        @Override
-        public int hashCode() { return hashCode; }
     }
 
     private Set<State> getAllStates(State start) {

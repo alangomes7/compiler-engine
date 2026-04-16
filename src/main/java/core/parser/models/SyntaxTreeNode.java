@@ -1,4 +1,4 @@
-package models.tree;
+package core.parser.models;
 
 import java.util.ArrayList;
 import java.util.List;

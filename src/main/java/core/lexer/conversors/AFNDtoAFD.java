@@ -1,23 +1,32 @@
 package core.lexer.conversors;
 
-import java.util.*;
-import models.atomic.State;
-import models.atomic.Transition;
-import models.automata.AFD;
-import models.automata.AFND;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.BitSet;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import core.lexer.models.atomic.State;
+import core.lexer.models.atomic.Symbol;
+import core.lexer.models.atomic.Transition;
+import core.lexer.models.automata.AFD;
+import core.lexer.models.automata.AFND;
 
 public class AFNDtoAFD {
 
     private int dfaStateCounter = 0;
 
-    // Classe auxiliar para armazenar dados pré-processados do NFA
     private static class NfaStateData {
         final int id;
         final boolean isFinal;
         final String token;
-        final Map<String, int[]> transitions;
+        final Map<Symbol, int[]> transitions;
 
-        NfaStateData(int id, boolean isFinal, String token, Map<String, List<Integer>> tempTrans) {
+        NfaStateData(int id, boolean isFinal, String token, Map<Symbol, List<Integer>> tempTrans) {
             this.id = id;
             this.isFinal = isFinal;
             this.token = token;
@@ -31,16 +40,13 @@ public class AFNDtoAFD {
     public AFD convert(AFND afnd) {
         dfaStateCounter = 0;
         
-        // 1. Pré-processamento: Array para acesso O(1) por ID
         Set<State> allStates = getAllStates(afnd.getStartState());
         int maxId = allStates.stream().mapToInt(State::getId).max().orElse(0);
         NfaStateData[] nfaData = new NfaStateData[maxId + 1];
-        Set<String> alphabet = new HashSet<>();
 
         for (State s : allStates) {
-            Map<String, List<Integer>> tempTrans = new HashMap<>();
+            Map<Symbol, List<Integer>> tempTrans = new HashMap<>();
             for (Transition t : s.getTransitions()) {
-                alphabet.add(t.getSymbol());
                 tempTrans.computeIfAbsent(t.getSymbol(), k -> new ArrayList<>()).add(t.getTarget().getId());
             }
             nfaData[s.getId()] = new NfaStateData(
@@ -51,7 +57,6 @@ public class AFNDtoAFD {
             );
         }
 
-        // 2. Estruturas do DFA usando BitSet como chave (muito mais rápido que Set<Integer>)
         Map<BitSet, State> dfaStateMap = new HashMap<>();
         ArrayDeque<BitSet> queue = new ArrayDeque<>();
         Set<State> dfaFinalStates = new HashSet<>();
@@ -64,19 +69,17 @@ public class AFNDtoAFD {
         queue.add(startSubset);
         if (dfaStart.isFinal()) dfaFinalStates.add(dfaStart);
 
-        // 3. Construção por subconjuntos
         while (!queue.isEmpty()) {
             BitSet currentSubset = queue.poll();
             State currentDfaState = dfaStateMap.get(currentSubset);
 
-            // Determina quais símbolos são relevantes para este subconjunto específico
-            Map<String, BitSet> nextSubsets = new HashMap<>();
+            Map<Symbol, BitSet> nextSubsets = new HashMap<>();
             
             for (int i = currentSubset.nextSetBit(0); i >= 0; i = currentSubset.nextSetBit(i + 1)) {
                 NfaStateData data = nfaData[i];
                 if (data == null) continue;
                 
-                for (Map.Entry<String, int[]> entry : data.transitions.entrySet()) {
+                for (Map.Entry<Symbol, int[]> entry : data.transitions.entrySet()) {
                     BitSet targetBitSet = nextSubsets.computeIfAbsent(entry.getKey(), k -> new BitSet());
                     for (int targetId : entry.getValue()) {
                         targetBitSet.set(targetId);
@@ -84,9 +87,8 @@ public class AFNDtoAFD {
                 }
             }
 
-            // Cria as transições no AFD
-            for (Map.Entry<String, BitSet> entry : nextSubsets.entrySet()) {
-                String symbol = entry.getKey();
+            for (Map.Entry<Symbol, BitSet> entry : nextSubsets.entrySet()) {
+                Symbol symbol = entry.getKey();
                 BitSet targetBits = entry.getValue();
 
                 State dfaTarget = dfaStateMap.get(targetBits);
@@ -113,7 +115,6 @@ public class AFNDtoAFD {
             NfaStateData data = nfaData[i];
             if (data != null && data.isFinal) {
                 isFinal = true;
-                // Mantém a lógica de prioridade (menor ID original ganha)
                 if (data.id < minId) {
                     minId = data.id;
                     bestToken = data.token;

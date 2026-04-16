@@ -12,14 +12,14 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 
+import core.lexer.models.atomic.State;
+import core.lexer.models.atomic.Transition;
+import core.lexer.models.automata.AFD;
 import guru.nidi.graphviz.engine.Format;
 import guru.nidi.graphviz.engine.Graphviz;
 import guru.nidi.graphviz.model.MutableGraph;
 import guru.nidi.graphviz.parse.Parser;
 import models.atomic.Constants;
-import models.atomic.State;
-import models.atomic.Transition;
-import models.automata.AFD;
 
 public class AutomataVisualizer {
 

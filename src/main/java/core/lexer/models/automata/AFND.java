@@ -1,4 +1,4 @@
-package models.automata;
+package core.lexer.models.automata;
 
 import java.util.ArrayDeque;
 import java.util.Collections;
@@ -8,19 +8,30 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
-import models.atomic.State;
-import models.atomic.Transition;
+import core.lexer.models.atomic.State;
+import core.lexer.models.atomic.Transition;
 
 public class AFND {
     private final String tokenName;
     private final State startState;
     private final Set<State> finalStates;
+    private final Alphabet alphabet; 
 
     public AFND(String tokenName, State startState, Set<State> finalStates) {
         this.tokenName = tokenName;
         this.startState = startState;
-        // Otimização: Garante que o set nunca seja nulo, simplificando checagens futuras
         this.finalStates = finalStates != null ? finalStates : Collections.emptySet();
+        
+        this.alphabet = new Alphabet();
+        computeAlphabet();
+    }
+
+    private void computeAlphabet() {
+        for (State state : getAllStates()) {
+            for (Transition t : state.getTransitions()) {
+                this.alphabet.addSymbol(t.getSymbol());
+            }
+        }
     }
 
     public String getTokenName() {
@@ -34,13 +45,13 @@ public class AFND {
     public Set<State> getFinalStates() {
         return finalStates;
     }
+    
+    public Alphabet getAlphabet() {
+        return alphabet;
+    }
 
-    /**
-     * Retorna todos os estados alcançáveis.
-     * Facilita a vida das classes de conversão (AFNDtoAFD).
-     */
     public Set<State> getAllStates() {
-        Set<State> visited = new LinkedHashSet<>(); // Mantém previsibilidade na ordem
+        Set<State> visited = new LinkedHashSet<>();
         Deque<State> queue = new ArrayDeque<>();
         
         queue.add(startState);
@@ -59,9 +70,9 @@ public class AFND {
 
     @Override
     public String toString() {
-        // Capacidade inicial para evitar cópias de array interno do StringBuilder
         StringBuilder sb = new StringBuilder(1024);
         sb.append("=== AFND: ").append(tokenName).append(" ===\n");
+        sb.append("Alphabet: ").append(alphabet.getSymbols()).append("\n");
         sb.append("Start State: q").append(startState.getId()).append("\n");
         
         if (!finalStates.isEmpty()) {
@@ -76,7 +87,6 @@ public class AFND {
         
         sb.append("Transitions:\n");
 
-        // Uso de State no lugar de Integer evita Autoboxing
         Set<State> visited = new HashSet<>();
         Deque<State> queue = new ArrayDeque<>();
 
@@ -88,7 +98,6 @@ public class AFND {
             
             sb.append("  q").append(current.getId());
             
-            // Checagem simplificada (finalStates nunca é nulo aqui)
             if (current.isFinal() || finalStates.contains(current)) {
                 sb.append(" [FINAL]");
             }
@@ -100,9 +109,8 @@ public class AFND {
             } else {
                 for (Transition t : transitions) {
                     State target = t.getTarget();
-                    sb.append("    --(").append(t.getSymbol()).append(")--> q").append(target.getId()).append("\n");
+                    sb.append("    --(").append(t.getSymbol().getValue()).append(")--> q").append(target.getId()).append("\n");
                     
-                    // Condicional combinada com a inserção no Set (operação O(1))
                     if (visited.add(target)) {
                         queue.add(target);
                     }

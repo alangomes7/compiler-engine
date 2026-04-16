@@ -1,4 +1,4 @@
-package app;
+package ui;
 
 import java.io.File;
 import java.io.IOException;
@@ -6,6 +6,14 @@ import java.io.OutputStream;
 import java.io.PrintStream;
 import java.io.PrintWriter;
 import javafx.util.Duration;
+import parser.RecursiveDescentParser;
+import parser.grammar.FirstFollowCalculator;
+import parser.grammar.GrammarBuilder;
+import parser.models.FirstFollowRow;
+import parser.models.Grammar;
+import parser.models.SyntaxTreeNode;
+import parser.models.atomic.Symbol;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -15,9 +23,9 @@ import java.util.stream.Collectors;
 
 import Utils.Utils;
 import core.lexer.Lexer;
-import core.lexer.translators.TokenReader;
-import core.parser.FirstFollowCalculator;
-import core.parser.GrammarBuilder;
+import core.lexer.models.SymbolTable;
+import core.lexer.models.atomic.Token;
+import core.lexer.translators.RuleReader;
 import graph.AutomataVisualizer;
 import graph.InteractiveAutomataView;
 import javafx.animation.KeyFrame;
@@ -34,14 +42,11 @@ import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextArea;
+import javafx.scene.control.TreeView;
 import javafx.scene.layout.VBox;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
 import javafx.stage.Window;
-import models.atomic.Symbol;
-import models.atomic.Token;
-import models.others.FirstFollowRow;
-import models.others.Grammar;
 
 public class Ui {
 
@@ -53,7 +58,6 @@ public class Ui {
     @FXML private TextArea inputArea;
     @FXML private TextArea outputArea;
     @FXML private TextArea consoleArea;
-    @FXML private TableView<Symbol> symbolTableViewer;
     @FXML private Label tokenFileLabel;
     @FXML private Label inputFileLabel;
     @FXML private Button loadGrammarBtn;
@@ -64,16 +68,20 @@ public class Ui {
     @FXML private Button runSyntaxBtn;
     @FXML private TextArea automataDetailsArea;
     @FXML private javafx.scene.layout.BorderPane interactiveGraphContainer;
-    @FXML private TableView<FirstFollowRow> firstFollowTable;
     
+    @FXML private TableView<Symbol> symbolTableViewer;
+    @FXML private TableColumn<Symbol, Integer> lineColumn;
+    @FXML private TableColumn<Symbol, Integer> colColumn;
+    @FXML private TableColumn<Symbol, String> lexemeColumn;
+    @FXML private TableColumn<Symbol, String> tokenTypeColumn;
+
+    @FXML private TableView<FirstFollowRow> firstFollowTable;
     @FXML private TableColumn<FirstFollowRow, Integer> ffLineCol;
     @FXML private TableColumn<FirstFollowRow, Symbol> nonTerminalCol;
     @FXML private TableColumn<FirstFollowRow, List<Symbol>> firstSetCol;
     @FXML private TableColumn<FirstFollowRow, List<Symbol>> followSetCol;
-    
-    @FXML private TableColumn<Symbol, String> lexemeColumn;
-    @FXML private TableColumn<Symbol, String> tokenTypeColumn;
-    @FXML private TableColumn<Symbol, Integer> lineColumn;
+
+    @FXML private TreeView<String> syntaxTreeView;
 
     private Lexer lexer;
     private Grammar currentGrammar;
@@ -201,7 +209,7 @@ public class Ui {
             executeHeavyTask(
                 "Building Lexer & Automata Graph...",
                 () -> {
-                    List<Token> rules = TokenReader.readTokens(file.getAbsolutePath());
+                    List<Token> rules = RuleReader.readTokens(file.getAbsolutePath());
                     Lexer newLexer = new Lexer(rules);
                     AutomataVisualizer.exportToImage(newLexer.getMasterAutomaton(), "master_lexer_automata.png");
                     return newLexer;
@@ -299,7 +307,7 @@ public class Ui {
                 
                 result.scanOutput = lexer.scan(input);
                 if (lexer.getSymbolTable() != null) {
-                    result.symbols = new ArrayList<>(lexer.getSymbolTable().getTable().values());
+                    result.symbols = new ArrayList<>(lexer.getSymbolTable().getTable());
                 }
                 
                 return result;
@@ -329,27 +337,71 @@ public class Ui {
             return;
         }
 
+        if (lexer == null || lexer.getSymbolTable() == null || lexer.getSymbolTable().getTable().isEmpty()) {
+            outputArea.setText("⚠️ Please run Lexer Analysis first to generate tokens.");
+            return;
+        }
+
         executeHeavyTask(
-            "Running Syntax Analysis (FIRST & FOLLOW)...",
+            "Running Syntax Analysis (FIRST/FOLLOW & Syntax Tree)...",
             () -> {
-                // Initialize the calculator with the loaded grammar and compute the sets
+                // 1. Calculate FIRST and FOLLOW sets
                 FirstFollowCalculator calculator = new FirstFollowCalculator(currentGrammar);
                 calculator.computeSets();
-                
-                // Extract the row data for the TableView
-                Map<Symbol, FirstFollowRow> tableData = calculator.getResultsTable().getTable();
-                return new ArrayList<>(tableData.values());
+                List<FirstFollowRow> firstFollowData = new ArrayList<>(calculator.getResultsTable().getTable().values());
+
+                // 2. Build the Syntax Tree (AST) using the Recursive Descent Parser
+                RecursiveDescentParser parser = new RecursiveDescentParser(lexer.getSymbolTable().getTable());
+                SyntaxTreeNode astRoot = parser.parse();
+
+                if (parser.hasErrors()) {
+                    throw new RuntimeException(String.join("\n", parser.getErrors()));
+                }
+
+                // Return a combined result object
+                return new SyntaxAnalysisResult(firstFollowData, astRoot);
             },
-            (rows) -> {
-                // Populate the UI Table
-                firstFollowTable.setItems(FXCollections.observableArrayList(rows));
+            (result) -> {
+                // 1. Populate the First & Follow UI Table
+                firstFollowTable.setItems(FXCollections.observableArrayList(result.firstFollowRows));
                 firstFollowTable.refresh();
-                outputArea.setText("✅ Syntax Analysis complete. FIRST and FOLLOW sets updated.");
+
+                // 2. Populate the Syntax Tree View
+                if (result.astRoot != null && syntaxTreeView != null) {
+                    syntaxTreeView.setRoot(buildTreeItem(result.astRoot));
+                }
+
+                outputArea.setText("✅ Syntax Analysis complete. FIRST/FOLLOW sets and AST updated.");
             },
             (error) -> {
-                outputArea.setText("❌ Syntax Analysis Error: " + error.getMessage());
+                outputArea.setText("❌ Syntax Analysis Error:\n" + error.getMessage());
             }
         );
+    }
+
+    // --- HELPER CLASSES AND METHODS ---
+
+    // Temporary object to pass both sets of data out of the background thread safely
+    private static class SyntaxAnalysisResult {
+        List<FirstFollowRow> firstFollowRows;
+        SyntaxTreeNode astRoot;
+
+        SyntaxAnalysisResult(List<FirstFollowRow> firstFollowRows, SyntaxTreeNode astRoot) {
+            this.firstFollowRows = firstFollowRows;
+            this.astRoot = astRoot;
+        }
+    }
+
+    // Recursively converts your custom AST nodes into JavaFX TreeItems for the UI
+    private javafx.scene.control.TreeItem<String> buildTreeItem(SyntaxTreeNode node) {
+        javafx.scene.control.TreeItem<String> item = new javafx.scene.control.TreeItem<>(node.getLabel());
+        item.setExpanded(true); // Expand tree by default so it's readable immediately
+        
+        for (SyntaxTreeNode child : node.getChildren()) {
+            item.getChildren().add(buildTreeItem(child));
+        }
+        
+        return item;
     }
 
     private void setButtonsDisabled(boolean disabled) {
@@ -459,17 +511,18 @@ public class Ui {
     }
 
     private void setupSymbolTable() {
-        if (lexemeColumn != null && tokenTypeColumn != null && lineColumn != null) {
-            // Replace PropertyValueFactory with explicit lambda properties
+        if (lexemeColumn != null && tokenTypeColumn != null && lineColumn != null && colColumn != null) {
             lexemeColumn.setCellValueFactory(cellData -> 
                 new SimpleStringProperty(cellData.getValue().getLexeme()));
                 
             tokenTypeColumn.setCellValueFactory(cellData -> 
                 new SimpleStringProperty(cellData.getValue().getTokenType()));
                 
-            // Use asObject() to convert primitive int to ObservableValue<Integer>
             lineColumn.setCellValueFactory(cellData -> 
                 new SimpleIntegerProperty(cellData.getValue().getLine()).asObject());
+
+            colColumn.setCellValueFactory(cellData -> 
+                new SimpleIntegerProperty(cellData.getValue().getCol()).asObject());
         } else {
             System.err.println("ERROR: Symbol Table columns failed to inject! Check FXML fx:id matches.");
         }

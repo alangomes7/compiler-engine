@@ -8,11 +8,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import models.atomic.Token;
+import core.lexer.models.atomic.Rule;
 
-public class TokenReader {
+public class RuleReader {
 
-    public static List<Token> readTokens(String filePath) {
+    public static List<Rule> readRules(String filePath) {
         List<String> lines;
 
         try {
@@ -28,7 +28,6 @@ public class TokenReader {
             return List.of();
         }
 
-        // 1. Reconstruct multi-line rule definitions
         List<String> joinedLines = new ArrayList<>();
         StringBuilder current = new StringBuilder();
         
@@ -45,7 +44,6 @@ public class TokenReader {
                 continue;
             }
 
-            // Group rules broken across multiple lines
             if (trimmed.contains(":")) {
                 if (current.length() > 0) joinedLines.add(current.toString());
                 current = new StringBuilder(trimmed);
@@ -55,7 +53,7 @@ public class TokenReader {
         }
         if (current.length() > 0) joinedLines.add(current.toString());
 
-        List<Token> rules = new ArrayList<>();
+        List<Rule> rules = new ArrayList<>();
         Map<String, String> macros = new HashMap<>();
 
         boolean isDynamicSection = false;
@@ -64,7 +62,6 @@ public class TokenReader {
         for (String line : joinedLines) {
             String lower = line.toLowerCase();
             
-            // 2. Section routing (Supports # comments and un-commented headers)
             if (line.startsWith("#") || !line.contains(":")) {
                 if (lower.contains("dynamic") || lower.contains("lexical elements")) {
                     isDynamicSection = true;
@@ -87,13 +84,11 @@ public class TokenReader {
             boolean skip = false;
             boolean isExtendedRule = false;
 
-            // 3. Identify the Extended Flag individually
             if (tokenName.startsWith("@DER")) {
                 isExtendedRule = true;
-                tokenName = tokenName.substring(4).trim(); // Strip the flag from the key/name
+                tokenName = tokenName.substring(4).trim(); 
             }
 
-            // Handle -> skip actions
             if (rightSide.contains("->")) {
                 String[] split = rightSide.split("->", 2);
                 rightSide = split[0].trim();
@@ -102,25 +97,20 @@ public class TokenReader {
 
             if (tokenName.isEmpty() || rightSide.isEmpty()) continue;
 
-            // 4. Populate macros or build final rules
             if (isMacroSection) {
-                // Keep definitions as reference macros
                 macros.put(tokenName, rightSide);
             } else {
                 String pattern;
 
                 if (isExtendedRule) {
-                    // Send RAW syntax. ExtendedRuleParser handles macros and formatting natively.
                     pattern = rightSide;
                 } else if (isDynamicSection) {
-                    // Standard parser formatting (basic structural translations)
                     pattern = rightSide.replace("\\n", "\n").replace("\\r", "\r").replace("\\t", "\t");
                 } else {
-                    // Static keywords must be escaped regardless of format (e.g., '++' -> '\+\+')
                     pattern = escapeLiteral(rightSide);
                 }
                 
-                rules.add(new Token(tokenName, pattern, skip, isExtendedRule, macros));
+                rules.add(new Rule(tokenName, pattern, skip, isExtendedRule, macros));
             }
         }
 

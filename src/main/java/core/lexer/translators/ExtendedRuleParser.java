@@ -5,8 +5,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import core.lexer.conversors.ReToAFNDE;
-import models.atomic.Token;
-import models.automata.AFNDE;
+import core.lexer.models.atomic.Rule;
+import core.lexer.models.automata.AFNDE;
 
 public class ExtendedRuleParser {
 
@@ -20,16 +20,13 @@ public class ExtendedRuleParser {
         this.generator = generator;
     }
 
-    public AFNDE parse(Token rule) {
-        // 1. Natively resolve macros and custom bracket syntax first
+    public AFNDE parse(Rule rule) { 
         String resolvedRegex = resolveExtendedSyntax(rule.getRegex(), rule.getMacros());
 
-        // 2. Proceed with recursive descent parsing
         this.input = resolvedRegex.toCharArray();
         this.pos = 0;
         this.length = input.length;
 
-        // Catch completely empty string evaluations
         if (this.length == 0) {
             System.err.println("⚠️ Warning: Token '" + rule.getTokenType() + "' resolved to an empty regex.");
             return generator.symbol(""); 
@@ -53,7 +50,6 @@ public class ExtendedRuleParser {
     private String resolveExtendedSyntax(String pattern, Map<String, String> macros) {
         String result = pattern;
 
-        // 1. Pre-process explicitly negated patterns INSIDE the macros map before expansion
         if (macros != null && !macros.isEmpty()) {
             for (Map.Entry<String, String> m : macros.entrySet()) {
                 String val = m.getValue();
@@ -64,7 +60,6 @@ public class ExtendedRuleParser {
                 m.setValue(val);
             }
 
-            // 2. Expand macros iteratively
             boolean changed = true;
             while (changed) {
                 changed = false;
@@ -80,7 +75,6 @@ public class ExtendedRuleParser {
             }
         }
 
-        // 3. Fallback for inline uses (in case rules use raw syntax instead of macros)
         result = result.replace("[ANY_CHAR ^ [NEWLINE_CH]]", "!!NOT_NL!!");
         result = result.replace("[ANY_CHAR ^ [DQUOTE | BACKSLASH]]", "!!NOT_DQ!!");
         result = result.replace("[ANY_CHAR ^ [SQUOTE | BACKSLASH]]", "!!NOT_SQ!!");
@@ -108,10 +102,6 @@ public class ExtendedRuleParser {
 
         return result;
     }
-
-    // ========================================================================
-    // CORE PARSER (Extended Constraints)
-    // ========================================================================
 
     private AFNDE parseExpression() {
         AFNDE nfa = parseTerm();
@@ -201,12 +191,8 @@ public class ExtendedRuleParser {
         return generator.symbol(String.valueOf(c));
     }
 
-    // ========================================================================
-    // CHARACTER CLASS
-    // ========================================================================
-
     private AFNDE parseCharacterClass() {
-        pos++; // [
+        pos++; 
         
         if (pos >= length) {
             throw new RuntimeException("Unclosed character class '[' at end of pattern");
@@ -224,7 +210,7 @@ public class ExtendedRuleParser {
             char start = readChar();
 
             if (pos < length - 1 && input[pos] == '-' && input[pos + 1] != ']') {
-                pos++; // skip '-'
+                pos++; 
                 char end = readChar();
 
                 for (int c = start; c <= end; c++) {
@@ -239,7 +225,7 @@ public class ExtendedRuleParser {
              throw new RuntimeException("Unclosed character class '[' (missing ']')");
         }
         
-        pos++; // ]
+        pos++; 
 
         AFNDE result = null;
 

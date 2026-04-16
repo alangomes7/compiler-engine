@@ -8,6 +8,9 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 
+import core.lexer.models.atomic.State;
+import core.lexer.models.atomic.Transition;
+import core.lexer.models.automata.AFD;
 import javafx.beans.binding.Bindings;
 import javafx.beans.binding.DoubleBinding;
 import javafx.scene.Group;
@@ -23,9 +26,6 @@ import javafx.scene.shape.Polygon;
 import javafx.scene.shape.QuadCurve;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
-import models.atomic.State;
-import models.atomic.Transition;
-import models.automata.AFD;
 
 public class InteractiveAutomataView extends Pane {
 

@@ -1,4 +1,4 @@
-package core.parser;
+package core.parser.grammar;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -6,8 +6,8 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
-import models.atomic.Symbol;
-import models.others.Grammar;
+import core.parser.models.Grammar;
+import core.parser.models.atomic.Symbol;
 
 public class GrammarBuilder {
 
@@ -32,7 +32,10 @@ public class GrammarBuilder {
                 String lhsLexeme = parts[0].trim();
                 
                 // Construct LHS Symbol with line number
-                currentLhs = new Symbol(lhsLexeme, "NON_TERMINAL", lineNumber, 1);
+                // TODO: token type
+                Symbol symbol = new Symbol(lhsLexeme, "NON_TERMINAL", lineNumber, 1);
+                symbol.setTerminal(false);
+                currentLhs = new Symbol(lhsLexeme, , lineNumber, 1);
                 
                 // Set the start symbol on the very first rule found
                 if (isFirstRule) {

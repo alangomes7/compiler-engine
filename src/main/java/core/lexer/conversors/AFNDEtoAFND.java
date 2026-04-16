@@ -1,52 +1,52 @@
 package core.lexer.conversors;
 
-import java.util.*;
+import java.util.ArrayDeque;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.Map;
+import java.util.Set;
+
+import core.lexer.models.atomic.State;
+import core.lexer.models.atomic.Symbol;
+import core.lexer.models.atomic.Transition;
+import core.lexer.models.automata.AFND;
+import core.lexer.models.automata.AFNDE;
 import models.atomic.Constants;
-import models.atomic.State;
-import models.atomic.Transition;
-import models.automata.AFND;
-import models.automata.AFNDE;
 
 public class AFNDEtoAFND {
 
-    // Cache local para evitar hit no Map global se houver reuso da classe
     private final Map<State, Set<State>> closureCache = new HashMap<>();
 
     public AFND convert(AFNDE afnde) {
         closureCache.clear();
         
-        // 1. Coleta estados originais
         Set<State> allOldStates = getAllReachableStates(afnde.getStartState());
         
-        // 2. Mapeamento e Pré-cálculo de Closures (Crucial para performance)
         Map<State, State> oldToNew = new HashMap<>(allOldStates.size());
         for (State oldState : allOldStates) {
             oldToNew.put(oldState, new State(oldState.getId()));
             getEpsilonClosure(oldState); 
         }
 
-        // 3. Construção de Transições Otimizada
         for (State oldState : allOldStates) {
             State newState = oldToNew.get(oldState);
             Set<State> closureQ = closureCache.get(oldState);
 
-            // Mapa temporário para agrupar destinos por símbolo: evita loops repetitivos
-            Map<String, Set<State>> transitionsBySymbol = new HashMap<>();
+            Map<Symbol, Set<State>> transitionsBySymbol = new HashMap<>();
             
             boolean isFinal = false;
             String acceptedToken = null;
 
             for (State cState : closureQ) {
-                // Define se o novo estado é final
                 if (cState.isFinal()) {
                     isFinal = true;
                     if (acceptedToken == null) acceptedToken = cState.getAcceptedToken();
                 }
 
-                // Agrupa transições que não são Epsilon
                 for (Transition t : cState.getTransitions()) {
-                    String symbol = t.getSymbol();
-                    if (symbol != Constants.EPSILON && !symbol.equals(Constants.EPSILON)) {
+                    Symbol symbol = t.getSymbol();
+                    if (!symbol.getValue().equals(Constants.EPSILON)) {
                         transitionsBySymbol
                             .computeIfAbsent(symbol, k -> new HashSet<>())
                             .add(t.getTarget());
@@ -57,9 +57,8 @@ public class AFNDEtoAFND {
             newState.setFinal(isFinal);
             newState.setAcceptedToken(acceptedToken);
 
-            // Adiciona transições ao novo estado
-            for (Map.Entry<String, Set<State>> entry : transitionsBySymbol.entrySet()) {
-                String symbol = entry.getKey();
+            for (Map.Entry<Symbol, Set<State>> entry : transitionsBySymbol.entrySet()) {
+                Symbol symbol = entry.getKey();
                 Set<State> targets = entry.getValue();
                 
                 Set<State> fullTargetClosure = new HashSet<>();
@@ -78,7 +77,6 @@ public class AFNDEtoAFND {
 
         State newStart = oldToNew.get(afnde.getStartState());
         
-        // Coleta estados finais apenas dos que restaram no novo mapeamento
         Set<State> finalStates = new HashSet<>();
         for (State s : oldToNew.values()) {
             if (s.isFinal()) finalStates.add(s);
@@ -88,7 +86,7 @@ public class AFNDEtoAFND {
     }
 
     private Set<State> getAllReachableStates(State start) {
-        Set<State> visited = new LinkedHashSet<>(); // Linked garante ordem de inserção se necessário
+        Set<State> visited = new LinkedHashSet<>(); 
         ArrayDeque<State> queue = new ArrayDeque<>();
         visited.add(start);
         queue.add(start);
@@ -116,8 +114,7 @@ public class AFNDEtoAFND {
         while (!queue.isEmpty()) {
             State current = queue.poll();
             for (Transition t : current.getTransitions()) {
-                // Otimização: comparação de referência primeiro
-                if (t.getSymbol() == Constants.EPSILON || t.getSymbol().equals(Constants.EPSILON)) {
+                if (t.getSymbol().getValue().equals(Constants.EPSILON)) {
                     if (closure.add(t.getTarget())) {
                         queue.add(t.getTarget());
                     }

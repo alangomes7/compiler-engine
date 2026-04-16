@@ -12,7 +12,7 @@ public class MainApp extends Application {
 
     @Override
     public void start(Stage primaryStage) throws Exception {
-        URL fxmlLocation = getClass().getResource("/app/Ui.fxml");
+        URL fxmlLocation = getClass().getResource("/ui/Ui.fxml");
 
         if (fxmlLocation == null) {
             throw new RuntimeException("FXML file not found!");

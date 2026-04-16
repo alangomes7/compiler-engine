@@ -1,4 +1,4 @@
-package core.parser;
+package core.parser.grammar;
 
 import java.util.Collections;
 import java.util.HashSet;
@@ -6,11 +6,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import core.parser.models.FirstFollowRow;
+import core.parser.models.FirstFollowTable;
+import core.parser.models.Grammar;
+import core.parser.models.atomic.Symbol;
 import models.atomic.Constants;
-import models.atomic.Symbol;
-import models.others.FirstFollowRow;
-import models.others.Grammar;
-import models.tables.FirstFollowTable;
 
 public class FirstFollowCalculator {
 

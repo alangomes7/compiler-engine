@@ -1,212 +1,218 @@
-awk-program		::= { top-level-element | comment }
+awk-program          ::= { top-level-element | comment }
 
-top-level-element	::= function-definition
-			| pattern-action-pair
+top-level-element    ::= function-definition
+                       | pattern-action-pair
 
-function-definition	::= "function" identifier '(' [ identifier-list ] ')' compound-statements
+function-definition  ::= "function" identifier '(' [ identifier-list ] ')' compound-statements
 
-pattern-action-pair	::= [ pattern ] action
+pattern-action-pair  ::= [ pattern ] action
 
-action			::= compound-statements
+pattern              ::= expression-range
+                       | "BEGIN"
+                       | "END"
 
-pattern			::= expression-range
-			| "BEGIN"
-			| "END"
+expression-range     ::= expression [ ',' expression ]
 
-expression-range	::= expression [ ',' expression ]
+action               ::= compound-statements
 
-compound-labeled	::= '{' labeled-statement-list '}'
+compound-statements  ::= '{' statement-list '}'
 
-compound-statements	::= '{' statement-list '}'
+statement-list       ::= statement { terminate statement }
 
-labeled-statement-list  ::= labeled-statement { terminate labeled-statement } 
+statement            ::= expression-statement
+                       | print-statement
+                       | printf-statement
+                       | for-statement
+                       | do-while-statement
+                       | while-statement
+                       | if-statement
+                       | switch-statement
+                       | controlflow-statement
+                       | memory-statement
 
-labeld-statement	::= label ':' statement-list
+memory-statement     ::= "delete" variable
 
-label			::= "case" identifier
-			| "default"
+controlflow-statement::= "break"
+                       | "continue"
+                       | "next"
+                       | "return" expression
 
-statement-list		::= statement { terminate statement }
+switch-statement     ::= "switch" '(' expression ')' compound-labeled
 
-statement		::= expression-statement
-			| print-statement
-			| printf-statement
-			| for-statement
-			| do-while-statement
-			| while-statement
-			| if-statement
-			| switch-statement
-			| controlflow-statement
-			| memory-statement
+; === IF SEM AMBIGUIDADE (dangling-else resolvido) ===
+if-statement         ::= if-without-else
+                       | if-with-else
 
-memory-statement	::= "delete" variable
+if-without-else      ::= "if" '(' expression ')' compound-statements
 
-controlflow-statement	::= "break"
-			| "continue"
-			| "next"
-			| "return" expression
+if-with-else         ::= "if" '(' expression ')' compound-statements
+                         "else" ( if-with-else | compound-statements )
 
-switch-statment		::= "switch" '(' expression ')' compound-labeled
+; === LOOPS ===
+while-statement      ::= "while" '(' expression ')' compound-statements
 
-if-statement            ::= "if" '(' expression ')' compound-statements [ "else" ( if-statement | compound-statements ) ]
+do-while-statement   ::= "do" compound-statements "while" '(' expression ')'
 
-while-statement		::= "while" '(' expression ')'compound-statements
+for-statement        ::= "for" '(' [ expr-list [ ';' expr-list ';' expr-list ] ] ')' compound-statements
 
-do-while-statement	::= "do" compound-statements "while" '(' expression ')'
+; === PRINT ===
+print-statement      ::= "print" expr-list [ output-redirection ] terminate
 
-for-statment 		::= "for" '(' [ expr-list [ ';' expr-list ';' expr-list ] ] ')' compound-statements
+printf-statement     ::= "printf" format-string ',' expr-list [ output-redirection ] terminate
 
-printf-statement	::= "printf" format-string ',' expr-list [ output-redirection ] terminate
+expression-statement ::= expression terminate
 
-print-statement		::= "print" expr-list [ output-redirection ] terminate
+output-redirection   ::= '>' string-const
+                       | ">>" string-const
+                       | '|' string-const
 
-expression-statement	::= expression terminate
+; === EXPRESSÕES (recursão à direita, sem ambiguidade e completa) ===
+expression           ::= binary-expr
+                       | unary-expr
+                       | assign-expr
+                       | ternary-expr
 
-output-redirection	::= '>' string-const
-			| ">>" string-const
-			| '|' string-const
+assign-expr          ::= variable ( "^=" | "%=" | "*=" | "/=" | "+=" | "-=" | "=" ) expression
 
-expr-list		::= expression { ',' expression }
+ternary-expr         ::= binary-expr '?' binary-expr ':' binary-expr
 
-expression		::= primary
-			| unary-expr
-			| binary-expr
-			| ternary-expr
-			| assign-expr
+binary-expr          ::= logical-or-expr
 
-assign-expr		::= variable "^=" expression
-			|  variable "%=" expression
-			|  variable "*=" expression
-			|  variable "/=" expression
-			|  variable "+=" expression
-			|  variable "-=" expression
-			|  variable '=' expression
+logical-or-expr      ::= logical-and-expr ( "||" logical-or-expr )?
 
-ternary-expr		::= binary-expr   '?' binary-expr ':' binary-expr 
+logical-and-expr     ::= in-expr ( "&&" logical-and-expr )?
 
-binary-expr		::= logical-or-expr
+in-expr              ::= match-expr ( "in" variable )?
 
-logical-or-expr		::= logical-and-expr "||" logical-and-expr
+match-expr           ::= relop-expr ( ( '~' | "!~" ) match-expr )?
 
-logical-and-expr	::= in-expr "&&" logical-and-expr
+relop-expr           ::= concat-expr ( ( '<' | "<=" | "!=" | "==" | '>' | ">=" ) relop-expr )?
 
-in-expr			::= match-xpr "in" variable
+concat-expr          ::= additive-expr concat-expr?
 
-match-expr		::= relop-expr'~' match-expr
-			| relop-expr "!~" match-expr
+additive-expr        ::= multiplicative-expr ( ( '+' | '-' ) additive-expr )?
 
-relop-expr		::= concat-expr '<' relop-expr
-			| concat-expr "<=" relop-expr
-			| concat-expr '!=' relop-expr
-			| concat-expr "==" relop-expr
-			| concat-expr '>' relop-expr
-			| concat-expr ">=" relop-expr
+multiplicative-expr  ::= exponential-expr ( ( '*' | '/' | '%' ) multiplicative-expr )?
 
-concat-expr		::= additive-expr concat-expr
+exponential-expr     ::= unary-expr ( '^' exponential-expr )?
 
-additive-expr		::= multiplicative-expr '+' additive-expr
-			| multiplicative-expr '-' additive-expr
+unary-expr           ::= ( '+' | '-' | '!' | '~' | '$' | "++" | "--" ) primary
+                       | postfix-expr
 
-multiplicative-expr	::= exponential-expr '*' multiplicative-expr
-			| exponential-expr '/' multiplicative-expr
-			| exponential-expr '%' multiplicative-expr
+postfix-expr         ::= primary ( "++" | "--" )
 
-exponential-expr	::= unary-expr '^' exponential-expr
+primary              ::= variable
+                       | const-literal
+                       | getline
+                       | identifier '(' [ expr-list ] ')'
+                       | '(' expression ')'
 
-unary-expr		::= '+' primary
-			| '-' primary
-			| '!' primary
-			| '~' primary
-			| '$' primary
-			| "++" primary
-			| "--" primary
-			| postfix-expr
+getline              ::= [ string-const '|' ] "getline" [ variable ] [ '<' string-const ]
 
-postfix-expr		::= primary "++"
-			| primary "--"
+expr-list            ::= expression { ',' expression }
 
-primary			::= variable
-			| const-literal
-			| getline
-			| identifier '(' [ expr-list ] ')'
-			| '(' expr ')'
+; === TIPOS BÁSICOS ===
+variable             ::= identifier [ index ]
 
-getline			::= [ string-const '|' ] "getline" [ variable ] [ '<' string-const ]
+index                ::= '[' { alphanumeric } ']'
 
-variable		::= identifier [ index ]
+identifier-list      ::= identifier { ',' identifier }
 
-index			::= '[' { alphanumeric } ']'
+identifier           ::= alphabetic { alphanumeric | '_' }
 
-identifier-list		::= identifier { ',' identifier }
+alphanumeric         ::= letter | int-digit
 
-identifier		::= alphabetic { alphanumeric | '_' }
+alphabetic           ::= upper-case | lower-case
 
-alphanumeric		::= letter | int-digit
+upper-case           ::= 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G' | 'H' | 'I' | 'J'
+                       | 'K' | 'L' | 'M' | 'N' | 'O' | 'P' | 'Q' | 'R' | 'S' | 'T'
+                       | 'U' | 'V' | 'W' | 'X' | 'Y' | 'Z'
 
-alphabetic		::= upper-case | lower-case
+lower-case           ::= 'a' | 'b' | 'c' | 'd' | 'e' | 'f' | 'g' | 'h' | 'i' | 'j'
+                       | 'k' | 'l' | 'm' | 'n' | 'o' | 'p' | 'q' | 'r' | 's' | 't'
+                       | 'u' | 'v' | 'w' | 'x' | 'y' | 'z'
 
-upper-case		::= 'A' | 'B' | 'C' | ... | 'X' | 'Y' | 'Z'
+; === LITERAIS E CONSTANTES ===
+const-literal        ::= regex-const
+                       | string-const
+                       | float-const
+                       | integer-const
 
-lower-case		::= 'a' | 'b' | 'c' | ... | 'x' | 'y' | 'z'
+regex-const          ::= '/' { vis-glyph } '/'
 
-format-string		::= '"' { format-glyph } '"'
-			| "'" { format-glyph } "'"
+string-const         ::= '"' { vis-glyph } '"'
+                       | "'" { vis-glyph } "'"
 
-const-literal		::= regex-const
-			| string-const
-			| float-const
-			| integer-const
+float-const          ::= [ dec-integer ] '.' dec-integer
 
-regex-const		::= '/' { vis-glyph } '/'
+integer-const        ::= dec-integer
+                       | hex-integer
+                       | oct-integer
+                       | bin-integer
 
-string-const		::= '"' { vis-glyph } '"'
-			| "'" { vis-glyph } "'"
+dec-integer          ::= int-digit { int-digit }
 
-float-const		::= [ dec-integer ] '.' dec-integer
+hex-integer          ::= ( "0x" | "0X" ) hex-digit { hex-digit }
 
-integer-const		::= dec-integer
-			| hex-integer
-			| oct-integer
-			| bin-integer
+oct-integer          ::= ( "0o" | "0O" ) oct-digit { oct-digit }
 
-dec-integer		::= int-digit { int-digit }
+bin-integer          ::= ( "0b" | "0B" ) bin-digit { bin-digit }
 
-hex-integer		::= ( "0x" | "0X" ) hex-digit { hex-digit }
+hex-digit            ::= int-digit | 'a' | 'b' | 'c' | 'd' | 'e' | 'f'
+                       | 'A' | 'B' | 'C' | 'D' | 'E' | 'F'
 
-oct-integer		::= ( "0o" | "0O" ) oct-digit { oct-digit }
+int-digit            ::= oct-digit | '8' | '9'
 
-bin-integer		::= ( "0b" | "0B" ) bin-digit { bin-digit }
+oct-digit            ::= bin-digit | '2' | '3' | '4' | '5' | '6' | '7'
 
-hex-digit		::= int-digit | 'a' | 'b' | 'c' | 'd' | 'e' | 'f'
-				     | 'A' | 'B' | 'C' | 'D' | 'E' | 'F'
+bin-digit            ::= '0' | '1'
 
-int-digit		::= oct-digit | '8' | '9'
+; === FORMAT STRING ===
+format-string        ::= '"' { format-glyph } '"'
+                       | "'" { format-glyph } "'"
 
-oct-digit		::= bin-digit | '2' | '3' | '4' | '5' | '6' | '7'
+format-glyph         ::= vis-glyph | format-tag
 
-bin-digit		::= '0' | '1' 
+format-tag           ::= '%' no-percentage
 
-format-glyph		::= vis-glyph | format-tag
+; === CARACTERES VISÍVEIS E ESCAPES ===
+vis-glyph            ::= printable | c-escape
 
-format-tag		::= '%' no-percentage
+printable            ::= ' ' | '!' | '"' | '#' | '$' | '%' | '&' | "'" | '(' | ')'
+                       | '*' | '+' | ',' | '-' | '.' | '/' | '0' | '1' | '2' | '3'
+                       | '4' | '5' | '6' | '7' | '8' | '9' | ':' | ';' | '<' | '='
+                       | '>' | '?' | '@' | 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G'
+                       | 'H' | 'I' | 'J' | 'K' | 'L' | 'M' | 'N' | 'O' | 'P' | 'Q'
+                       | 'R' | 'S' | 'T' | 'U' | 'V' | 'W' | 'X' | 'Y' | 'Z' | '['
+                       | '\' | ']' | '^' | '_' | '`' | 'a' | 'b' | 'c' | 'd' | 'e'
+                       | 'f' | 'g' | 'h' | 'i' | 'j' | 'k' | 'l' | 'm' | 'n' | 'o'
+                       | 'p' | 'q' | 'r' | 's' | 't' | 'u' | 'v' | 'w' | 'x' | 'y'
+                       | 'z' | '{' | '|' | '}' | '~'
 
-vis-glyph		::= printable | c-escape
+c-escape             ::= '\' ( "'" | '"' | 'n' | 't' | 'r' | 'b' | 'f' | 'v' | 'a' | '?' | '0' | '\' )
+                       | '\' oct-digit oct-digit oct-digit
+                       | "\x" hex-digit hex-digit
+                       | "\U" hex-digit hex-digit hex-digit hex-digit
 
-printable		::= ' ' | '!' | ... | '}' | '~'
+; === OUTROS ===
+comment              ::= "# " { no-newline } sys-newline
 
-c-escape		::= '\' ( "'" | '"' | 'n' | 't' | 'r' | 'b' | 'f' | 'v' | 'a' | '?' | '0' | '\' )
-			| '\' oct-digit oct-digit oct-digit
-			| "\x" hex-digit hex-digit
-			| "\U" hex-digit hex-digit hex-digit hex-digit
+no-percentage        ::= ? qualquer caractere exceto '%' ?
 
-comment			::= "# " { no-newline } sys-newline
+no-newline           ::= ? qualquer caractere exceto sys-newline ?
 
-no-percentage		::= ? any character except percentage sign ?
+terminate            ::= [ ';' ] sys-newline
 
-no-newline		::= ? any character except sys-newline ?
+whitespace           ::= ? espaço e tabulação horizontal ?
 
-terminate		::= [ ';' ] sys-newline
+sys-newline          ::= ? caractere de nova linha do sistema ?
 
-whitespace		::= ? space and horizontal tab ?
+; === ESTRUTURAS AUXILIARES DO SWITCH (mantidas da original) ===
+compound-labeled     ::= '{' labeled-statement-list '}'
 
-sys-newline		::= ? system newline character ?
+labeled-statement-list ::= labeled-statement { terminate labeled-statement }
+
+labeled-statement    ::= label ':' statement-list
+
+label                ::= "case" identifier
+                       | "default"

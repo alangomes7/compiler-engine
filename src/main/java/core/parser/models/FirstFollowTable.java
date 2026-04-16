@@ -1,12 +1,11 @@
-package models.tables;
+package core.parser.models;
 
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import models.atomic.Symbol;
-import models.others.FirstFollowRow;
+import core.parser.models.atomic.Symbol;
 
 import java.util.Collection;
 

@@ -1,4 +1,4 @@
-package models.others;
+package core.parser.models;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import models.atomic.Symbol;
+import core.parser.models.atomic.Symbol;
 
 public class Grammar {
     // Change all String generics and types to Symbol

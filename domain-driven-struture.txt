@@ -1,0 +1,13 @@
+src/main/java/global/
+├── app/
+│   ├── Main.java
+│   └── MainApp.java
+├── ui/
+│   └── Ui.java         (And move Ui.fxml to resources/global/ui/)
+├── utils/
+│   └── Utils.java
+└── models/atomic/
+    ├── Constants.java
+    ├── Symbol.java       (Moved from parser.models.atomic)
+    ├── Terminal.java     (Moved from parser.models.atomic)
+    └── NonTerminal.java  (Moved from parser.models.atomic - keeps AST base together)

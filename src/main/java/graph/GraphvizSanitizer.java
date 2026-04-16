@@ -1,7 +1,7 @@
 package graph;
 
+import core.lexer.models.atomic.Transition;
 import models.atomic.Constants;
-import models.atomic.Transition;
 
 public class GraphvizSanitizer {
 
