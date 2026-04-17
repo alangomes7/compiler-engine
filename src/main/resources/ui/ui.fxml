@@ -171,26 +171,64 @@
                                  </content>
                               </Tab>
                               <Tab text="Syntax Tree Viewer">
-    <content>
-        <VBox spacing="10">
-            <padding>
-                <Insets bottom="10" left="10" right="10" top="10" />
-            </padding>
-            <children>
-                <HBox VBox.vgrow="ALWAYS">
-                    <children>
-                        <javafx.scene.layout.BorderPane fx:id="interactiveTreeContainer" HBox.hgrow="ALWAYS" />
-                    </children>
-                </HBox>
-                <HBox spacing="10">
-                    <children>
-                        <Button onAction="#handleExportTreeImage" text="Export tree graph" />
-                    </children>
-                </HBox>
-            </children>
-        </VBox>
-    </content>
-</Tab>
+                                 <content>
+                                     <VBox spacing="10">
+                                         <padding>
+                                             <Insets bottom="10" left="10" right="10" top="10" />
+                                         </padding>
+                                         <children>
+                                             <TabPane tabClosingPolicy="UNAVAILABLE" VBox.vgrow="ALWAYS">
+                                                 <tabs>
+                                                     <Tab text="1. Grammar Full Derivation Tree">
+                                                         <content>
+                                                             <VBox spacing="10">
+                                                                 <padding>
+                                                                     <Insets top="10" />
+                                                                 </padding>
+                                                                 <children>
+                                                                     <HBox VBox.vgrow="ALWAYS">
+                                                                         <children>
+                                                                             <javafx.scene.layout.BorderPane fx:id="grammarTreeContainer" HBox.hgrow="ALWAYS" />
+                                                                         </children>
+                                                                     </HBox>
+                                                                     <HBox spacing="10">
+                                                                         <children>
+                                                                            <Button onAction="#handleGenerateGrammarTree" text="Generate Grammar Tree" />
+                                                                            <Button onAction="#handleExportGrammarTreeImage" text="Export Grammar Tree" />
+                                                                         </children>
+                                                                     </HBox>
+                                                                 </children>
+                                                             </VBox>
+                                                         </content>
+                                                     </Tab>
+                                                     <Tab text="2. Input Code Derivation Tree">
+                                                         <content>
+                                                             <VBox spacing="10">
+                                                                 <padding>
+                                                                     <Insets top="10" />
+                                                                 </padding>
+                                                                 <children>
+                                                                     <HBox VBox.vgrow="ALWAYS">
+                                                                         <children>
+                                                                             <javafx.scene.layout.BorderPane fx:id="inputTreeContainer" HBox.hgrow="ALWAYS" />
+                                                                         </children>
+                                                                     </HBox>
+                                                                     <HBox spacing="10">
+                                                                         <children>
+                                                                            <Button onAction="#handleGenerateInputTree" text="Generate Input Tree" />
+                                                                            <Button onAction="#handleExportInputTreeImage" text="Export Input Tree" />
+                                                                         </children>
+                                                                     </HBox>
+                                                                 </children>
+                                                             </VBox>
+                                                         </content>
+                                                     </Tab>
+                                                 </tabs>
+                                             </TabPane>
+                                         </children>
+                                     </VBox>
+                                 </content>
+                              </Tab>
                           </tabs>
                       </TabPane>
                   </items>

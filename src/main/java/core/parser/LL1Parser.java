@@ -24,15 +24,14 @@ public class LL1Parser {
     }
 
     /**
-     * Parses tokens and returns the Parse Tree or null if invalid.
+     * Parses tokens and returns the Parse Tree. If errors occur, it returns the 
+     * partial broken tree constructed up to the error point.
      */
     public ParseTree parse(List<Token> tokens) {
         errors.clear();
         Stack<Node> stack = new Stack<>();
 
-        // 1. Initialize Root and Stack
         Node root = new Node(grammar.getStartSymbol());
-        // Use a placeholder for the EOF node matching the Symbol constant
         stack.push(new Node(Symbol.EOF)); 
         stack.push(root);
 
@@ -42,21 +41,14 @@ public class LL1Parser {
             Node currentNode = stack.pop();
             Symbol top = currentNode.getSymbol();
 
-            // 2. Resolve Lookahead Token and Symbol
-            Token currentToken = (lookaheadIndex < tokens.size()) 
-                ? tokens.get(lookaheadIndex) 
-                : null;
-            
-            // Map Lexer String type to Parser Symbol object
+            Token currentToken = (lookaheadIndex < tokens.size()) ? tokens.get(lookaheadIndex) : null;
             Symbol lookahead = resolveLookahead(currentToken);
 
             if (top.isTerminal()) {
                 if (top.equals(lookahead)) {
-                    // Successful Match: link the lexeme to the tree node
                     if (currentToken != null) {
                         currentNode.setLexeme(currentToken.getLexeme());
                     }
-                    // Only advance if we matched a real token (not the end-of-file symbol)
                     if (!top.equals(Symbol.EOF)) {
                         lookaheadIndex++;
                     }
@@ -66,10 +58,9 @@ public class LL1Parser {
                         (currentToken != null ? currentToken.getCol() : 0),
                         top.getName(), 
                         (currentToken != null ? currentToken.getLexeme() : "EOF")));
-                    return null;
+                    return new ParseTree(root); // Return partial broken tree
                 }
             } else {
-                // 3. Non-terminal: Query the Parse Table
                 List<Production> productions = this.parseTable.getEntry(top, lookahead);
 
                 if (productions.isEmpty()) {
@@ -78,14 +69,12 @@ public class LL1Parser {
                         (currentToken != null ? currentToken.getCol() : 0),
                         top.getName(), 
                         (currentToken != null ? currentToken.getLexeme() : "EOF")));
-                    return null;
+                    return new ParseTree(root); // Return partial broken tree
                 }
 
-                // In LL(1), we take the first production in the list
                 Production production = productions.get(0);
                 List<Symbol> rhs = production.getRhs();
 
-                // Build children for the current tree node
                 List<Node> children = new ArrayList<>();
                 for (Symbol s : rhs) {
                     Node child = new Node(s);
@@ -93,7 +82,6 @@ public class LL1Parser {
                     children.add(child);
                 }
 
-                // Push RHS symbols to stack in reverse (skipping EPSILON)
                 if (!production.isEpsilonProduction()) {
                     for (int i = children.size() - 1; i >= 0; i--) {
                         stack.push(children.get(i));
@@ -102,10 +90,8 @@ public class LL1Parser {
             }
         }
 
-        // Final check: Ensure all tokens were consumed
         if (lookaheadIndex < tokens.size()) {
             errors.add("Syntax Error: Unexpected tokens after program end.");
-            return null;
         }
 
         return new ParseTree(root);

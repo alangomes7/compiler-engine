@@ -80,7 +80,8 @@ public class InteractiveTreeView extends Pane {
         return width - SIBLING_GAP;
     }
 
-    private void drawTree(Node node, double x, double y, double subtreeWidth) {
+    // CHANGED: Now returns the generated StackPane so the parent can bind to it
+    private StackPane drawTree(Node node, double x, double y, double subtreeWidth) {
         StackPane nodeUI = createNodeUI(node);
         nodeUI.setLayoutX(x - NODE_WIDTH / 2);
         nodeUI.setLayoutY(y);
@@ -94,16 +95,29 @@ public class InteractiveTreeView extends Pane {
                 double childCenterX = currentX + childWidth / 2;
                 double childY = y + NODE_HEIGHT + LEVEL_GAP;
 
-                // Draw connecting line
-                Line line = new Line(x, y + NODE_HEIGHT, childCenterX, childY);
+                // Recursively draw child and get its UI element
+                StackPane childUI = drawTree(child, childCenterX, childY, childWidth);
+
+                // CHANGED: Draw connecting line dynamically using bindings
+                Line line = new Line();
                 line.setStroke(Color.GRAY);
                 line.setStrokeWidth(1.5);
+                
+                // Bind line start to the bottom-center of the parent node
+                line.startXProperty().bind(nodeUI.layoutXProperty().add(NODE_WIDTH / 2));
+                line.startYProperty().bind(nodeUI.layoutYProperty().add(NODE_HEIGHT));
+                
+                // Bind line end to the top-center of the child node
+                line.endXProperty().bind(childUI.layoutXProperty().add(NODE_WIDTH / 2));
+                line.endYProperty().bind(childUI.layoutYProperty());
+
                 contentGroup.getChildren().add(0, line); // Add line behind nodes
 
-                drawTree(child, childCenterX, childY, childWidth);
                 currentX += childWidth + SIBLING_GAP;
             }
         }
+        
+        return nodeUI;
     }
 
     private StackPane createNodeUI(Node node) {
@@ -129,6 +143,21 @@ public class InteractiveTreeView extends Pane {
 
         stack.getChildren().addAll(rect, label);
         Tooltip.install(stack, new Tooltip(isTerminal ? "Terminal: " + node.getSymbol().getName() : "Non-Terminal: " + node.getSymbol().getName()));
+
+        // CHANGED: Add drag functionality for individual nodes
+        final double[] dragDelta = new double[2]; // Using array to hold mutable state inside lambda
+        
+        stack.setOnMousePressed(e -> {
+            dragDelta[0] = stack.getLayoutX() - e.getSceneX();
+            dragDelta[1] = stack.getLayoutY() - e.getSceneY();
+            e.consume(); // Prevents the canvas pan event from triggering
+        });
+
+        stack.setOnMouseDragged(e -> {
+            stack.setLayoutX(e.getSceneX() + dragDelta[0]);
+            stack.setLayoutY(e.getSceneY() + dragDelta[1]);
+            e.consume();
+        });
 
         return stack;
     }
