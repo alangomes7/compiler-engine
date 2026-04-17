@@ -10,6 +10,7 @@ import java.util.stream.Collectors;
 
 import core.lexer.models.atomic.Token;
 import core.lexer.models.automata.AFD;
+import core.parser.core.grammar.GrammarClassification;
 import core.parser.models.FirstFollowTable;
 import core.parser.models.ParseTable;
 import core.parser.models.Production;
@@ -78,6 +79,9 @@ public class Ui {
     // Store a reference to the current table to resolve sets in cell factories
     private FirstFollowTable currentFirstFollowTable;
     private ParseTable currentParseTable;
+
+    // Grammar classification are
+    @FXML private TextArea grammarClassificationArea;
 
     @FXML private TreeView<String> syntaxTreeView;
 
@@ -263,7 +267,7 @@ public class Ui {
 
         executeHeavyTask("Building Syntax Tree",
             log -> {
-                var parserTableResult = (core.parser.models.ParseTable) parserService.buildParseTable(this.currentFirstFollowTable, this.lexerService.getSymbolTable());
+                var parserTableResult = (ParseTable) parserService.buildParseTable(this.currentFirstFollowTable, this.lexerService.getSymbolTable());
                 return parserTableResult;
             },
             result -> {
@@ -287,7 +291,7 @@ public class Ui {
         symbolTableViewer.getItems().clear();
         firstFollowTable.getItems().clear();
         parserTable.getItems().clear();
-        parserTable.getColumns().setAll(parserTableNonTerminalCol);
+        parserTable.getColumns().setAll(List.of(parserTableNonTerminalCol));
         syntaxTreeView.setRoot(null);
         outputArea.clear();
         consoleArea.clear();
@@ -344,7 +348,7 @@ public class Ui {
 
     private void populateParserTable(ParseTable parseTableResult) {
         // 1. Reset columns to just the Non-Terminal base column
-        this.parserTable.getColumns().setAll(parserTableNonTerminalCol);
+        this.parserTable.getColumns().setAll(List.of(parserTableNonTerminalCol));
 
         if (parseTableResult == null || parseTableResult.getTable().isEmpty()) {
             parserTable.getItems().clear();
@@ -427,6 +431,25 @@ public class Ui {
     private void handleExportCSV() {
         // Implementation for exporting symbol tables or sets to CSV
         System.out.println("Exporting to CSV... (Feature not yet implemented)");
+    }
+
+    @FXML
+    private void handleClassifyGrammar() {
+        executeHeavyTask("Classifying grammar...", 
+        log ->{
+            var grammarCheck = (GrammarClassification) parserService.classifyGrammarWithParserTable(this.currentParseTable);
+            return grammarCheck;
+        }, result ->{
+            grammarClassificationArea.setText(result.toString());
+            outputArea.setText(result.toString());
+        }, onError ->{
+            outputArea.setText(onError.getMessage());
+        });
+    }
+
+    @FXML
+    private void handleClearGrammarClassification() {
+        grammarClassificationArea.clear();
     }
 
     private void appendLog(String message) {

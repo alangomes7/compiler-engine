@@ -99,7 +99,21 @@
                                 </TableView>
                             </content>
                         </Tab>
+                        <Tab text="Grammar classication">
+                            <VBox spacing="10">
+                                <padding>
+                                    <Insets top="10" right="10" bottom="10" left="10"/>
+                                </padding>
 
+                                <HBox spacing="10">
+                                    <Button text="Classify Grammar" onAction="#handleClassifyGrammar"/>
+                                    <Button text="Clear" onAction="#handleClearGrammarClassification"/>
+                                </HBox>
+
+                                <TextArea fx:id="grammarClassificationArea" editable="false" style="-fx-font-family: monospace;" VBox.vgrow="ALWAYS"/>
+                            
+                            </VBox>
+                        </Tab>
                         <Tab text="Syntax Tree Viewer">
                             <TreeView fx:id="syntaxTreeView" VBox.vgrow="ALWAYS" />
                         </Tab>

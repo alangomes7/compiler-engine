@@ -3,10 +3,11 @@ package ui.core.services;
 import java.util.List;
 
 import core.lexer.models.atomic.Token;
-import core.parser.LL1Parser;
 import core.parser.core.FirstFollowTableBuilder;
 import core.parser.core.GrammarReader;
 import core.parser.core.ParserTableBuilder;
+import core.parser.core.grammar.GrammarClassification;
+import core.parser.core.grammar.GrammarClassificationBuilder;
 import core.parser.models.FirstFollowTable;
 import core.parser.models.Grammar;
 import core.parser.models.ParseTable;
@@ -31,22 +32,14 @@ public class ParserService {
         return parseTable;
     }
 
-    public SyntaxAnalysisResult runAnalysis(List<Token> tokens) {
-        if (grammar == null) throw new IllegalStateException("Grammar not loaded");
+    public GrammarClassification classifyGrammarWithParserTable(ParseTable parseTable) {
+        if (parseTable == null) throw new IllegalStateException("ParseTable must be not null before classifying the grammar.");
 
-        FirstFollowTable firstFollowTable = FirstFollowTableBuilder.build(grammar);
-        ParseTable parseTable = ParserTableBuilder.build(grammar, firstFollowTable);
-        
-        LL1Parser parser = new LL1Parser(grammar, parseTable);
-        ParseTree tree = parser.parse(tokens);
+        GrammarClassification classification = new GrammarClassificationBuilder().withGrammar(grammar).withParseTable(parseTable).build();
 
-        if (tree == null) {
-            throw new RuntimeException(String.join("\n", parser.getErrors()));
-        }
-
-        // Return the table model directly instead of UI-specific rows
-        return new SyntaxAnalysisResult(firstFollowTable, tree);
+        return classification;
     }
+
 
     public boolean isGrammarLoaded() {
         return grammar != null;

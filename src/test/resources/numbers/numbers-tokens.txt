@@ -1,0 +1,85 @@
+# =========================
+# Operators (Longest First!)
+# =========================
+ASSIGN_EXP : ^=
+ASSIGN_MOD : %=
+ASSIGN_MUL : *=
+ASSIGN_DIV : /=
+ASSIGN_ADD : +=
+ASSIGN_SUB : -=
+
+LOGICAL_OR : ||
+LOGICAL_AND: &&
+
+MATCH_NOT  : !~
+RELOP_EQ   : ==
+RELOP_NE   : !=
+RELOP_GE   : >=
+RELOP_LE   : <=
+INC        : ++
+DEC        : --
+
+ASSIGN     : =
+MATCH      : ~
+RELOP_GT   : >
+RELOP_LT   : <
+
+PLUS       : +
+MINUS      : -
+MULT       : *
+DIV        : /
+MOD        : %
+EXP        : ^
+NOT        : !
+
+# =========================
+# Delimiters
+# =========================
+LPAREN     : (
+RPAREN     : )
+
+# =========================
+# Explicit Primitive Sets
+# =========================
+DIGIT      : [0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9]
+
+LOWER      : [a | b | c | d | e | f | g | h | i | j | k | l | m | n | o | p | q | r | s | t | u | v | w | x | y | z]
+
+UPPER      : [A | B | C | D | E | F | G | H | I | J | K | L | M | N | O | P | Q | R | S | T | U | V | W | X | Y | Z]
+
+LETTER     : [LOWER | UPPER]
+
+UNDERSCORE : [_]
+
+SPACE      : [ ]
+TAB        : [\t]
+
+NEWLINE_CH : [\r | \n]
+
+DOT        : [.]
+
+# --- Universal Set (Explicit) ---
+ANY_CHAR   : [LETTER | DIGIT | SPACE | TAB | NEWLINE_CH | DOT | UNDERSCORE | LPAREN | RPAREN | PLUS | MINUS | MULT | DIV | MOD | EXP | NOT | ASSIGN | MATCH | RELOP_GT | RELOP_LT | & | | | ^ | ~ | =]
+
+# =========================
+# Derived Sets (Explicit Negation) (Longest First!)
+# =========================
+@DER NOT_NEWLINE : [ANY_CHAR ^ [NEWLINE_CH]]
+
+# =========================
+# Lexical Elements (Dynamic) (Longest First!)
+# =========================
+@DER SCIENTIFIC : ([DIGIT]+ | [DIGIT]*[DOT][DIGIT]+ | [DIGIT]+[DOT])[e | E]([+ | -][DIGIT]+ | [DIGIT]+)
+
+@DER FLOAT : [DIGIT]*[DOT][DIGIT]+ | [DIGIT]+[DOT]
+
+@DER INT : [DIGIT]+
+
+@DER IDENTIFIER : [LETTER | UNDERSCORE][LETTER | DIGIT | UNDERSCORE]*
+
+# =========================
+# Ignored Tokens
+# =========================
+@DER WHITESPACE : [SPACE | TAB]+ -> skip
+
+@DER NEWLINE : [NEWLINE_CH]+ -> skip
