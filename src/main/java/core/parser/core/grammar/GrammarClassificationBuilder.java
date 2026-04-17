@@ -6,6 +6,7 @@ import java.util.Map;
 import core.parser.models.Grammar;
 import core.parser.models.ParseTable;
 import core.parser.models.Production;
+import core.parser.models.atomic.GrammarErrors;
 import core.parser.models.atomic.GrammarSemantics;
 import core.parser.models.atomic.GrammarType;
 import core.parser.models.atomic.ParserAlgorithm;
@@ -31,20 +32,34 @@ public class GrammarClassificationBuilder {
             throw new IllegalStateException("Both Grammar and ParseTable must be provided before building the classification.");
         }
 
-        // Parsing tables natively deal with Type-2 grammars
         GrammarType type = GrammarType.TYPE_2_CONTEXT_FREE;
         ParserAlgorithm recommendedParser;
         GrammarSemantics semantics;
+        GrammarErrors errors = new GrammarErrors(); // Default to no errors
 
         if (isLL1(this.parseTable)) {
             recommendedParser = ParserAlgorithm.LL1;
             semantics = GrammarSemantics.LL1_DETERMINISTIC;
         } else {
             recommendedParser = ParserAlgorithm.LALR1_OR_LR1;
-            semantics = GrammarSemantics.CONTAINS_CONFLICTS;
+            
+            // Retrieve full error details
+            errors = GrammarAnalyzer.analyzeGrammar(this.grammar);
+            
+            // Assign semantics based on the generated GrammarErrors object
+            if (!errors.getLeftRecursionDetails().isEmpty()) {
+                semantics = GrammarSemantics.LEFT_RECURSIVE;
+            } else if (!errors.getCommonPrefixDetails().isEmpty()) {
+                semantics = GrammarSemantics.CONTAINS_CONFLICTS;
+            } else {
+                semantics = GrammarSemantics.AMBIGUOUS;
+            }
         }
 
-        return new GrammarClassification(recommendedParser, type, semantics);
+        GrammarClassification classification = new GrammarClassification(recommendedParser, type, semantics);
+        classification.setErrors(errors);
+        
+        return classification;
     }
 
     private boolean isLL1(ParseTable parseTable) {

@@ -247,41 +247,54 @@ public class Ui {
 
         executeHeavyTask(
             "Populating FirstFollowTable",
-        log ->{
-                var firstFollowTable = parserService.buildFirstFollowTable();
-                return firstFollowTable;
+            log -> {
+                return parserService.buildFirstFollowTable();
             },
-            result ->{
-                this.currentFirstFollowTable = result;
+            firstFollowResult -> {
+                // ✅ FIRST TASK SUCCESS
+                this.currentFirstFollowTable = firstFollowResult;
+
                 List<Symbol> nonTerminals =
                     List.copyOf(currentFirstFollowTable.getAllFirstSets().keySet());
 
                 firstFollowTable.setItems(
-                    FXCollections.observableArrayList(nonTerminals));
+                    FXCollections.observableArrayList(nonTerminals)
+                );
 
-                outputArea.setText("✅ Syntax Analysis complete.");
+                outputArea.setText("✅ First/Follow computed.");
 
-                }, error ->{
-                    outputArea.setText("FirstFollow Table Error:\n" + error.getMessage());
-        });
+                // 🚀 NOW run the SECOND task INSIDE success callback
+                executeHeavyTask(
+                    "Building Parse Table",
+                    log -> {
+                        return parserService.buildParseTable(
+                            this.currentFirstFollowTable,
+                            this.lexerService.getSymbolTable()
+                        );
+                    },
+                    parseTableResult -> {
+                        this.currentParseTable = parseTableResult;
 
-        executeHeavyTask("Building Syntax Tree",
-            log -> {
-                var parserTableResult = (ParseTable) parserService.buildParseTable(this.currentFirstFollowTable, this.lexerService.getSymbolTable());
-                return parserTableResult;
-            },
-            result -> {
-                this.currentParseTable = result;
-                
-                // Populate the dynamic columns and rows
-                populateParserTable(result);
-                
-                outputArea.setText(outputArea.getText() + "\nParse Table generated.");
+                        populateParserTable(parseTableResult);
+
+                        outputArea.setText(
+                            outputArea.getText() + "\n✅ Parse Table generated."
+                        );
+                    },
+                    error -> {
+                        currentParseTable = null;
+                        currentFirstFollowTable = null;
+
+                        outputArea.setText(
+                            outputArea.getText() + "\n❌ Parse Table Error:\n" + error.getMessage()
+                        );
+                    }
+                );
             },
             error -> {
-                currentParseTable.getTable().clear();
-                currentFirstFollowTable = null;
-                outputArea.setText(outputArea.getText() + "\nParse Table Error:\n" + error.getMessage());
+                outputArea.setText(
+                    "❌ FirstFollow Table Error:\n" + error.getMessage()
+                );
             }
         );
     }
