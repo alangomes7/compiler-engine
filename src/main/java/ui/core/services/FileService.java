@@ -22,4 +22,13 @@ public class FileService {
     public static String readFileContent(File file) throws Exception {
         return UiUtils.readTextFile(file.getAbsolutePath());
     }
+
+    /**
+     * Helper to correctly escape internal double quotes. 
+     * Wrapping values in quotes handles internal commas and line-breaks.
+     */
+    public static String escapeCsv(String data) {
+        if (data == null) return "";
+        return data.replace("\"", "\"\"");
+    }
 }

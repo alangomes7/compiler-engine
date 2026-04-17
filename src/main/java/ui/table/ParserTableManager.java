@@ -14,6 +14,7 @@ import javafx.collections.FXCollections;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
+import static ui.core.services.FileService.escapeCsv;
 
 /**
  * Dynamically builds and populates the LL(1) parsing table with columns for each terminal.
@@ -99,5 +100,32 @@ public class ParserTableManager {
     public void clear() {
         table.getItems().clear();
         table.getColumns().setAll(List.of(nonTerminalCol));
+    }
+
+    public static void exportParseTableCsv(String path, ParseTable currentParseTable, TableView<Symbol> parserTable) throws java.io.IOException {
+        if (currentParseTable == null) return;
+        try (java.io.PrintWriter writer = new java.io.PrintWriter(new java.io.FileWriter(path))) {
+            
+            // The parse table generates columns dynamically, so we fetch them directly from the UI
+            java.util.List<javafx.scene.control.TableColumn<Symbol, ?>> columns = parserTable.getColumns();
+            
+            // Write Headers
+            java.util.List<String> headers = new java.util.ArrayList<>();
+            for (javafx.scene.control.TableColumn<Symbol, ?> col : columns) {
+                headers.add("\"" + escapeCsv(col.getText()) + "\"");
+            }
+            writer.println(String.join(",", headers));
+
+            // Write Data Row by Row
+            for (Symbol s : parserTable.getItems()) {
+                java.util.List<String> rowData = new java.util.ArrayList<>();
+                for (javafx.scene.control.TableColumn<Symbol, ?> col : columns) {
+                    Object cellData = col.getCellData(s);
+                    String cellString = cellData != null ? cellData.toString() : "";
+                    rowData.add("\"" + escapeCsv(cellString) + "\"");
+                }
+                writer.println(String.join(",", rowData));
+            }
+        }
     }
 }

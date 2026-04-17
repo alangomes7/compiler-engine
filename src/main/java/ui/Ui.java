@@ -27,8 +27,11 @@ import ui.core.services.FileService;
 import ui.core.services.LexerService;
 import ui.core.services.ParserService;
 import ui.table.FirstFollowTableManager;
+import static ui.table.FirstFollowTableManager.exportFirstFollowCsv;
 import ui.table.ParserTableManager;
+import static ui.table.ParserTableManager.exportParseTableCsv;
 import ui.table.SymbolTableManager;
+import static ui.table.SymbolTableManager.exportSymbolTableCsv;
 import ui.util.BackgroundTaskExecutor;
 import ui.util.UiUtils;
 
@@ -322,7 +325,32 @@ public class Ui {
 
     @FXML
     private void handleExportCSV() {
-        System.out.println("Exporting to CSV... (Feature not yet implemented)");
+        taskExecutor.execute("Exporting to CSV...",
+                log -> {
+                    // Create output directory if it doesn't exist
+                    java.io.File outputDir = new java.io.File("output");
+                    if (!outputDir.exists()) {
+                        outputDir.mkdirs();
+                    }
+                    
+                    try {
+                        log.accept("Exporting Symbol Table...");
+                        exportSymbolTableCsv("output/symbol_table.csv", symbolTableViewer);
+                        
+                        log.accept("Exporting First/Follow Table...");
+                        exportFirstFollowCsv("output/first_follow_table.csv", currentFirstFollowTable, firstFollowTable);
+                        
+                        log.accept("Exporting Parse Table...");
+                        exportParseTableCsv("output/parse_table.csv", currentParseTable, parserTable);
+                        
+                        return outputDir.getAbsolutePath();
+                    } catch (IOException ex) {
+                        throw new RuntimeException("Failed to write CSV files: " + ex.getMessage(), ex);
+                    }
+                },
+                path -> outputArea.setText("✅ Tables successfully exported to: " + path),
+                err -> outputArea.setText("❌ CSV Export failed: " + err.getMessage())
+        );
     }
 
     @FXML

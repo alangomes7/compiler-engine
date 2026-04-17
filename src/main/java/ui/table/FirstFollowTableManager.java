@@ -12,6 +12,7 @@ import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.util.Callback;
+import static ui.core.services.FileService.escapeCsv;
 
 /**
  * Configures the First/Follow table columns and cell factories.
@@ -19,11 +20,9 @@ import javafx.util.Callback;
  */
 public class FirstFollowTableManager {
 
-    private final TableView<Symbol> table;
     private final Supplier<FirstFollowTable> currentTableSupplier;
 
     public FirstFollowTableManager(TableView<Symbol> table, Supplier<FirstFollowTable> currentTableSupplier) {
-        this.table = table;
         this.currentTableSupplier = currentTableSupplier;
     }
 
@@ -53,5 +52,26 @@ public class FirstFollowTableManager {
 
         firstSetCol.setCellFactory(cellFactory);
         followSetCol.setCellFactory(cellFactory);
+    }
+
+    public static void exportFirstFollowCsv(String path, FirstFollowTable currentFirstFollowTable, TableView<Symbol> firstFollowTable) throws java.io.IOException {
+        if (currentFirstFollowTable == null) return;
+        try (java.io.PrintWriter writer = new java.io.PrintWriter(new java.io.FileWriter(path))) {
+            writer.println("Non-Terminal,FIRST,FOLLOW");
+            for (Symbol s : firstFollowTable.getItems()) {
+                String firstSet = currentFirstFollowTable.getFirst(s).stream()
+                        .map(Symbol::getName)
+                        .collect(java.util.stream.Collectors.joining(", "));
+                
+                String followSet = currentFirstFollowTable.getFollow(s).stream()
+                        .map(Symbol::getName)
+                        .collect(java.util.stream.Collectors.joining(", "));
+                
+                writer.printf("\"%s\",\"%s\",\"%s\"%n",
+                        escapeCsv(s.getName()),
+                        escapeCsv("{ " + firstSet + " }"),
+                        escapeCsv("{ " + followSet + " }"));
+            }
+        }
     }
 }
