@@ -15,6 +15,7 @@ import core.parser.models.FirstFollowTable;
 import core.parser.models.ParseTable;
 import core.parser.models.Production;
 import core.parser.models.atomic.Symbol;
+import core.parser.models.tree.Node;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleObjectProperty;
@@ -27,6 +28,7 @@ import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextArea;
+import javafx.scene.control.TreeItem;
 import javafx.scene.control.TreeView;
 import javafx.scene.layout.VBox;
 import javafx.util.Callback;
@@ -274,15 +276,34 @@ public class Ui {
                         );
                     },
                     parseTableResult -> {
+                        // --- SUCCESS BLOCK FOR PARSE TABLE ---
                         this.currentParseTable = parseTableResult;
 
                         populateParserTable(parseTableResult);
 
-                        outputArea.setText(
-                            outputArea.getText() + "\n✅ Parse Table generated."
-                        );
+                        outputArea.setText(outputArea.getText() + "\n✅ Parse Table generated.");
+
+                        // --- RUN THE LL(1) PARSER ---
+                        try {
+                            // Run the LL(1) parser using the generated table and the lexer's tokens
+                            core.parser.models.tree.ParseTree tree = parserService.parseTokens(
+                                this.currentParseTable, 
+                                this.lexerService.getSymbolTable()
+                            );
+                            
+                            // Map the parsed tree to JavaFX and set it to the UI
+                            javafx.scene.control.TreeItem<String> rootItem = buildTreeItem(tree.getRoot());
+                            syntaxTreeView.setRoot(rootItem);
+                            
+                            outputArea.setText(outputArea.getText() + "\n✅ Derivation Tree successfully generated.");
+                            
+                        } catch (Exception e) {
+                            outputArea.setText(outputArea.getText() + "\n❌ Syntax Error during parsing:\n" + e.getMessage());
+                            syntaxTreeView.setRoot(null); // Clear previous tree on failure
+                        }
                     },
                     error -> {
+                        // --- ERROR BLOCK FOR PARSE TABLE ---
                         currentParseTable = null;
                         currentFirstFollowTable = null;
 
@@ -293,6 +314,7 @@ public class Ui {
                 );
             },
             error -> {
+                // --- ERROR BLOCK FOR FIRST/FOLLOW ---
                 outputArea.setText(
                     "❌ FirstFollow Table Error:\n" + error.getMessage()
                 );
@@ -302,17 +324,41 @@ public class Ui {
 
     @FXML
     private void handleClearTables() {
-        symbolTableViewer.getItems().clear();
-        firstFollowTable.getItems().clear();
-        parserTable.getItems().clear();
-        parserTable.getColumns().setAll(List.of(parserTableNonTerminalCol));
-        syntaxTreeView.setRoot(null);
-        outputArea.clear();
-        consoleArea.clear();
+
+        // Symbol Table
+        if (symbolTableViewer != null) {
+            symbolTableViewer.getItems().clear();
+            // DO NOT clear columns here, as they are statically bound in setupSymbolTable()
+        }
         
-        // Clear references
+        // FirstFollow Table
+        if (firstFollowTable != null) {
+            firstFollowTable.getItems().clear();
+        }
+        
+        // Safely clear current data references (Let the Garbage Collector handle the sets)
         currentFirstFollowTable = null;
+
+        // Parser Table
+        if (parserTable != null) {
+            parserTable.getItems().clear();
+            // Reset to ONLY the base Non-Terminal column, removing dynamic Terminal columns
+            parserTable.getColumns().setAll(List.of(parserTableNonTerminalCol));
+        }
         currentParseTable = null;
+
+        // Syntax Tree
+        if (syntaxTreeView != null) {
+            syntaxTreeView.setRoot(null);
+        }
+
+        // Outputs
+        if (outputArea != null) outputArea.clear();
+        if (consoleArea != null) consoleArea.clear();
+        if (grammarClassificationArea != null) grammarClassificationArea.clear();
+        
+        // CRITICAL: Do NOT set @FXML UI components to null (e.g., symbolTableViewer = null).
+        // JavaFX relies on those references to update the UI on the next run.
     }
 
     // --- UI Logic & Helpers ---
@@ -435,6 +481,29 @@ public class Ui {
         this.parserTable.setItems(FXCollections.observableArrayList(parseTable.keySet()));
     }
 
+    /**
+     * Recursively maps a parser Node to a JavaFX TreeItem for visualization.
+     */
+    private TreeItem<String> buildTreeItem(Node node) {
+        // Show the symbol name (e.g., "Expression", "IDENTIFIER")
+        String displayText = node.getSymbol().getName();
+        
+        // If it's a leaf node with a matched token, append the exact lexeme string
+        if (node.getLexeme() != null) {
+            displayText += " (\"" + node.getLexeme() + "\")";
+        }
+        
+        TreeItem<String> item = new TreeItem<>(displayText);
+        item.setExpanded(true); // Automatically expand the tree view
+        
+        // Recurse for all children
+        for (Node child : node.getChildren()) {
+            item.getChildren().add(buildTreeItem(child));
+        }
+        
+        return item;
+    }
+
     @FXML
     private void handleExportGraphImage() {
         // 1. Check if the view is currently loaded
@@ -453,9 +522,9 @@ public class Ui {
         executeHeavyTask(
             "Exporting graph image...",
             log -> {
-                log.accept("Converting to 4K PNG and saving to disk...");
+                log.accept("Converting to high resolution PNG and saving to disk...");
                 
-                String outputFilename = "graph.png";
+                String outputFilename = "output/graph.png";
                 File outputFile = new File(outputFilename);
                 File parentDir = outputFile.getParentFile();
                 if (parentDir != null && !parentDir.exists()) {
@@ -539,12 +608,14 @@ public class Ui {
             public void handle(long now) {
                 // Calculate elapsed time
                 long elapsedMillis = System.currentTimeMillis() - startTime;
+                long hours = elapsedMillis / (1000 * 60 * 60);
+                long minutes = (elapsedMillis / (1000 * 60)) % 60;
                 long seconds = (elapsedMillis / 1000) % 60;
-                long millis = (elapsedMillis % 1000) / 10; // get 2 digits for milliseconds
-                
+                long millis = elapsedMillis % 1000;
+
                 // Safely update the UI (AnimationTimer inherently runs on the FX Thread)
                 if (loadingTimeLabel != null) {
-                    loadingTimeLabel.setText(String.format("processing... %d.%03ds", seconds, millis));
+                    loadingTimeLabel.setText(String.format("processing... %02d:%02d:%02d.%03d", hours, minutes, seconds, millis));
                 }
             }
         };

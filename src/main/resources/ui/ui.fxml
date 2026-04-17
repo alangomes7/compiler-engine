@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import java.lang.*?>
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
@@ -16,136 +20,184 @@
 <?import javafx.scene.control.SplitPane?>
 <?import javafx.scene.control.ProgressIndicator?>
 
-<StackPane xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml" fx:controller="ui.Ui">
-    
-    <VBox spacing="10">
-        <padding>
-            <Insets top="10" right="10" bottom="10" left="10"/>
-        </padding>
-
-        <HBox spacing="10" alignment="CENTER_LEFT">
-            <Button fx:id="loadTokenBtn" text="1. Load Lexer RE &amp; Tokens" onAction="#handleLoadTokenFile" />
-            <Label fx:id="tokenFileLabel" text="No file selected" textFill="gray"/>
-        </HBox>
-
-        <HBox spacing="10" alignment="CENTER_LEFT">
-            <Button fx:id="loadInputBtn" text="2. Load Input File (.txt)" onAction="#handleLoadInputFile" />
-            <Label fx:id="inputFileLabel" text="No file selected" textFill="gray"/>
-        </HBox>
-
-        <HBox spacing="10" alignment="CENTER_LEFT">
-            <Button fx:id="loadGrammarBtn" text="Load Grammar (BNF/EBNF)" onAction="#handleLoadGrammarFile" />
-            <Label fx:id="grammarFileLabel" text="No grammar selected" textFill="gray"/>
-        </HBox>
-
-        <SplitPane orientation="VERTICAL" VBox.vgrow="ALWAYS">
-            <items>
-                <HBox VBox.vgrow="ALWAYS" spacing="0">
-                    <TextArea fx:id="lineNumbersArea" editable="false" prefWidth="50" style="-fx-font-family: monospace; -fx-control-inner-background: #e8e8e8; -fx-text-fill: #555555;" />
-                    <TextArea fx:id="inputArea" promptText="Load a .txt file or paste source code here..." HBox.hgrow="ALWAYS" style="-fx-font-family: monospace;" />
-                </HBox>
-        
-                <TabPane VBox.vgrow="ALWAYS" tabClosingPolicy="UNAVAILABLE">
-                    <tabs>
-                        <Tab text="Console Log">
-                            <TextArea fx:id="consoleArea" editable="false" style="-fx-font-family: monospace;"/>
-                        </Tab>
-
-                        <Tab text="Output">
-                            <TextArea fx:id="outputArea" editable="false" />
-                        </Tab>
-
-                        <Tab text="Automata Viewer">
-                            <ScrollPane fitToWidth="true" fitToHeight="true">
-                                <VBox alignment="TOP_CENTER" spacing="20">
-                                    <padding><Insets top="20" right="20" bottom="20" left="20"/></padding>
-                                    <Label text="Master Lexer DFA Visualization" style="-fx-font-weight: bold; -fx-font-size: 16;"/>
-                                    <TextArea fx:id="automataDetailsArea" editable="false" style="-fx-font-family: monospace;" VBox.vgrow="ALWAYS" />
-                                </VBox>
-                            </ScrollPane>
-                        </Tab>
-
-                        <Tab text="Interactive Graph">
-                            <VBox spacing="10">
-                                <padding>
-                                    <Insets top="10" right="10" bottom="10" left="10"/>
-                                </padding>
-
-                                <HBox>
-                                    <javafx.scene.layout.BorderPane fx:id="interactiveGraphContainer" />
-                                </HBox>
-                                
-                                <HBox spacing="10">
-                                    <Button text="Export graph" onAction="#handleExportGraphImage"/>
-                                </HBox>                            
-                            </VBox>
-                        </Tab>
-                        
-                        <Tab text="Symbol Table">
-                            <TableView fx:id="symbolTableViewer">
-                                <columns>
-                                    <TableColumn fx:id="symbolTableLexemeColumn" text="Lexeme" prefWidth="250"/>
-                                    <TableColumn fx:id="symbolTableTokenTypeColumn" text="Token Type" prefWidth="150"/>
-                                    <TableColumn fx:id="symbolTableLineColumn" text="Line" prefWidth="75"/>
-                                    <TableColumn fx:id="symbolTableColColumn" text="Column" prefWidth="75"/>
-                                </columns>
-                            </TableView>
-                        </Tab>
-                        
-                        <Tab text="First &amp; Follow Sets">
-                            <TableView fx:id="firstFollowTable">
-                                <columns>
-                                    <TableColumn fx:id="firstFollowTableNonTerminalCol" text="Non-Terminal" prefWidth="150" />
-                                    <TableColumn fx:id="firstFollowTableFirstSetCol" text="FIRST" prefWidth="200" />
-                                    <TableColumn fx:id="firstFollowTableFollowSetCol" text="FOLLOW" prefWidth="200" />
-                                </columns>
-                            </TableView>
-                        </Tab>
-
-                        <Tab text="Parse Table">
-                            <content>
-                                <TableView fx:id="parserTable">
-                                    <columns>
-                                        <TableColumn fx:id="parserTableNonTerminalCol" text="Non-Terminal" prefWidth="200" />
-                                    </columns>
-                                </TableView>
-                            </content>
-                        </Tab>
-                        <Tab text="Grammar classication">
-                            <VBox spacing="10">
-                                <padding>
-                                    <Insets top="10" right="10" bottom="10" left="10"/>
-                                </padding>
-
-                                <HBox spacing="10">
-                                    <Button text="Classify Grammar" onAction="#handleClassifyGrammar"/>
-                                    <Button text="Clear" onAction="#handleClearGrammarClassification"/>
-                                </HBox>
-
-                                <TextArea fx:id="grammarClassificationArea" editable="false" style="-fx-font-family: monospace;" VBox.vgrow="ALWAYS"/>
-                            
-                            </VBox>
-                        </Tab>
-                        <Tab text="Syntax Tree Viewer">
-                            <TreeView fx:id="syntaxTreeView" VBox.vgrow="ALWAYS" />
-                        </Tab>
-                    </tabs>
-                </TabPane>
-            </items>
-        </SplitPane>
-
-        <HBox spacing="10" alignment="CENTER_LEFT">
-            <Button fx:id="runLexerBtn" text="3. Run Lexer Analysis" onAction="#handleRunLexer" style="-fx-font-weight: bold;"/>
-            <Button fx:id="runSyntaxBtn" text="4. Run Syntax Analysis" onAction="#handleRunSyntaxAnalysis" style="-fx-font-weight: bold;"/>
-            <Button text="Clear Tables" onAction="#handleClearTables" style="-fx-text-fill: red;"/>
-            <Button text="Save Console Log" onAction="#handleSaveConsoleLog"/>
-            <Button text="Export Tables (.csv)" onAction="#handleExportCSV" /> 
-        </HBox>
-    </VBox>
-
-    <VBox fx:id="loadingOverlay" alignment="CENTER" spacing="15" style="-fx-background-color: rgba(0, 0, 0, 0.6);" visible="false">
-        <ProgressIndicator fx:id="mainSpinner" />
-        <Label fx:id="loadingLabel" text="Loading..." style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: white;" />
-        <Label fx:id="loadingTimeLabel" text="0.00s" style="-fx-font-size: 14px; -fx-text-fill: lightgray;" />
-    </VBox>
+<StackPane xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ui.Ui">
+   <children>
+       
+       <VBox spacing="10">
+           <padding>
+               <Insets bottom="10" left="10" right="10" top="10" />
+           </padding>
+          <children>
+      
+              <HBox alignment="CENTER_LEFT" spacing="10">
+         <children>
+                     <Button fx:id="loadTokenBtn" onAction="#handleLoadTokenFile" text="1. Load Regular Expressions &amp; Tokens (.txt)" />
+                     <Label fx:id="tokenFileLabel" text="No file selected" textFill="gray" />
+         </children>
+              </HBox>
+      
+              <HBox alignment="CENTER_LEFT" spacing="10">
+         <children>
+                     <Button fx:id="loadGrammarBtn" onAction="#handleLoadGrammarFile" text="2. Load Grammar (BNF/EBNF) (.txt)" />
+                     <Label fx:id="grammarFileLabel" text="No grammar selected" textFill="gray" />
+         </children>
+              </HBox>
+      
+              <HBox alignment="CENTER_LEFT" spacing="10">
+         <children>
+                     <Button fx:id="loadInputBtn" onAction="#handleLoadInputFile" text="3. Load Input File (.txt)" />
+                     <Label fx:id="inputFileLabel" text="No input code selected" textFill="gray" />
+         </children>
+              </HBox>
+      
+              <SplitPane dividerPositions="0.5" orientation="VERTICAL" VBox.vgrow="ALWAYS">
+                  <items>
+                      <HBox spacing="0" VBox.vgrow="ALWAYS">
+                         <children>
+                             <TextArea fx:id="lineNumbersArea" editable="false" prefWidth="50" style="-fx-font-family: monospace; -fx-control-inner-background: #e8e8e8; -fx-text-fill: #555555;" />
+                             <TextArea fx:id="inputArea" promptText="Load a .txt file or paste source code here..." style="-fx-font-family: monospace;" HBox.hgrow="ALWAYS" />
+                         </children>
+                      </HBox>
+              
+                      <TabPane tabClosingPolicy="UNAVAILABLE" VBox.vgrow="ALWAYS">
+                          <tabs>
+                              <Tab text="Console Log">
+                                 <content>
+                                     <TextArea fx:id="consoleArea" editable="false" style="-fx-font-family: monospace;" />
+                                 </content>
+                              </Tab>
+      
+                              <Tab text="Output">
+         <content>
+                                     <TextArea fx:id="outputArea" editable="false" />
+         </content>
+                              </Tab>
+      
+                              <Tab text="Automata Viewer">
+         <content>
+                                     <ScrollPane fitToHeight="true" fitToWidth="true">
+                                        <content>
+                                            <VBox alignment="TOP_CENTER" spacing="20">
+                                                <padding>
+                                          <Insets bottom="20" left="20" right="20" top="20" />
+                                       </padding>
+                                               <children>
+                                                   <Label style="-fx-font-weight: bold; -fx-font-size: 16;" text="Master Lexer DFA Visualization" />
+                                                   <TextArea fx:id="automataDetailsArea" editable="false" style="-fx-font-family: monospace;" VBox.vgrow="ALWAYS" />
+                                               </children>
+                                            </VBox>
+                                        </content>
+                                     </ScrollPane>
+         </content>
+                              </Tab>
+      
+                              <Tab text="Interactive Graph">
+         <content>
+                                     <VBox spacing="10">
+                                         <padding>
+                                             <Insets bottom="10" left="10" right="10" top="10" />
+                                         </padding>
+                                        <children>
+            
+                                            <HBox>
+               <children>
+                                                   <javafx.scene.layout.BorderPane fx:id="interactiveGraphContainer" />
+               </children>
+                                            </HBox>
+                                            
+                                            <HBox spacing="10">
+                                               <children>
+                                                   <Button onAction="#handleExportGraphImage" text="Export graph" />
+                                               </children>
+                                            </HBox>
+                                        </children>                            
+                                     </VBox>
+         </content>
+                              </Tab>
+                              
+                              <Tab text="Symbol Table">
+                                 <content>
+                                     <TableView fx:id="symbolTableViewer">
+                                         <columns>
+                                             <TableColumn fx:id="symbolTableLexemeColumn" prefWidth="250" text="Lexeme" />
+                                             <TableColumn fx:id="symbolTableTokenTypeColumn" prefWidth="150" text="Token Type" />
+                                             <TableColumn fx:id="symbolTableLineColumn" prefWidth="75" text="Line" />
+                                             <TableColumn fx:id="symbolTableColColumn" prefWidth="75" text="Column" />
+                                         </columns>
+                                     </TableView>
+                                 </content>
+                              </Tab>
+                              
+                              <Tab text="First &amp; Follow Sets">
+                                 <content>
+                                     <TableView fx:id="firstFollowTable">
+                                         <columns>
+                                             <TableColumn fx:id="firstFollowTableNonTerminalCol" prefWidth="150" text="Non-Terminal" />
+                                             <TableColumn fx:id="firstFollowTableFirstSetCol" prefWidth="200" text="FIRST" />
+                                             <TableColumn fx:id="firstFollowTableFollowSetCol" prefWidth="200" text="FOLLOW" />
+                                         </columns>
+                                     </TableView>
+                                 </content>
+                              </Tab>
+      
+                              <Tab text="Parse Table">
+                                  <content>
+                                      <TableView fx:id="parserTable">
+                                          <columns>
+                                              <TableColumn fx:id="parserTableNonTerminalCol" prefWidth="200" text="Non-Terminal" />
+                                          </columns>
+                                      </TableView>
+                                  </content>
+                              </Tab>
+                              <Tab text="Grammar classification">
+                                 <content>
+                                     <VBox spacing="10">
+                                         <padding>
+                                             <Insets bottom="10" left="10" right="10" top="10" />
+                                         </padding>
+                                        <children>
+            
+                                            <HBox spacing="10">
+               <children>
+                                                   <Button onAction="#handleClassifyGrammar" text="Classify Grammar" />
+                                                   <Button onAction="#handleClearGrammarClassification" text="Clear" />
+               </children>
+                                            </HBox>
+            
+                                            <TextArea fx:id="grammarClassificationArea" editable="false" style="-fx-font-family: monospace;" VBox.vgrow="ALWAYS" />
+                                        </children>
+                                     
+                                     </VBox>
+                                 </content>
+                              </Tab>
+                              <Tab text="Syntax Tree Viewer">
+                                 <content>
+                                     <TreeView fx:id="syntaxTreeView" VBox.vgrow="ALWAYS" />
+                                 </content>
+                              </Tab>
+                          </tabs>
+                      </TabPane>
+                  </items>
+              </SplitPane>
+      
+              <HBox alignment="CENTER_LEFT" spacing="10">
+         <children>
+                     <Button fx:id="runLexerBtn" onAction="#handleRunLexer" style="-fx-font-weight: bold;" text="4. Run Lexer Analysis" />
+                     <Button fx:id="runSyntaxBtn" onAction="#handleRunSyntaxAnalysis" style="-fx-font-weight: bold;" text="5. Run Syntax Analysis" />
+                     <Button onAction="#handleClearTables" style="-fx-text-fill: red;" text="Clear Tables" />
+                     <Button onAction="#handleSaveConsoleLog" text="Save Console Log" />
+                     <Button onAction="#handleExportCSV" text="Export Tables (.csv)" />
+         </children> 
+              </HBox>
+          </children>
+       </VBox>
+   
+       <VBox fx:id="loadingOverlay" alignment="CENTER" spacing="15" style="-fx-background-color: rgba(0, 0, 0, 0.6);" visible="false">
+      <children>
+              <ProgressIndicator fx:id="mainSpinner" />
+              <Label fx:id="loadingLabel" style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: white;" text="Loading..." />
+              <Label fx:id="loadingTimeLabel" style="-fx-font-size: 14px; -fx-text-fill: lightgray;" text="0.00s" />
+      </children>
+       </VBox>
+   </children>
 </StackPane>

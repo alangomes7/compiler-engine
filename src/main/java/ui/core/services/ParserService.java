@@ -3,11 +3,12 @@ package ui.core.services;
 import java.util.List;
 
 import core.lexer.models.atomic.Token;
+import core.parser.LL1Parser;
 import core.parser.core.FirstFollowTableBuilder;
-import core.parser.core.GrammarReader;
 import core.parser.core.ParserTableBuilder;
 import core.parser.core.grammar.GrammarClassification;
 import core.parser.core.grammar.GrammarClassificationBuilder;
+import core.parser.core.grammar.GrammarReader;
 import core.parser.models.FirstFollowTable;
 import core.parser.models.Grammar;
 import core.parser.models.ParseTable;
@@ -17,7 +18,7 @@ public class ParserService {
     private Grammar grammar;
 
     public void loadGrammar(String path) throws Exception {
-        this.grammar = GrammarReader.readFromFile(path, "Program");
+        this.grammar = GrammarReader.readFromFile(path);
     }
 
     public FirstFollowTable buildFirstFollowTable(){
@@ -38,6 +39,20 @@ public class ParserService {
         GrammarClassification classification = new GrammarClassificationBuilder().withGrammar(grammar).withParseTable(parseTable).build();
 
         return classification;
+    }
+
+    public ParseTree parseTokens(ParseTable parseTable, List<Token> tokens) {
+        if (grammar == null) throw new IllegalStateException("Grammar not loaded");
+        
+        LL1Parser parser = new LL1Parser(grammar, parseTable);
+        ParseTree parseTree = parser.parse(tokens);
+        
+        // If parsing fails, throw an exception with the accumulated syntax errors
+        if (parseTree == null) {
+            throw new RuntimeException(String.join("\n", parser.getErrors()));
+        }
+        
+        return parseTree;
     }
 
 

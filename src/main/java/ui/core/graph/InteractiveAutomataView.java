@@ -72,9 +72,13 @@ public class InteractiveAutomataView extends Pane {
         javafx.geometry.Bounds bounds = contentGroup.getLayoutBounds();
 
         if (bounds.getWidth() > 0 && bounds.getHeight() > 0) {
-            // Calculate scale factor to make the image 3840 pixels wide (4K)
-            double scale = 3840.0 / bounds.getWidth();
-            parameters.setTransform(Transform.scale(scale, scale));
+            // Ensure at least a 3.0x scale for crispness on large graphs.
+            // If the graph is small, it will still scale up to 3840px.
+            // If the graph is huge, it will scale by 5.0x, exceeding 4K to preserve detail.
+            double scaleFactorTo4K = 3840.0 / bounds.getWidth();
+            double finalScale = Math.max(3.0, scaleFactorTo4K); 
+            
+            parameters.setTransform(Transform.scale(finalScale, finalScale));
         }
 
         // 4. Take the snapshot of the contentGroup (the whole graph), not the Pane

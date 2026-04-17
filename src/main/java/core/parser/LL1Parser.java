@@ -64,16 +64,20 @@ public class LL1Parser {
                     errors.add(String.format("Syntax Error at line %d:%d: Expected '%s', but found '%s'",
                         (currentToken != null ? currentToken.getLine() : 0),
                         (currentToken != null ? currentToken.getCol() : 0),
-                        top.getName(), lookahead.getName()));
+                        top.getName(), 
+                        (currentToken != null ? currentToken.getLexeme() : "EOF")));
                     return null;
                 }
             } else {
                 // 3. Non-terminal: Query the Parse Table
-                List<Production> productions = parseTable.getEntry(top, lookahead);
+                List<Production> productions = this.parseTable.getEntry(top, lookahead);
 
                 if (productions.isEmpty()) {
-                    errors.add(String.format("Syntax Error: No rule to derive '%s' with lookahead '%s'", 
-                        top.getName(), lookahead.getName()));
+                    errors.add(String.format("Syntax Error at line %d:%d: No rule to derive '%s' with lookahead '%s'", 
+                        (currentToken != null ? currentToken.getLine() : 0),
+                        (currentToken != null ? currentToken.getCol() : 0),
+                        top.getName(), 
+                        (currentToken != null ? currentToken.getLexeme() : "EOF")));
                     return null;
                 }
 
@@ -108,24 +112,34 @@ public class LL1Parser {
     }
 
     /**
-     * Maps the Lexer's Token (String-based) to the Parser's Symbol (Object-based).
+     * Maps the Lexer's Token to the Parser's Symbol (Object-based).
+     * Must check BOTH the token's Lexeme (for literals) 
+     * and the TokenType (for sets like "IDENTIFIER" or "INT").
      */
     private Symbol resolveLookahead(Token token) {
         if (token == null) {
             return Symbol.EOF;
         }
         
-        String typeName = token.getTokenType();
+        String lexeme = token.getLexeme();
+        String tokenType = token.getTokenType();
         
-        // Check if the type matches any terminal in our grammar
+        // 1. Try to match by Exact Lexeme first (e.g., "+", "&&", "==")
         for (Symbol terminal : grammar.getTerminals()) {
-            if (terminal.getName().equals(typeName)) {
+            if (terminal.getName().equals(lexeme)) {
+                return terminal;
+            }
+        }
+
+        // 2. Try to match by Token Type (e.g., "IDENTIFIER", "INT", "FLOAT")
+        for (Symbol terminal : grammar.getTerminals()) {
+            if (terminal.getName().equals(tokenType)) {
                 return terminal;
             }
         }
         
         // If not found in grammar, return a temporary terminal for error reporting
-        return new Symbol(typeName, true);
+        return new Symbol(tokenType != null ? tokenType : lexeme, true);
     }
 
     public List<String> getErrors() {

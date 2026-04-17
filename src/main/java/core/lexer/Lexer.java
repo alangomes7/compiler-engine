@@ -148,7 +148,7 @@ public class Lexer {
                     log.debug("[{}, {}]: Found Token: <{}, '{}'>", currentLine, currentCol, lastAcceptingToken, displayLexeme);
                 }
 
-                if (!isSkipToken && dynamicTokens.contains(lastAcceptingToken)) {
+                if (!isSkipToken) {
                     pendingSymbols.add(new PendingSymbol(lexeme, lastAcceptingToken, currentLine, currentCol));
                 }
 
