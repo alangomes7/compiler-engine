@@ -1,4 +1,4 @@
-package ui.table;
+package ui.core.table;
 
 import core.lexer.models.atomic.Token;
 import javafx.beans.property.SimpleIntegerProperty;

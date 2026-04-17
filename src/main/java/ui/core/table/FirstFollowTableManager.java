@@ -1,4 +1,4 @@
-package ui.table;
+package ui.core.table;
 
 import java.util.Set;
 import java.util.function.Supplier;

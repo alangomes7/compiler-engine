@@ -1,5 +1,9 @@
 package ui;
 
+import static ui.core.table.FirstFollowTableManager.exportFirstFollowCsv;
+import static ui.core.table.ParserTableManager.exportParseTableCsv;
+import static ui.core.table.SymbolTableManager.exportSymbolTableCsv;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -25,12 +29,9 @@ import ui.core.graph.tree.InteractiveTreeView;
 import ui.core.services.FileService;
 import ui.core.services.LexerService;
 import ui.core.services.ParserService;
-import ui.table.FirstFollowTableManager;
-import static ui.table.FirstFollowTableManager.exportFirstFollowCsv;
-import ui.table.ParserTableManager;
-import static ui.table.ParserTableManager.exportParseTableCsv;
-import ui.table.SymbolTableManager;
-import static ui.table.SymbolTableManager.exportSymbolTableCsv;
+import ui.core.table.FirstFollowTableManager;
+import ui.core.table.ParserTableManager;
+import ui.core.table.SymbolTableManager;
 import ui.util.BackgroundTaskExecutor;
 import ui.util.UiUtils;
 
