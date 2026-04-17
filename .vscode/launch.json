@@ -2,6 +2,13 @@
   "configurations": [
     {
       "type": "java",
+      "name": "Launcher",
+      "request": "launch",
+      "mainClass": "compiler.app/app.Launcher",
+      "projectName": "compiler-engine"
+    },
+    {
+      "type": "java",
       "name": "MainApp",
       "request": "launch",
       "mainClass": "compiler.app/app.MainApp",
