@@ -16,6 +16,7 @@ import core.parser.models.ParseTable;
 import core.parser.models.Production;
 import core.parser.models.atomic.Symbol;
 import core.parser.models.tree.Node;
+import core.parser.models.tree.ParseTree;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleObjectProperty;
@@ -33,8 +34,9 @@ import javafx.scene.control.TreeView;
 import javafx.scene.layout.VBox;
 import javafx.util.Callback;
 import lombok.Getter;
-import ui.core.graph.AutomataVisualizer;
-import ui.core.graph.InteractiveAutomataView;
+import ui.core.graph.automata.AutomataVisualizer;
+import ui.core.graph.automata.InteractiveAutomataView;
+import ui.core.graph.tree.InteractiveTreeView;
 import ui.core.services.FileService;
 import ui.core.services.LexerService;
 import ui.core.services.ParserService;
@@ -54,6 +56,7 @@ public class Ui {
     
     @FXML private Label tokenFileLabel;
     @FXML private Label grammarFileLabel;
+    @FXML private Label inputFileLabel;
 
     @Getter
     @FXML private TextArea automataDetailsArea;
@@ -86,7 +89,7 @@ public class Ui {
     // Grammar classification are
     @FXML private TextArea grammarClassificationArea;
 
-    @FXML private TreeView<String> syntaxTreeView;
+    @FXML private javafx.scene.layout.BorderPane interactiveTreeContainer;
 
     // --- Services ---
     private final LexerService lexerService = new LexerService();
@@ -122,6 +125,8 @@ public class Ui {
         if (file == null) return;
 
         tokenFileLabel.setText(file.getName());
+        
+        invalidateParserState();
 
         executeHeavyTask(
             "Building Lexer...",
@@ -160,6 +165,8 @@ public class Ui {
 
         grammarFileLabel.setText(file.getName());
         
+        invalidateParserState();
+        
         executeHeavyTask(
             "Loading Grammar...",
             log -> {
@@ -187,6 +194,12 @@ public class Ui {
         File file = FileService.selectFile(inputArea.getScene().getWindow(), "Select Input File");
         if (file == null) return;
 
+        // Update the FXML label
+        inputFileLabel.setText(file.getName()); 
+        
+        // Clear previous input-dependent results
+        invalidateInputState();
+
         executeHeavyTask(
             "Loading File...",
             log -> {
@@ -195,10 +208,7 @@ public class Ui {
                 try {
                     content = FileService.readFileContent(file);
                 } catch (Exception ex) {
-                    // 1. Log the error
                     System.getLogger(Ui.class.getName()).log(System.Logger.Level.ERROR, "Input file load failed", ex);
-                    
-                    // 2. Rethrow to trigger the onError consumer
                     throw new RuntimeException("Failed to read input file: " + ex.getMessage(), ex);
                 }
                 
@@ -285,22 +295,20 @@ public class Ui {
 
                         // --- RUN THE LL(1) PARSER ---
                         try {
-                            // Run the LL(1) parser using the generated table and the lexer's tokens
-                            core.parser.models.tree.ParseTree tree = parserService.parseTokens(
-                                this.currentParseTable, 
-                                this.lexerService.getSymbolTable()
-                            );
-                            
-                            // Map the parsed tree to JavaFX and set it to the UI
-                            javafx.scene.control.TreeItem<String> rootItem = buildTreeItem(tree.getRoot());
-                            syntaxTreeView.setRoot(rootItem);
-                            
-                            outputArea.setText(outputArea.getText() + "\n✅ Derivation Tree successfully generated.");
-                            
-                        } catch (Exception e) {
-                            outputArea.setText(outputArea.getText() + "\n❌ Syntax Error during parsing:\n" + e.getMessage());
-                            syntaxTreeView.setRoot(null); // Clear previous tree on failure
-                        }
+                            ParseTree tree = parserService.parseTokens(
+                            this.currentParseTable, 
+                            this.lexerService.getSymbolTable()
+                        );
+                        
+                        // Create and attach the Interactive Graph to the UI
+                        interactiveTreeContainer.setCenter(new InteractiveTreeView(tree.getRoot()));
+                        
+                        outputArea.setText(outputArea.getText() + "\n✅ Derivation Tree successfully generated.");
+                        
+                    } catch (Exception e) {
+                        outputArea.setText(outputArea.getText() + "\n❌ Syntax Error during parsing:\n" + e.getMessage());
+                        interactiveTreeContainer.setCenter(null); // Clear previous tree on failure
+                    }
                     },
                     error -> {
                         // --- ERROR BLOCK FOR PARSE TABLE ---
@@ -348,8 +356,8 @@ public class Ui {
         currentParseTable = null;
 
         // Syntax Tree
-        if (syntaxTreeView != null) {
-            syntaxTreeView.setRoot(null);
+        if (interactiveTreeContainer != null) {
+            interactiveTreeContainer.setCenter(null);
         }
 
         // Outputs
@@ -482,6 +490,33 @@ public class Ui {
     }
 
     /**
+     * Clears all tables and trees when the Lexer or Grammar files are updated.
+     */
+    private void invalidateParserState() {
+        if (parserTable != null) {
+            parserTable.getItems().clear();
+            parserTable.getColumns().setAll(List.of(parserTableNonTerminalCol));
+        }
+        currentParseTable = null;
+        
+        if (firstFollowTable != null) firstFollowTable.getItems().clear();
+        currentFirstFollowTable = null;
+
+        if (grammarClassificationArea != null) grammarClassificationArea.clear();
+        
+        // Clear input-dependent views as well
+        invalidateInputState(); 
+    }
+
+    /**
+     * Clears only the views that depend directly on the input code.
+     */
+    private void invalidateInputState() {
+        if (symbolTableViewer != null) symbolTableViewer.getItems().clear();
+        if (interactiveTreeContainer != null) interactiveTreeContainer.setCenter(null);
+    }
+
+    /**
      * Recursively maps a parser Node to a JavaFX TreeItem for visualization.
      */
     private TreeItem<String> buildTreeItem(Node node) {
@@ -548,6 +583,44 @@ public class Ui {
             onError -> {
                 outputArea.setText("❌ Export failed: " + onError.getMessage());
             }
+        );
+    }
+
+    @FXML
+    private void handleExportTreeImage() {
+        javafx.scene.Node centerNode = interactiveTreeContainer.getCenter();
+        if (!(centerNode instanceof InteractiveTreeView)) {
+            outputArea.setText("No interactive tree graph available to export.");
+            return;
+        }
+        
+        InteractiveTreeView view = (InteractiveTreeView) centerNode;
+        javafx.scene.image.WritableImage snapshotImage = view.generateSnapshot();
+
+        executeHeavyTask(
+            "Exporting tree image...",
+            log -> {
+                log.accept("Converting to high resolution PNG and saving to disk...");
+                
+                String outputFilename = "output/syntax_tree.png";
+                File outputFile = new File(outputFilename);
+                File parentDir = outputFile.getParentFile();
+                if (parentDir != null && !parentDir.exists()) {
+                    parentDir.mkdirs();
+                }
+
+                try {
+                    java.awt.image.BufferedImage bufferedImage = SwingFXUtils.fromFXImage(snapshotImage, null);
+                    javax.imageio.ImageIO.write(bufferedImage, "png", outputFile);
+                    
+                    log.accept("✅ Export completed.");
+                    return outputFile.getAbsolutePath();
+                } catch (Exception e) {
+                    throw new RuntimeException("Failed to export image: " + e.getMessage(), e);
+                }
+            },
+            resultPath -> outputArea.setText("✅ Full 4K Syntax Tree successfully exported to " + resultPath),
+            onError -> outputArea.setText("❌ Export failed: " + onError.getMessage())
         );
     }
 

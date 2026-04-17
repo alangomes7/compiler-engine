@@ -1,4 +1,4 @@
-package ui.core.graph;
+package ui.core.graph.automata;
 
 import java.util.ArrayList;
 import java.util.HashMap;

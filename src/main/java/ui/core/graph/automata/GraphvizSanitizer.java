@@ -1,4 +1,4 @@
-package ui.core.graph;
+package ui.core.graph.automata;
 
 import core.lexer.models.atomic.Transition;
 import models.atomic.Constants;

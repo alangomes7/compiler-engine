@@ -171,10 +171,26 @@
                                  </content>
                               </Tab>
                               <Tab text="Syntax Tree Viewer">
-                                 <content>
-                                     <TreeView fx:id="syntaxTreeView" VBox.vgrow="ALWAYS" />
-                                 </content>
-                              </Tab>
+    <content>
+        <VBox spacing="10">
+            <padding>
+                <Insets bottom="10" left="10" right="10" top="10" />
+            </padding>
+            <children>
+                <HBox VBox.vgrow="ALWAYS">
+                    <children>
+                        <javafx.scene.layout.BorderPane fx:id="interactiveTreeContainer" HBox.hgrow="ALWAYS" />
+                    </children>
+                </HBox>
+                <HBox spacing="10">
+                    <children>
+                        <Button onAction="#handleExportTreeImage" text="Export tree graph" />
+                    </children>
+                </HBox>
+            </children>
+        </VBox>
+    </content>
+</Tab>
                           </tabs>
                       </TabPane>
                   </items>
