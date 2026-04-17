@@ -14,8 +14,10 @@ import core.lexer.models.automata.AFD;
 import javafx.beans.binding.Bindings;
 import javafx.beans.binding.DoubleBinding;
 import javafx.scene.Group;
+import javafx.scene.SnapshotParameters;
 import javafx.scene.control.Label;
 import javafx.scene.control.Tooltip;
+import javafx.scene.image.WritableImage;
 import javafx.scene.input.ScrollEvent;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.StackPane;
@@ -26,6 +28,7 @@ import javafx.scene.shape.Polygon;
 import javafx.scene.shape.QuadCurve;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
+import javafx.scene.transform.Transform;
 
 public class InteractiveAutomataView extends Pane {
 
@@ -43,6 +46,47 @@ public class InteractiveAutomataView extends Pane {
         if (afd != null) {
             buildGraph(afd);
         }
+    }
+
+    /**
+     * Takes a snapshot of the entire interactive graph and returns it as a WritableImage.
+     */
+    public WritableImage generateSnapshot() {
+        // 1. Save the current pan and zoom state
+        double oldScaleX = contentGroup.getScaleX();
+        double oldScaleY = contentGroup.getScaleY();
+        double oldTranslateX = contentGroup.getTranslateX();
+        double oldTranslateY = contentGroup.getTranslateY();
+
+        // 2. Reset the view to its default state for a clean export
+        contentGroup.setScaleX(1.0);
+        contentGroup.setScaleY(1.0);
+        contentGroup.setTranslateX(0.0);
+        contentGroup.setTranslateY(0.0);
+
+        // 3. Configure the snapshot parameters
+        SnapshotParameters parameters = new SnapshotParameters();
+        parameters.setFill(Color.WHITE); // Solid white background
+
+        // Get the total unclipped bounds of the entire graph
+        javafx.geometry.Bounds bounds = contentGroup.getLayoutBounds();
+
+        if (bounds.getWidth() > 0 && bounds.getHeight() > 0) {
+            // Calculate scale factor to make the image 3840 pixels wide (4K)
+            double scale = 3840.0 / bounds.getWidth();
+            parameters.setTransform(Transform.scale(scale, scale));
+        }
+
+        // 4. Take the snapshot of the contentGroup (the whole graph), not the Pane
+        WritableImage image = contentGroup.snapshot(parameters, null);
+
+        // 5. Restore the user's previous pan and zoom state
+        contentGroup.setScaleX(oldScaleX);
+        contentGroup.setScaleY(oldScaleY);
+        contentGroup.setTranslateX(oldTranslateX);
+        contentGroup.setTranslateY(oldTranslateY);
+
+        return image;
     }
 
     private void buildGraph(AFD afd) {

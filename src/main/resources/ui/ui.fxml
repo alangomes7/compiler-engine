@@ -66,7 +66,19 @@
                         </Tab>
 
                         <Tab text="Interactive Graph">
-                            <javafx.scene.layout.BorderPane fx:id="interactiveGraphContainer" />
+                            <VBox spacing="10">
+                                <padding>
+                                    <Insets top="10" right="10" bottom="10" left="10"/>
+                                </padding>
+
+                                <HBox>
+                                    <javafx.scene.layout.BorderPane fx:id="interactiveGraphContainer" />
+                                </HBox>
+                                
+                                <HBox spacing="10">
+                                    <Button text="Export graph" onAction="#handleExportGraphImage"/>
+                                </HBox>                            
+                            </VBox>
                         </Tab>
                         
                         <Tab text="Symbol Table">

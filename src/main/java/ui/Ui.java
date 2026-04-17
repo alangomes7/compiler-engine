@@ -20,6 +20,7 @@ import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
+import javafx.embed.swing.SwingFXUtils;
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
 import javafx.scene.control.TableCell;
@@ -171,11 +172,11 @@ public class Ui {
                     throw new RuntimeException("Failed to load grammar: " + ex.getMessage(), ex);
                 }
 
-                log.accept("✅ Grammar loaded.");
+                log.accept("Grammar loaded.");
                 return null;
             },
-            res -> outputArea.setText("✅ Grammar loaded."),
-            err -> outputArea.setText("❌ Error: " + err.getMessage())
+            res -> outputArea.setText("Grammar loaded."),
+            err -> outputArea.setText("Error: " + err.getMessage())
         );
     }
 
@@ -432,6 +433,53 @@ public class Ui {
 
         // 4. Set the Non-Terminals as the rows
         this.parserTable.setItems(FXCollections.observableArrayList(parseTable.keySet()));
+    }
+
+    @FXML
+    private void handleExportGraphImage() {
+        // 1. Check if the view is currently loaded
+        javafx.scene.Node centerNode = interactiveGraphContainer.getCenter();
+        if (!(centerNode instanceof InteractiveAutomataView)) {
+            outputArea.setText("No interactive graph available to export.");
+            return;
+        }
+        
+        InteractiveAutomataView view = (InteractiveAutomataView) centerNode;
+
+        // 2. Capture the snapshot ON the JavaFX UI Thread (Safe)
+        javafx.scene.image.WritableImage snapshotImage = view.generateSnapshot();
+
+        // 3. Delegate the heavy file conversion and saving to the background thread
+        executeHeavyTask(
+            "Exporting graph image...",
+            log -> {
+                log.accept("Converting to 4K PNG and saving to disk...");
+                
+                String outputFilename = "graph.png";
+                File outputFile = new File(outputFilename);
+                File parentDir = outputFile.getParentFile();
+                if (parentDir != null && !parentDir.exists()) {
+                    parentDir.mkdirs();
+                }
+
+                try {
+                    // Heavy tasks: Converting FX Image to Swing Image and Disk I/O
+                    java.awt.image.BufferedImage bufferedImage = SwingFXUtils.fromFXImage(snapshotImage, null);
+                    javax.imageio.ImageIO.write(bufferedImage, "png", outputFile);
+                    
+                    log.accept("✅ Export completed.");
+                    return outputFile.getAbsolutePath(); // Return the path for the success callback
+                } catch (Exception e) {
+                    throw new RuntimeException("Failed to export image: " + e.getMessage(), e);
+                }
+            },
+            resultPath -> {
+                outputArea.setText("✅ Full 4K Graph successfully exported to " + resultPath);
+            },
+            onError -> {
+                outputArea.setText("❌ Export failed: " + onError.getMessage());
+            }
+        );
     }
 
     @FXML
