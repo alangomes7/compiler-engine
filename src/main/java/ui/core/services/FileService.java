@@ -2,7 +2,7 @@ package ui.core.services;
 
 import java.io.File;
 
-import Utils.Utils;
+import Utils.UiUtils;
 import javafx.stage.FileChooser;
 import javafx.stage.Window;
 
@@ -20,6 +20,6 @@ public class FileService {
     }
 
     public static String readFileContent(File file) throws Exception {
-        return Utils.readTextFile(file.getAbsolutePath());
+        return UiUtils.readTextFile(file.getAbsolutePath());
     }
 }
