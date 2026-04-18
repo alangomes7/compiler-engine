@@ -1,9 +1,8 @@
 package core.parser.models.tree;
 
+import core.parser.models.atomic.Symbol;
 import java.util.ArrayList;
 import java.util.List;
-
-import core.parser.models.atomic.Symbol;
 
 public class Node {
     private final Symbol symbol;
@@ -23,17 +22,28 @@ public class Node {
         this.lexeme = lexeme;
     }
 
-    public Symbol getSymbol() { return symbol; }
-    public String getLexeme() { return lexeme; }
-    public List<Node> getChildren() { return children; }
+    public Symbol getSymbol() {
+        return symbol;
+    }
+
+    public String getLexeme() {
+        return lexeme;
+    }
+
+    public List<Node> getChildren() {
+        return children;
+    }
 
     /**
-     * Helper to print the tree in a visual format for debugging.
-     * It uses the name of the Symbol and the lexeme if available.
+     * Helper to print the tree in a visual format for debugging. It uses the name of the Symbol and
+     * the lexeme if available.
      */
     public void print(String prefix, boolean isTail) {
-        System.out.println(prefix + (isTail ? "└── " : "├── ") + symbol.getName() + 
-            (lexeme != null ? " (\"" + lexeme + "\")" : ""));
+        System.out.println(
+                prefix
+                        + (isTail ? "└── " : "├── ")
+                        + symbol.getName()
+                        + (lexeme != null ? " (\"" + lexeme + "\")" : ""));
         for (int i = 0; i < children.size(); i++) {
             children.get(i).print(prefix + (isTail ? "    " : "│   "), i == children.size() - 1);
         }

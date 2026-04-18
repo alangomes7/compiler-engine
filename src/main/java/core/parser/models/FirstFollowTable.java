@@ -1,11 +1,10 @@
 package core.parser.models;
 
+import core.parser.models.atomic.Symbol;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-
-import core.parser.models.atomic.Symbol;
 
 public class FirstFollowTable {
     private final Map<Symbol, Set<Symbol>> firstSets;
@@ -31,7 +30,7 @@ public class FirstFollowTable {
     public Set<Symbol> getFollow(Symbol nonTerminal) {
         return followSets.getOrDefault(nonTerminal, new HashSet<>());
     }
-    
+
     public Map<Symbol, Set<Symbol>> getAllFirstSets() {
         return firstSets;
     }
@@ -43,7 +42,7 @@ public class FirstFollowTable {
     public void printSets() {
         System.out.println("=== First Sets ===");
         firstSets.forEach((k, v) -> System.out.println("FIRST(" + k + ") = " + v));
-        
+
         System.out.println("\n=== Follow Sets ===");
         followSets.forEach((k, v) -> System.out.println("FOLLOW(" + k + ") = " + v));
     }

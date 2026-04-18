@@ -1,9 +1,8 @@
 package core.lexer.models.automata;
 
+import core.lexer.models.atomic.Symbol;
 import java.util.HashSet;
 import java.util.Set;
-
-import core.lexer.models.atomic.Symbol;
 
 public class Alphabet {
     private final Set<Symbol> symbols;

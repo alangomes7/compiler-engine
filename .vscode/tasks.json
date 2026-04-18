@@ -2,11 +2,44 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "Run JavaFX (Maven)",
+      "label": "Maven: Format",
       "type": "shell",
       "command": "mvn",
-      "args": ["clean", "javafx:run", "-U"],
-      "group": "build",
+      "args": [
+        "spotless:apply",
+        "spotless:check"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "Dev Pipeline (JavaFX Run)",
+      "type": "shell",
+      "command": "mvn",
+      "args": [
+        "javafx:run"
+      ],
+      "dependsOn": "Maven: Format",
+      "problemMatcher": []
+    },
+    {
+      "label": "Production Build (Fat JAR)",
+      "type": "shell",
+      "command": "mvn",
+      "args": [
+        "package"
+      ],
+      "dependsOn": "Maven: Format",
+      "problemMatcher": []
+    },
+    {
+      "label": "Run Fat JAR",
+      "type": "shell",
+      "command": "java",
+      "args": [
+        "-jar",
+        "target/compiler-engine-1.0-SNAPSHOT-standalone.jar"
+      ],
+      "dependsOn": "Production Build (Fat JAR)",
       "problemMatcher": []
     }
   ]

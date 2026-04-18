@@ -1,11 +1,10 @@
 package core.parser.models;
 
+import core.parser.models.atomic.Symbol;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import core.parser.models.atomic.Symbol;
 
 public class ParseTable {
     // 2D Map representing M[NonTerminal, Terminal] = List of Productions
@@ -16,12 +15,13 @@ public class ParseTable {
     }
 
     /**
-     * Adds a production to the parsing table. 
-     * Appends to a list to allow for conflict tracking.
+     * Adds a production to the parsing table. Appends to a list to allow for conflict tracking.
      * * @param nonTerminal The non-terminal (row)
-     * @param terminal    The lookahead terminal (column)
-     * @param production  The production to apply
-     * @throws IllegalArgumentException if EPSILON is used as a column or if a terminal is used as a row.
+     *
+     * @param terminal The lookahead terminal (column)
+     * @param production The production to apply
+     * @throws IllegalArgumentException if EPSILON is used as a column or if a terminal is used as a
+     *     row.
      */
     public void addEntry(Symbol nonTerminal, Symbol terminal, Production production) {
         if (nonTerminal.isTerminal()) {
@@ -32,8 +32,8 @@ public class ParseTable {
         }
 
         table.computeIfAbsent(nonTerminal, k -> new HashMap<>())
-             .computeIfAbsent(terminal, k -> new ArrayList<>())
-             .add(production);
+                .computeIfAbsent(terminal, k -> new ArrayList<>())
+                .add(production);
     }
 
     /**
@@ -45,7 +45,7 @@ public class ParseTable {
         if (row != null) {
             return row.getOrDefault(terminal, new ArrayList<>());
         }
-        return new ArrayList<>(); 
+        return new ArrayList<>();
     }
 
     public Map<Symbol, Map<Symbol, List<Production>>> getTable() {
@@ -53,24 +53,28 @@ public class ParseTable {
     }
 
     /**
-     * Utility method to print the Parse Table for debugging purposes.
-     * Highlights cells that contain grammar conflicts.
+     * Utility method to print the Parse Table for debugging purposes. Highlights cells that contain
+     * grammar conflicts.
      */
     public void printTable() {
         System.out.println("=== Parsing Table ===");
         for (Map.Entry<Symbol, Map<Symbol, List<Production>>> rowEntry : table.entrySet()) {
             Symbol nonTerminal = rowEntry.getKey();
-            
+
             for (Map.Entry<Symbol, List<Production>> colEntry : rowEntry.getValue().entrySet()) {
                 Symbol terminal = colEntry.getKey();
                 List<Production> productions = colEntry.getValue();
-                
+
                 if (productions.size() > 1) {
-                    System.out.printf("M[%s, %s] = %s  <-- CONFLICT!%n", 
+                    System.out.printf(
+                            "M[%s, %s] = %s  <-- CONFLICT!%n",
                             nonTerminal.getName(), terminal.getName(), productions.toString());
                 } else if (!productions.isEmpty()) {
-                    System.out.printf("M[%s, %s] = %s%n", 
-                            nonTerminal.getName(), terminal.getName(), productions.get(0).toString());
+                    System.out.printf(
+                            "M[%s, %s] = %s%n",
+                            nonTerminal.getName(),
+                            terminal.getName(),
+                            productions.get(0).toString());
                 }
             }
         }

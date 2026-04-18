@@ -1,12 +1,11 @@
 package core.lexer.core.translators;
 
-import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 import core.lexer.core.conversors.ReToAFNDE;
 import core.lexer.models.atomic.Rule;
 import core.lexer.models.automata.AFNDE;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class ExtendedRuleParser {
 
@@ -20,7 +19,7 @@ public class ExtendedRuleParser {
         this.generator = generator;
     }
 
-    public AFNDE parse(Rule rule) { 
+    public AFNDE parse(Rule rule) {
         String resolvedRegex = resolveExtendedSyntax(rule.getRegex(), rule.getMacros());
 
         this.input = resolvedRegex.toCharArray();
@@ -28,23 +27,28 @@ public class ExtendedRuleParser {
         this.length = input.length;
 
         if (this.length == 0) {
-            System.err.println("⚠️ Warning: Token '" + rule.getTokenType() + "' resolved to an empty regex.");
-            return generator.symbol(""); 
+            System.err.println(
+                    "⚠️ Warning: Token '" + rule.getType() + "' resolved to an empty regex.");
+            return generator.symbol("");
         }
 
         AFNDE nfa = parseExpression();
-        
+
         if (nfa == null) {
             System.out.println(rule.toString());
         }
 
         if (pos < length) {
             throw new RuntimeException(
-                "Extended Parser: Unexpected '" + input[pos] + "' at pos " + pos + " in rule " + rule.getTokenType()
-            );
+                    "Extended Parser: Unexpected '"
+                            + input[pos]
+                            + "' at pos "
+                            + pos
+                            + " in rule "
+                            + rule.getType());
         }
 
-        return generator.nameToken(rule.getTokenType(), nfa);
+        return generator.nameToken(rule.getType(), nfa);
     }
 
     private String resolveExtendedSyntax(String pattern, Map<String, String> macros) {
@@ -87,13 +91,13 @@ public class ExtendedRuleParser {
         result = result.replace("]", ")");
         result = result.replace("!!RBRACKET!!", "]");
         result = result.replace("!!LBRACKET!!", "[");
-        
+
         result = result.replace("!!NOT_NL!!", "[^\r\n]");
         result = result.replace("!!NOT_DQ!!", "[^\"\\\\]");
         result = result.replace("!!NOT_SQ!!", "[^'\\\\]");
         result = result.replace("!!NOT_NL_SL!!", "[^\r\n/]");
 
-        result = result.replaceAll("\\s*\\|\\s*", "|"); 
+        result = result.replaceAll("\\s*\\|\\s*", "|");
         result = result.replace("\\n", "\n").replace("\\r", "\r").replace("\\t", "\t");
 
         result = result.replace("( )", "!!SPACE!!");
@@ -192,8 +196,8 @@ public class ExtendedRuleParser {
     }
 
     private AFNDE parseCharacterClass() {
-        pos++; 
-        
+        pos++;
+
         if (pos >= length) {
             throw new RuntimeException("Unclosed character class '[' at end of pattern");
         }
@@ -204,13 +208,13 @@ public class ExtendedRuleParser {
             pos++;
         }
 
-        boolean[] table = new boolean[128]; 
+        boolean[] table = new boolean[128];
 
         while (pos < length && input[pos] != ']') {
             char start = readChar();
 
             if (pos < length - 1 && input[pos] == '-' && input[pos + 1] != ']') {
-                pos++; 
+                pos++;
                 char end = readChar();
 
                 for (int c = start; c <= end; c++) {
@@ -222,10 +226,10 @@ public class ExtendedRuleParser {
         }
 
         if (pos >= length) {
-             throw new RuntimeException("Unclosed character class '[' (missing ']')");
+            throw new RuntimeException("Unclosed character class '[' (missing ']')");
         }
-        
-        pos++; 
+
+        pos++;
 
         AFNDE result = null;
 
@@ -248,13 +252,13 @@ public class ExtendedRuleParser {
 
     private char readChar() {
         if (pos >= length) {
-             throw new RuntimeException("Unexpected end of pattern while reading character");
+            throw new RuntimeException("Unexpected end of pattern while reading character");
         }
-        
+
         if (input[pos] == '\\') {
             pos++;
             if (pos >= length) {
-                 throw new RuntimeException("Dangling escape character '\\' inside character class");
+                throw new RuntimeException("Dangling escape character '\\' inside character class");
             }
         }
         return input[pos++];
@@ -267,7 +271,12 @@ public class ExtendedRuleParser {
 
     private RuntimeException error(String expected) {
         return new RuntimeException(
-            "Expected '" + expected + "' at pos " + pos + " but found '" + (pos < length ? input[pos] : "EOF") + "'"
-        );
+                "Expected '"
+                        + expected
+                        + "' at pos "
+                        + pos
+                        + " but found '"
+                        + (pos < length ? input[pos] : "EOF")
+                        + "'");
     }
 }

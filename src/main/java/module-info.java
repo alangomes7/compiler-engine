@@ -1,27 +1,26 @@
-module compiler.app {
+module compiler.engine {
+    // JavaFX core modules
     requires javafx.controls;
     requires javafx.fxml;
-    requires javafx.graphics;
-    requires javafx.base;
-    
-    requires javafx.swing;
-    requires java.desktop; 
+    requires transitive javafx.graphics;
+    requires javafx.swing; // Required for SwingFXUtils in Utils class
 
-    requires guru.nidi.graphviz;
-    requires org.slf4j;
-    requires org.slf4j.simple;
-    
-    // Use 'requires static' for compile-time only dependencies
+    // External dependencies
+    requires guru.nidi.graphviz; // For automata visualizer
+    requires org.slf4j; // For simple logging
+
+    // Compile-time only dependency
     requires static lombok;
 
-    // Open packages containing TableView models to javafx.base
-    opens core.lexer.models.atomic to javafx.base;
-    opens core.parser.models.atomic to javafx.base;
+    // Allow JavaFX FXML to access your UI controllers reflectively
+    opens ui to
+            javafx.fxml;
 
-    // Merge duplicate opens
-    opens ui to javafx.base, javafx.fxml;
+    // Allow JavaFX to instantiate your main application class
+    opens app to
+            javafx.graphics;
 
-    // Maintain standard app exports
-    opens app to javafx.fxml;
+    // Export core packages if they need to be visible to other modules
     exports app;
+    exports ui;
 }

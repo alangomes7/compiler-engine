@@ -1,5 +1,8 @@
 package core.lexer.models.automata;
 
+import core.lexer.models.atomic.State;
+import core.lexer.models.atomic.Symbol;
+import core.lexer.models.atomic.Transition;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -7,24 +10,20 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 
-import core.lexer.models.atomic.State;
-import core.lexer.models.atomic.Symbol;
-import core.lexer.models.atomic.Transition;
-
 public class AFD {
     private final String tokenName;
     private final State startState;
     private final Set<State> finalStates;
-    private final Alphabet alphabet; 
-    
+    private final Alphabet alphabet;
+
     private final Map<Integer, Map<Symbol, State>> transitionTable = new HashMap<>();
 
     public AFD(String tokenName, State startState, Set<State> finalStates) {
         this.tokenName = tokenName;
         this.startState = startState;
         this.finalStates = finalStates;
-        this.alphabet = new Alphabet(); 
-        
+        this.alphabet = new Alphabet();
+
         precomputeTransitions();
     }
 
@@ -38,12 +37,12 @@ public class AFD {
         while (!queue.isEmpty()) {
             State current = queue.poll();
             Map<Symbol, State> stateMap = new HashMap<>();
-            
+
             for (Transition t : current.getTransitions()) {
 
                 this.alphabet.addSymbol(t.getSymbol());
                 stateMap.put(t.getSymbol(), t.getTarget());
-                
+
                 if (visited.add(t.getTarget().getId())) {
                     queue.add(t.getTarget());
                 }
@@ -54,7 +53,7 @@ public class AFD {
 
     public State getNextState(State current, char c) {
         Symbol inputSymbol = new Symbol(String.valueOf(c));
-        
+
         if (!alphabet.getSymbols().contains(inputSymbol)) {
             return null;
         }
@@ -66,10 +65,21 @@ public class AFD {
         return null;
     }
 
-    public String getTokenName() { return tokenName; }
-    public State getStartState() { return startState; }
-    public Set<State> getFinalStates() { return finalStates; }
-    public Alphabet getAlphabet() { return alphabet; }
+    public String getTokenName() {
+        return tokenName;
+    }
+
+    public State getStartState() {
+        return startState;
+    }
+
+    public Set<State> getFinalStates() {
+        return finalStates;
+    }
+
+    public Alphabet getAlphabet() {
+        return alphabet;
+    }
 
     @Override
     public String toString() {
@@ -77,7 +87,7 @@ public class AFD {
         sb.append("=== AFD: ").append(tokenName).append(" ===\n");
         sb.append("Alphabet: ").append(alphabet.getSymbols()).append("\n");
         sb.append("Start State: q").append(startState.getId()).append("\n");
-        
+
         if (finalStates != null && !finalStates.isEmpty()) {
             sb.append("Final States: ");
             for (State s : finalStates) {
@@ -87,7 +97,7 @@ public class AFD {
         } else {
             sb.append("Final States: None/Multiple\n");
         }
-        
+
         sb.append("Transitions:\n");
 
         Queue<State> queue = new LinkedList<>();
@@ -108,8 +118,12 @@ public class AFD {
             }
 
             for (Transition t : current.getTransitions()) {
-                sb.append("    --(").append(t.getSymbol().getValue()).append(")--> q").append(t.getTarget().getId()).append("\n");
-                
+                sb.append("    --(")
+                        .append(t.getSymbol().getValue())
+                        .append(")--> q")
+                        .append(t.getTarget().getId())
+                        .append("\n");
+
                 if (!visited.contains(t.getTarget().getId())) {
                     visited.add(t.getTarget().getId());
                     queue.add(t.getTarget());

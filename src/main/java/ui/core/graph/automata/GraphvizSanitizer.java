@@ -24,7 +24,7 @@ public class GraphvizSanitizer {
                 case '\r' -> safe.append("&#92;r");
                 case '\t' -> safe.append("&#92;t");
                 case ' ' -> safe.append("&nbsp;");
-                
+
                 default -> {
                     // Trap raw control characters (ASCII 0-31 or 127)
                     if (c < 32 || c == 127) {
@@ -37,8 +37,8 @@ public class GraphvizSanitizer {
             // Escape XML-sensitive characters
             // Convert problem characters into safe HTML entities
             // Visually print structural whitespace so you can see it on the arrow
-                    }
-        
+        }
+
         // Wrap in < and > to force Graphviz to treat this as an HTML Label.
         // This entirely avoids the buggy "..." string parser.
         return "<" + safe.toString() + ">";

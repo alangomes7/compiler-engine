@@ -1,17 +1,16 @@
 package core.lexer.core.conversors;
 
+import core.lexer.models.atomic.State;
+import core.lexer.models.atomic.Symbol;
+import core.lexer.models.atomic.Transition;
+import core.lexer.models.automata.AFND;
+import core.lexer.models.automata.AFNDE;
 import java.util.ArrayDeque;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
-
-import core.lexer.models.atomic.State;
-import core.lexer.models.atomic.Symbol;
-import core.lexer.models.atomic.Transition;
-import core.lexer.models.automata.AFND;
-import core.lexer.models.automata.AFNDE;
 import models.atomic.Constants;
 
 public class AFNDEtoAFND {
@@ -20,13 +19,13 @@ public class AFNDEtoAFND {
 
     public AFND convert(AFNDE afnde) {
         closureCache.clear();
-        
+
         Set<State> allOldStates = getAllReachableStates(afnde.getStartState());
-        
+
         Map<State, State> oldToNew = new HashMap<>(allOldStates.size());
         for (State oldState : allOldStates) {
             oldToNew.put(oldState, new State(oldState.getId()));
-            getEpsilonClosure(oldState); 
+            getEpsilonClosure(oldState);
         }
 
         for (State oldState : allOldStates) {
@@ -34,7 +33,7 @@ public class AFNDEtoAFND {
             Set<State> closureQ = closureCache.get(oldState);
 
             Map<Symbol, Set<State>> transitionsBySymbol = new HashMap<>();
-            
+
             boolean isFinal = false;
             String acceptedToken = null;
 
@@ -48,8 +47,8 @@ public class AFNDEtoAFND {
                     Symbol symbol = t.getSymbol();
                     if (!symbol.getValue().equals(Constants.EPSILON)) {
                         transitionsBySymbol
-                            .computeIfAbsent(symbol, k -> new HashSet<>())
-                            .add(t.getTarget());
+                                .computeIfAbsent(symbol, k -> new HashSet<>())
+                                .add(t.getTarget());
                     }
                 }
             }
@@ -60,7 +59,7 @@ public class AFNDEtoAFND {
             for (Map.Entry<Symbol, Set<State>> entry : transitionsBySymbol.entrySet()) {
                 Symbol symbol = entry.getKey();
                 Set<State> targets = entry.getValue();
-                
+
                 Set<State> fullTargetClosure = new HashSet<>();
                 for (State t : targets) {
                     fullTargetClosure.addAll(closureCache.get(t));
@@ -76,7 +75,7 @@ public class AFNDEtoAFND {
         }
 
         State newStart = oldToNew.get(afnde.getStartState());
-        
+
         Set<State> finalStates = new HashSet<>();
         for (State s : oldToNew.values()) {
             if (s.isFinal()) finalStates.add(s);
@@ -86,7 +85,7 @@ public class AFNDEtoAFND {
     }
 
     private Set<State> getAllReachableStates(State start) {
-        Set<State> visited = new LinkedHashSet<>(); 
+        Set<State> visited = new LinkedHashSet<>();
         ArrayDeque<State> queue = new ArrayDeque<>();
         visited.add(start);
         queue.add(start);

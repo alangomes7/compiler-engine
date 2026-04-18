@@ -102,11 +102,11 @@ public class InteractiveTreeView extends Pane {
                 Line line = new Line();
                 line.setStroke(Color.GRAY);
                 line.setStrokeWidth(1.5);
-                
+
                 // Bind line start to the bottom-center of the parent node
                 line.startXProperty().bind(nodeUI.layoutXProperty().add(NODE_WIDTH / 2));
                 line.startYProperty().bind(nodeUI.layoutYProperty().add(NODE_HEIGHT));
-                
+
                 // Bind line end to the top-center of the child node
                 line.endXProperty().bind(childUI.layoutXProperty().add(NODE_WIDTH / 2));
                 line.endYProperty().bind(childUI.layoutYProperty());
@@ -116,7 +116,7 @@ public class InteractiveTreeView extends Pane {
                 currentX += childWidth + SIBLING_GAP;
             }
         }
-        
+
         return nodeUI;
     }
 
@@ -126,7 +126,7 @@ public class InteractiveTreeView extends Pane {
         Rectangle rect = new Rectangle(NODE_WIDTH, NODE_HEIGHT);
         rect.setArcWidth(10);
         rect.setArcHeight(10);
-        
+
         boolean isTerminal = node.getSymbol().isTerminal();
         rect.setFill(isTerminal ? Color.LIGHTGREEN : Color.LIGHTBLUE);
         rect.setStroke(Color.DARKBLUE);
@@ -142,50 +142,60 @@ public class InteractiveTreeView extends Pane {
         label.setStyle("-fx-text-alignment: center;");
 
         stack.getChildren().addAll(rect, label);
-        Tooltip.install(stack, new Tooltip(isTerminal ? "Terminal: " + node.getSymbol().getName() : "Non-Terminal: " + node.getSymbol().getName()));
+        Tooltip.install(
+                stack,
+                new Tooltip(
+                        isTerminal
+                                ? "Terminal: " + node.getSymbol().getName()
+                                : "Non-Terminal: " + node.getSymbol().getName()));
 
         // CHANGED: Add drag functionality for individual nodes
         final double[] dragDelta = new double[2]; // Using array to hold mutable state inside lambda
-        
-        stack.setOnMousePressed(e -> {
-            dragDelta[0] = stack.getLayoutX() - e.getSceneX();
-            dragDelta[1] = stack.getLayoutY() - e.getSceneY();
-            e.consume(); // Prevents the canvas pan event from triggering
-        });
 
-        stack.setOnMouseDragged(e -> {
-            stack.setLayoutX(e.getSceneX() + dragDelta[0]);
-            stack.setLayoutY(e.getSceneY() + dragDelta[1]);
-            e.consume();
-        });
+        stack.setOnMousePressed(
+                e -> {
+                    dragDelta[0] = stack.getLayoutX() - e.getSceneX();
+                    dragDelta[1] = stack.getLayoutY() - e.getSceneY();
+                    e.consume(); // Prevents the canvas pan event from triggering
+                });
+
+        stack.setOnMouseDragged(
+                e -> {
+                    stack.setLayoutX(e.getSceneX() + dragDelta[0]);
+                    stack.setLayoutY(e.getSceneY() + dragDelta[1]);
+                    e.consume();
+                });
 
         return stack;
     }
 
     private void setupZoomAndPan() {
-        this.setOnMousePressed(event -> {
-            if (event.getTarget() == this) {
-                dragContextX = event.getSceneX() - contentGroup.getTranslateX();
-                dragContextY = event.getSceneY() - contentGroup.getTranslateY();
-            }
-        });
+        this.setOnMousePressed(
+                event -> {
+                    if (event.getTarget() == this) {
+                        dragContextX = event.getSceneX() - contentGroup.getTranslateX();
+                        dragContextY = event.getSceneY() - contentGroup.getTranslateY();
+                    }
+                });
 
-        this.setOnMouseDragged(event -> {
-            if (event.getTarget() == this) {
-                contentGroup.setTranslateX(event.getSceneX() - dragContextX);
-                contentGroup.setTranslateY(event.getSceneY() - dragContextY);
-            }
-        });
+        this.setOnMouseDragged(
+                event -> {
+                    if (event.getTarget() == this) {
+                        contentGroup.setTranslateX(event.getSceneX() - dragContextX);
+                        contentGroup.setTranslateY(event.getSceneY() - dragContextY);
+                    }
+                });
 
-        this.setOnScroll((ScrollEvent event) -> {
-            double zoomFactor = 1.05;
-            double deltaY = event.getDeltaY();
-            if (deltaY < 0) {
-                zoomFactor = 1 / zoomFactor;
-            }
-            contentGroup.setScaleX(contentGroup.getScaleX() * zoomFactor);
-            contentGroup.setScaleY(contentGroup.getScaleY() * zoomFactor);
-            event.consume();
-        });
+        this.setOnScroll(
+                (ScrollEvent event) -> {
+                    double zoomFactor = 1.05;
+                    double deltaY = event.getDeltaY();
+                    if (deltaY < 0) {
+                        zoomFactor = 1 / zoomFactor;
+                    }
+                    contentGroup.setScaleX(contentGroup.getScaleX() * zoomFactor);
+                    contentGroup.setScaleY(contentGroup.getScaleY() * zoomFactor);
+                    event.consume();
+                });
     }
 }

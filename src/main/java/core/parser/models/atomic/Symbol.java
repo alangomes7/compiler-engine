@@ -1,7 +1,6 @@
 package core.parser.models.atomic;
 
 import java.util.Objects;
-
 import models.atomic.Constants;
 
 public class Symbol {

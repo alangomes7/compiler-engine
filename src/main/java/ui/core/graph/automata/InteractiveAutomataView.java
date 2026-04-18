@@ -1,5 +1,8 @@
 package ui.core.graph.automata;
 
+import core.lexer.models.atomic.State;
+import core.lexer.models.atomic.Transition;
+import core.lexer.models.automata.AFD;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -7,10 +10,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
-
-import core.lexer.models.atomic.State;
-import core.lexer.models.atomic.Transition;
-import core.lexer.models.automata.AFD;
 import javafx.beans.binding.Bindings;
 import javafx.beans.binding.DoubleBinding;
 import javafx.scene.Group;
@@ -48,9 +47,7 @@ public class InteractiveAutomataView extends Pane {
         }
     }
 
-    /**
-     * Takes a snapshot of the entire interactive graph and returns it as a WritableImage.
-     */
+    /** Takes a snapshot of the entire interactive graph and returns it as a WritableImage. */
     public WritableImage generateSnapshot() {
         // 1. Save the current pan and zoom state
         double oldScaleX = contentGroup.getScaleX();
@@ -76,8 +73,8 @@ public class InteractiveAutomataView extends Pane {
             // If the graph is small, it will still scale up to 3840px.
             // If the graph is huge, it will scale by 5.0x, exceeding 4K to preserve detail.
             double scaleFactorTo4K = 3840.0 / bounds.getWidth();
-            double finalScale = Math.max(3.0, scaleFactorTo4K); 
-            
+            double finalScale = Math.max(3.0, scaleFactorTo4K);
+
             parameters.setTransform(Transform.scale(finalScale, finalScale));
         }
 
@@ -113,7 +110,9 @@ public class InteractiveAutomataView extends Pane {
                 State target = t.getTarget();
                 if (!stateLayers.containsKey(target)) {
                     stateLayers.put(target, currentLayer + 1);
-                    layerToStates.computeIfAbsent(currentLayer + 1, k -> new ArrayList<>()).add(target);
+                    layerToStates
+                            .computeIfAbsent(currentLayer + 1, k -> new ArrayList<>())
+                            .add(target);
                     queue.add(target);
                 }
             }
@@ -121,28 +120,31 @@ public class InteractiveAutomataView extends Pane {
 
         double startX = 100;
         double startY = 300;
-        double layerSpacingX = 220; 
-        double nodeSpacingY = 120;  
+        double layerSpacingX = 220;
+        double nodeSpacingY = 120;
 
         Set<State> allStates = stateLayers.keySet();
 
         for (Map.Entry<Integer, List<State>> entry : layerToStates.entrySet()) {
             int layer = entry.getKey();
             List<State> statesInLayer = entry.getValue();
-            
+
             int numNodes = statesInLayer.size();
             double currentY = startY - ((numNodes - 1) * nodeSpacingY) / 2.0;
 
             for (State state : statesInLayer) {
                 boolean isStart = state.equals(afd.getStartState());
-                boolean isFinal = state.isFinal() || (afd.getFinalStates() != null && afd.getFinalStates().contains(state));
-                
+                boolean isFinal =
+                        state.isFinal()
+                                || (afd.getFinalStates() != null
+                                        && afd.getFinalStates().contains(state));
+
                 StackPane nodeUI = createNodeUI(state, isStart, isFinal);
-                
+
                 nodeUI.setLayoutX(startX + (layer * layerSpacingX));
                 nodeUI.setLayoutY(currentY);
-                currentY += nodeSpacingY; 
-                
+                currentY += nodeSpacingY;
+
                 nodeMap.put(state, nodeUI);
                 contentGroup.getChildren().add(nodeUI);
             }
@@ -150,16 +152,27 @@ public class InteractiveAutomataView extends Pane {
 
         for (State source : allStates) {
             Map<State, List<String>> groupedTransitions = new HashMap<>();
-            
+
             for (Transition t : source.getTransitions()) {
-                String symbol = t.getSymbol() == null || t.getSymbol().getValue().isEmpty() ? "ε" : t.getSymbol().getValue();
-                groupedTransitions.computeIfAbsent(t.getTarget(), k -> new ArrayList<>()).add(symbol);
+                String symbol =
+                        t.getSymbol() == null || t.getSymbol().getValue().isEmpty()
+                                ? "ε"
+                                : t.getSymbol().getValue();
+                groupedTransitions
+                        .computeIfAbsent(t.getTarget(), k -> new ArrayList<>())
+                        .add(symbol);
             }
 
             for (Map.Entry<State, List<String>> entry : groupedTransitions.entrySet()) {
                 State target = entry.getKey();
-                String labelStr = source.getId() + " -> " + target.getId() + ", {" + summarizeTokens(entry.getValue()) + "}";
-                
+                String labelStr =
+                        source.getId()
+                                + " -> "
+                                + target.getId()
+                                + ", {"
+                                + summarizeTokens(entry.getValue())
+                                + "}";
+
                 createEdgeUI(source, target, labelStr);
             }
         }
@@ -171,8 +184,8 @@ public class InteractiveAutomataView extends Pane {
 
     private StackPane createNodeUI(State state, boolean isStart, boolean isFinal) {
         StackPane stack = new StackPane();
-        
-        Circle circle = new Circle(25); 
+
+        Circle circle = new Circle(25);
         circle.setFill(isStart ? Color.LIGHTGREEN : Color.LIGHTBLUE);
         circle.setStroke(isFinal ? Color.RED : Color.DARKBLUE);
         circle.setStrokeWidth(isFinal ? 4 : 2);
@@ -195,17 +208,19 @@ public class InteractiveAutomataView extends Pane {
 
         stack.getChildren().addAll(circle, label);
 
-        stack.setOnMousePressed(e -> {
-            dragContextX = stack.getLayoutX() - e.getSceneX();
-            dragContextY = stack.getLayoutY() - e.getSceneY();
-            e.consume();
-        });
+        stack.setOnMousePressed(
+                e -> {
+                    dragContextX = stack.getLayoutX() - e.getSceneX();
+                    dragContextY = stack.getLayoutY() - e.getSceneY();
+                    e.consume();
+                });
 
-        stack.setOnMouseDragged(e -> {
-            stack.setLayoutX(e.getSceneX() + dragContextX);
-            stack.setLayoutY(e.getSceneY() + dragContextY);
-            e.consume();
-        });
+        stack.setOnMouseDragged(
+                e -> {
+                    stack.setLayoutX(e.getSceneX() + dragContextX);
+                    stack.setLayoutY(e.getSceneY() + dragContextY);
+                    e.consume();
+                });
 
         Tooltip.install(stack, new Tooltip("State: " + labelText));
 
@@ -217,7 +232,8 @@ public class InteractiveAutomataView extends Pane {
         StackPane targetNode = nodeMap.get(target);
 
         Label label = new Label(text);
-        label.setStyle("-fx-background-color: rgba(255, 255, 255, 0.9); -fx-padding: 3px; -fx-border-color: gray; -fx-border-radius: 3px;");
+        label.setStyle(
+                "-fx-background-color: rgba(255, 255, 255, 0.9); -fx-padding: 3px; -fx-border-color: gray; -fx-border-radius: 3px;");
 
         if (source.equals(target)) {
             QuadCurve curve = new QuadCurve();
@@ -237,7 +253,9 @@ public class InteractiveAutomataView extends Pane {
             arrow.setFill(Color.GRAY);
             arrow.layoutXProperty().bind(curve.endXProperty());
             arrow.layoutYProperty().bind(curve.endYProperty());
-            arrow.setRotate(107); // Fixed angle pointing down and slightly left along the curve's end trajectory
+            arrow.setRotate(
+                    107); // Fixed angle pointing down and slightly left along the curve's end
+            // trajectory
 
             label.layoutXProperty().bind(sourceNode.layoutXProperty().add(20));
             label.layoutYProperty().bind(sourceNode.layoutYProperty().subtract(50));
@@ -257,22 +275,39 @@ public class InteractiveAutomataView extends Pane {
             // Calculate arrow bindings dynamically
             DoubleBinding dx = line.endXProperty().subtract(line.startXProperty());
             DoubleBinding dy = line.endYProperty().subtract(line.startYProperty());
-            DoubleBinding length = Bindings.createDoubleBinding(() -> 
-                Math.sqrt(dx.get() * dx.get() + dy.get() * dy.get()), dx, dy);
+            DoubleBinding length =
+                    Bindings.createDoubleBinding(
+                            () -> Math.sqrt(dx.get() * dx.get() + dy.get() * dy.get()), dx, dy);
 
-            // Position arrow just outside the target node border (radius is ~25, we use 27 for padding)
-            DoubleBinding arrowX = Bindings.createDoubleBinding(() -> {
-                if (length.get() == 0) return line.getEndX();
-                return line.getStartX() + (dx.get() / length.get()) * (length.get() - 27);
-            }, line.startXProperty(), line.endXProperty(), dx, length);
+            // Position arrow just outside the target node border (radius is ~25, we use 27 for
+            // padding)
+            DoubleBinding arrowX =
+                    Bindings.createDoubleBinding(
+                            () -> {
+                                if (length.get() == 0) return line.getEndX();
+                                return line.getStartX()
+                                        + (dx.get() / length.get()) * (length.get() - 27);
+                            },
+                            line.startXProperty(),
+                            line.endXProperty(),
+                            dx,
+                            length);
 
-            DoubleBinding arrowY = Bindings.createDoubleBinding(() -> {
-                if (length.get() == 0) return line.getEndY();
-                return line.getStartY() + (dy.get() / length.get()) * (length.get() - 27);
-            }, line.startYProperty(), line.endYProperty(), dy, length);
+            DoubleBinding arrowY =
+                    Bindings.createDoubleBinding(
+                            () -> {
+                                if (length.get() == 0) return line.getEndY();
+                                return line.getStartY()
+                                        + (dy.get() / length.get()) * (length.get() - 27);
+                            },
+                            line.startYProperty(),
+                            line.endYProperty(),
+                            dy,
+                            length);
 
-            DoubleBinding angle = Bindings.createDoubleBinding(() -> 
-                Math.toDegrees(Math.atan2(dy.get(), dx.get())), dx, dy);
+            DoubleBinding angle =
+                    Bindings.createDoubleBinding(
+                            () -> Math.toDegrees(Math.atan2(dy.get(), dx.get())), dx, dy);
 
             // Arrow shape
             Polygon arrow = new Polygon(0, 0, -10, 5, -10, -5);
@@ -281,40 +316,45 @@ public class InteractiveAutomataView extends Pane {
             arrow.layoutYProperty().bind(arrowY);
             arrow.rotateProperty().bind(angle);
 
-            label.layoutXProperty().bind(line.startXProperty().add(line.endXProperty()).divide(2).subtract(20));
-            label.layoutYProperty().bind(line.startYProperty().add(line.endYProperty()).divide(2).subtract(15));
+            label.layoutXProperty()
+                    .bind(line.startXProperty().add(line.endXProperty()).divide(2).subtract(20));
+            label.layoutYProperty()
+                    .bind(line.startYProperty().add(line.endYProperty()).divide(2).subtract(15));
 
             contentGroup.getChildren().addAll(line, arrow, label);
         }
     }
 
     private void setupZoomAndPan() {
-        this.setOnMousePressed(event -> {
-            if (event.getTarget() == this) {
-                dragContextX = event.getSceneX() - contentGroup.getTranslateX();
-                dragContextY = event.getSceneY() - contentGroup.getTranslateY();
-            }
-        });
+        this.setOnMousePressed(
+                event -> {
+                    if (event.getTarget() == this) {
+                        dragContextX = event.getSceneX() - contentGroup.getTranslateX();
+                        dragContextY = event.getSceneY() - contentGroup.getTranslateY();
+                    }
+                });
 
-        this.setOnMouseDragged(event -> {
-            if (event.getTarget() == this) {
-                contentGroup.setTranslateX(event.getSceneX() - dragContextX);
-                contentGroup.setTranslateY(event.getSceneY() - dragContextY);
-            }
-        });
+        this.setOnMouseDragged(
+                event -> {
+                    if (event.getTarget() == this) {
+                        contentGroup.setTranslateX(event.getSceneX() - dragContextX);
+                        contentGroup.setTranslateY(event.getSceneY() - dragContextY);
+                    }
+                });
 
-        this.setOnScroll((ScrollEvent event) -> {
-            double zoomFactor = 1.05;
-            double deltaY = event.getDeltaY();
+        this.setOnScroll(
+                (ScrollEvent event) -> {
+                    double zoomFactor = 1.05;
+                    double deltaY = event.getDeltaY();
 
-            if (deltaY < 0) {
-                zoomFactor = 1 / zoomFactor;
-            }
+                    if (deltaY < 0) {
+                        zoomFactor = 1 / zoomFactor;
+                    }
 
-            contentGroup.setScaleX(contentGroup.getScaleX() * zoomFactor);
-            contentGroup.setScaleY(contentGroup.getScaleY() * zoomFactor);
-            event.consume();
-        });
+                    contentGroup.setScaleX(contentGroup.getScaleX() * zoomFactor);
+                    contentGroup.setScaleY(contentGroup.getScaleY() * zoomFactor);
+                    event.consume();
+                });
     }
 
     private String summarizeTokens(List<String> symbols) {

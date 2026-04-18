@@ -1,9 +1,8 @@
 package core.lexer.models;
 
+import core.lexer.models.atomic.Token;
 import java.util.ArrayList;
 import java.util.List;
-
-import core.lexer.models.atomic.Token;
 
 public class SymbolTable {
     private final List<Token> table;
@@ -44,7 +43,7 @@ public class SymbolTable {
         }
         System.out.println("====================\n");
     }
-    
+
     public List<Token> getTable() {
         return table;
     }

@@ -1,18 +1,16 @@
 package ui.core.services;
 
-import java.util.List;
-import java.util.function.Consumer;
-
 import core.lexer.Lexer;
 import core.lexer.core.translators.RuleReader;
 import core.lexer.models.atomic.Rule;
 import core.lexer.models.atomic.Token;
 import core.lexer.models.automata.AFD;
+import java.util.List;
+import java.util.function.Consumer;
 
 public class LexerService {
-    
-    private Lexer lexer;
 
+    private Lexer lexer;
 
     public AFD buildLexer(String filePath, Consumer<String> log) throws Exception {
         log.accept("📥 Reading rules...");
@@ -26,6 +24,7 @@ public class LexerService {
 
     public String scan(String input) {
         if (lexer == null) throw new IllegalStateException("Lexer not initialized");
+        lexer.getSymbolTable().clearTable();
         return lexer.scan(input);
     }
 

@@ -30,7 +30,7 @@ class Signature {
     }
 
     @Override
-    public int hashCode() { 
-        return hashCode; 
+    public int hashCode() {
+        return hashCode;
     }
 }

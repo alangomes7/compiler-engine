@@ -23,7 +23,7 @@ public class State {
     public void addTransition(Symbol symbol, State target) {
         Transition transition = new Transition(this, target, symbol);
         this.transitions.add(transition);
-        this.symbols.add(symbol); 
+        this.symbols.add(symbol);
     }
 
     public void setFinal(boolean isFinal) {
@@ -34,9 +34,23 @@ public class State {
         this.acceptedToken = acceptedToken;
     }
 
-    public String getAcceptedToken() { return acceptedToken; }
-    public int getId() { return id; }
-    public boolean isFinal() { return isFinal; }
-    public List<Transition> getTransitions() { return transitions; }
-    public Set<Symbol> getSymbols() { return symbols; }
+    public String getAcceptedToken() {
+        return acceptedToken;
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public boolean isFinal() {
+        return isFinal;
+    }
+
+    public List<Transition> getTransitions() {
+        return transitions;
+    }
+
+    public Set<Symbol> getSymbols() {
+        return symbols;
+    }
 }

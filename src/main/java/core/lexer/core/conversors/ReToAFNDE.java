@@ -1,10 +1,9 @@
 package core.lexer.core.conversors;
 
-import java.util.List;
-
 import core.lexer.models.atomic.State;
 import core.lexer.models.atomic.Symbol;
 import core.lexer.models.automata.AFNDE;
+import java.util.List;
 import models.atomic.Constants;
 
 public class ReToAFNDE {
@@ -17,7 +16,7 @@ public class ReToAFNDE {
     private static final String MASTER = "MasterLexer";
 
     private final Symbol EPSILON = new Symbol(Constants.EPSILON);
-    
+
     private int stateCounter = 0;
 
     public AFNDE symbol(String sym) {

@@ -1,8 +1,5 @@
 package core.parser.core.grammar;
 
-import java.util.List;
-import java.util.Map;
-
 import core.parser.models.Grammar;
 import core.parser.models.ParseTable;
 import core.parser.models.Production;
@@ -11,6 +8,8 @@ import core.parser.models.atomic.GrammarSemantics;
 import core.parser.models.atomic.GrammarType;
 import core.parser.models.atomic.ParserAlgorithm;
 import core.parser.models.atomic.Symbol;
+import java.util.List;
+import java.util.Map;
 
 public class GrammarClassificationBuilder {
 
@@ -29,7 +28,8 @@ public class GrammarClassificationBuilder {
 
     public GrammarClassification build() {
         if (this.grammar == null || this.parseTable == null) {
-            throw new IllegalStateException("Both Grammar and ParseTable must be provided before building the classification.");
+            throw new IllegalStateException(
+                    "Both Grammar and ParseTable must be provided before building the classification.");
         }
 
         GrammarType type = GrammarType.TYPE_2_CONTEXT_FREE;
@@ -42,10 +42,10 @@ public class GrammarClassificationBuilder {
             semantics = GrammarSemantics.LL1_DETERMINISTIC;
         } else {
             recommendedParser = ParserAlgorithm.LALR1_OR_LR1;
-            
+
             // Retrieve full error details
             errors = GrammarAnalyzer.analyzeGrammar(this.grammar);
-            
+
             // Assign semantics based on the generated GrammarErrors object
             if (!errors.getLeftRecursionDetails().isEmpty()) {
                 semantics = GrammarSemantics.LEFT_RECURSIVE;
@@ -56,9 +56,10 @@ public class GrammarClassificationBuilder {
             }
         }
 
-        GrammarClassification classification = new GrammarClassification(recommendedParser, type, semantics);
+        GrammarClassification classification =
+                new GrammarClassification(recommendedParser, type, semantics);
         classification.setErrors(errors);
-        
+
         return classification;
     }
 
@@ -76,7 +77,7 @@ public class GrammarClassificationBuilder {
                 }
             }
         }
-        
-        return true; 
+
+        return true;
     }
 }

@@ -1,5 +1,9 @@
 package core.lexer.core.conversors;
 
+import core.lexer.models.atomic.State;
+import core.lexer.models.atomic.Symbol;
+import core.lexer.models.atomic.Transition;
+import core.lexer.models.automata.AFD;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -10,11 +14,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import core.lexer.models.atomic.State;
-import core.lexer.models.atomic.Symbol;
-import core.lexer.models.atomic.Transition;
-import core.lexer.models.automata.AFD;
-
 public class AFDMinimizer {
 
     private int minStateCounter = 0;
@@ -24,13 +23,13 @@ public class AFDMinimizer {
         Set<State> allStatesSet = getAllStates(afd.getStartState());
         int numStates = allStatesSet.size();
         State[] states = allStatesSet.toArray(State[]::new);
-        
+
         Map<State, Integer> stateToIndex = new HashMap<>(numStates);
         for (int i = 0; i < numStates; i++) stateToIndex.put(states[i], i);
 
         Map<Symbol, Integer> symbolToIndex = new HashMap<>();
         List<Symbol> alphabet = new ArrayList<>();
-        
+
         for (State s : states) {
             for (Transition t : s.getTransitions()) {
                 if (!symbolToIndex.containsKey(t.getSymbol())) {
@@ -55,7 +54,10 @@ public class AFDMinimizer {
 
         for (int i = 0; i < numStates; i++) {
             if (isStateFinal(states[i], afd)) {
-                String token = states[i].getAcceptedToken() != null ? states[i].getAcceptedToken() : "FINAL_DEFAULT";
+                String token =
+                        states[i].getAcceptedToken() != null
+                                ? states[i].getAcceptedToken()
+                                : "FINAL_DEFAULT";
                 if (!finalGroups.containsKey(token)) {
                     finalGroups.put(token, ++pidCounter);
                 }
@@ -76,7 +78,7 @@ public class AFDMinimizer {
             for (int i = 0; i < numStates; i++) {
                 Signature sig = new Signature(partition[i], transitions[i], partition);
                 Integer existingPid = signatureToId.get(sig);
-                
+
                 if (existingPid == null) {
                     signatureToId.put(sig, nextPid);
                     newPartition[i] = nextPid++;
@@ -117,7 +119,8 @@ public class AFDMinimizer {
             for (int sIdx = 0; sIdx < alphabetSize; sIdx++) {
                 int targetOldIdx = transitions[oldIdx][sIdx];
                 if (targetOldIdx != -1) {
-                    newSource.addTransition(alphabet.get(sIdx), representative[partition[targetOldIdx]]);
+                    newSource.addTransition(
+                            alphabet.get(sIdx), representative[partition[targetOldIdx]]);
                 }
             }
         }

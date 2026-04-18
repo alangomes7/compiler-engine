@@ -1,13 +1,5 @@
 package core.lexer;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import core.lexer.core.conversors.AFDMinimizer;
 import core.lexer.core.conversors.AFNDEtoAFND;
 import core.lexer.core.conversors.AFNDtoAFD;
@@ -19,26 +11,32 @@ import core.lexer.models.atomic.State;
 import core.lexer.models.automata.AFD;
 import core.lexer.models.automata.AFND;
 import core.lexer.models.automata.AFNDE;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class Lexer {
-    
+
     private static final Logger log = LoggerFactory.getLogger(Lexer.class);
 
     private AFD masterAutomaton;
     private final List<Rule> rules;
     private final SymbolTable symbolTable;
-    
+
     private final Set<String> dynamicTokens;
     private final Set<String> skipTokens;
 
     public Lexer(List<Rule> rules) {
         this.rules = rules;
         log.info("--- Building Scanner For: {} Tokens ---", rules.size());
-        
+
         this.symbolTable = new SymbolTable();
         this.dynamicTokens = new HashSet<>();
         this.skipTokens = new HashSet<>();
-        
+
         categorizeRules();
         buildScanner();
     }
@@ -47,10 +45,10 @@ public class Lexer {
         String metacharacterPattern = ".*[\\\\\\[\\]\\(\\)\\*\\+\\?\\|].*";
         for (Rule rule : rules) {
             if (rule.isSkip()) {
-                skipTokens.add(rule.getTokenType());
+                skipTokens.add(rule.getType());
             }
             if (rule.getRegex().matches(metacharacterPattern)) {
-                dynamicTokens.add(rule.getTokenType());
+                dynamicTokens.add(rule.getType());
             }
         }
     }
@@ -86,13 +84,17 @@ public class Lexer {
         AFNDtoAFD afdConverter = new AFNDtoAFD();
         AFD masterAFD = afdConverter.convert(masterAFND);
         end = System.nanoTime();
-        log.debug("3. AFND converted to strictly deterministic AFD. Time: {} ms", (end - start) / 1_000_000);
+        log.debug(
+                "3. AFND converted to strictly deterministic AFD. Time: {} ms",
+                (end - start) / 1_000_000);
 
         start = System.nanoTime();
         AFDMinimizer minimizer = new AFDMinimizer();
         this.masterAutomaton = minimizer.minimize(masterAFD);
         end = System.nanoTime();
-        log.debug("4. AFD Minimized successfully. Time: {} ms", (end - start) / 1_000_000);
+        log.debug(
+                "4. AFD Minimized (and implicitly trimmed) successfully. Time: {} ms",
+                (end - start) / 1_000_000);
 
         log.info("Total pipeline time: {} ms\n", (System.nanoTime() - totalStart) / 1_000_000);
     }
@@ -106,15 +108,16 @@ public class Lexer {
     }
 
     public String scan(String input) {
+        this.symbolTable.clearTable();
         log.info("Scanning input...");
-        
+
         char[] chars = input.toCharArray();
         int inputLength = chars.length;
-        
+
         int currentIndex = 0;
         int currentLine = 1;
         int currentCol = 1;
-        
+
         boolean hasErrors = false;
         List<PendingSymbol> pendingSymbols = new ArrayList<>();
 
@@ -128,7 +131,7 @@ public class Lexer {
                 currentState = masterAutomaton.getNextState(currentState, chars[i]);
 
                 if (currentState == null) {
-                    break; 
+                    break;
                 }
 
                 if (currentState.isFinal()) {
@@ -144,12 +147,19 @@ public class Lexer {
                 boolean isSkipToken = skipTokens.contains(lastAcceptingToken);
 
                 if (log.isDebugEnabled()) {
-                    String displayLexeme = lexeme.replace("\n", "\\n").replace("\r", "\\r").replace("\t", "\\t");
-                    log.debug("[{}, {}]: Found Token: <{}, '{}'>", currentLine, currentCol, lastAcceptingToken, displayLexeme);
+                    String displayLexeme =
+                            lexeme.replace("\n", "\\n").replace("\r", "\\r").replace("\t", "\\t");
+                    log.debug(
+                            "[{}, {}]: Found Token: <{}, '{}'>",
+                            currentLine,
+                            currentCol,
+                            lastAcceptingToken,
+                            displayLexeme);
                 }
 
                 if (!isSkipToken) {
-                    pendingSymbols.add(new PendingSymbol(lexeme, lastAcceptingToken, currentLine, currentCol));
+                    pendingSymbols.add(
+                            new PendingSymbol(lexeme, lastAcceptingToken, currentLine, currentCol));
                 }
 
                 for (int i = currentIndex; i <= lastAcceptingIndex; i++) {
@@ -160,16 +170,16 @@ public class Lexer {
                         currentCol++;
                     }
                 }
-                
+
                 currentIndex = lastAcceptingIndex + 1;
-                
+
             } else {
-                hasErrors = true; 
-                
+                hasErrors = true;
+
                 int errorStart = currentIndex;
                 int errorLine = currentLine;
                 int errorCol = currentCol;
-                
+
                 while (currentIndex < inputLength && !Character.isWhitespace(chars[currentIndex])) {
                     if (chars[currentIndex] == '\n') {
                         currentLine++;
@@ -179,9 +189,13 @@ public class Lexer {
                     }
                     currentIndex++;
                 }
-                
+
                 String malformedChunk = new String(chars, errorStart, currentIndex - errorStart);
-                log.error("[{}, {}]: Lexical Error: Invalid sequence '{}'", errorLine, errorCol, malformedChunk);
+                log.error(
+                        "[{}, {}]: Lexical Error: Invalid sequence '{}'",
+                        errorLine,
+                        errorCol,
+                        malformedChunk);
             }
         }
 

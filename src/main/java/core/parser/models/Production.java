@@ -1,10 +1,9 @@
 package core.parser.models;
 
+import core.parser.models.atomic.Symbol;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-
-import core.parser.models.atomic.Symbol;
 
 public class Production {
     private final Symbol lhs; // Left-Hand Side (Must be a Non-Terminal)

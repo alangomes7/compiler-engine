@@ -1,9 +1,5 @@
 package core.parser;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Stack;
-
 import core.lexer.models.atomic.Token;
 import core.parser.models.Grammar;
 import core.parser.models.ParseTable;
@@ -11,6 +7,9 @@ import core.parser.models.Production;
 import core.parser.models.atomic.Symbol;
 import core.parser.models.tree.Node;
 import core.parser.models.tree.ParseTree;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Stack;
 
 public class LL1Parser {
     private final Grammar grammar;
@@ -24,15 +23,15 @@ public class LL1Parser {
     }
 
     /**
-     * Parses tokens and returns the Parse Tree. If errors occur, it returns the 
-     * partial broken tree constructed up to the error point.
+     * Parses tokens and returns the Parse Tree. If errors occur, it returns the partial broken tree
+     * constructed up to the error point.
      */
     public ParseTree parse(List<Token> tokens) {
         errors.clear();
         Stack<Node> stack = new Stack<>();
 
         Node root = new Node(grammar.getStartSymbol());
-        stack.push(new Node(Symbol.EOF)); 
+        stack.push(new Node(Symbol.EOF));
         stack.push(root);
 
         int lookaheadIndex = 0;
@@ -41,7 +40,8 @@ public class LL1Parser {
             Node currentNode = stack.pop();
             Symbol top = currentNode.getSymbol();
 
-            Token currentToken = (lookaheadIndex < tokens.size()) ? tokens.get(lookaheadIndex) : null;
+            Token currentToken =
+                    (lookaheadIndex < tokens.size()) ? tokens.get(lookaheadIndex) : null;
             Symbol lookahead = resolveLookahead(currentToken);
 
             if (top.isTerminal()) {
@@ -53,22 +53,26 @@ public class LL1Parser {
                         lookaheadIndex++;
                     }
                 } else {
-                    errors.add(String.format("Syntax Error at line %d:%d: Expected '%s', but found '%s'",
-                        (currentToken != null ? currentToken.getLine() : 0),
-                        (currentToken != null ? currentToken.getCol() : 0),
-                        top.getName(), 
-                        (currentToken != null ? currentToken.getLexeme() : "EOF")));
+                    errors.add(
+                            String.format(
+                                    "Syntax Error at line %d:%d: Expected '%s', but found '%s'",
+                                    (currentToken != null ? currentToken.getLine() : 0),
+                                    (currentToken != null ? currentToken.getCol() : 0),
+                                    top.getName(),
+                                    (currentToken != null ? currentToken.getLexeme() : "EOF")));
                     return new ParseTree(root); // Return partial broken tree
                 }
             } else {
                 List<Production> productions = this.parseTable.getEntry(top, lookahead);
 
                 if (productions.isEmpty()) {
-                    errors.add(String.format("Syntax Error at line %d:%d: No rule to derive '%s' with lookahead '%s'", 
-                        (currentToken != null ? currentToken.getLine() : 0),
-                        (currentToken != null ? currentToken.getCol() : 0),
-                        top.getName(), 
-                        (currentToken != null ? currentToken.getLexeme() : "EOF")));
+                    errors.add(
+                            String.format(
+                                    "Syntax Error at line %d:%d: No rule to derive '%s' with lookahead '%s'",
+                                    (currentToken != null ? currentToken.getLine() : 0),
+                                    (currentToken != null ? currentToken.getCol() : 0),
+                                    top.getName(),
+                                    (currentToken != null ? currentToken.getLexeme() : "EOF")));
                     return new ParseTree(root); // Return partial broken tree
                 }
 
@@ -98,18 +102,17 @@ public class LL1Parser {
     }
 
     /**
-     * Maps the Lexer's Token to the Parser's Symbol (Object-based).
-     * Must check BOTH the token's Lexeme (for literals) 
-     * and the TokenType (for sets like "IDENTIFIER" or "INT").
+     * Maps the Lexer's Token to the Parser's Symbol (Object-based). Must check BOTH the token's
+     * Lexeme (for literals) and the TokenType (for sets like "IDENTIFIER" or "INT").
      */
     private Symbol resolveLookahead(Token token) {
         if (token == null) {
             return Symbol.EOF;
         }
-        
+
         String lexeme = token.getLexeme();
-        String tokenType = token.getTokenType();
-        
+        String tokenType = token.getType();
+
         // 1. Try to match by Exact Lexeme first (e.g., "+", "&&", "==")
         for (Symbol terminal : grammar.getTerminals()) {
             if (terminal.getName().equals(lexeme)) {
@@ -123,7 +126,7 @@ public class LL1Parser {
                 return terminal;
             }
         }
-        
+
         // If not found in grammar, return a temporary terminal for error reporting
         return new Symbol(tokenType != null ? tokenType : lexeme, true);
     }

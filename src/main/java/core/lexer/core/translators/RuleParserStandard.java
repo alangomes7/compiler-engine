@@ -16,7 +16,7 @@ public class RuleParserStandard {
         this.generator = generator;
     }
 
-    public AFNDE parse(Rule rule) { 
+    public AFNDE parse(Rule rule) {
         this.input = rule.getRegex().toCharArray();
         this.pos = 0;
         this.length = input.length;
@@ -25,11 +25,15 @@ public class RuleParserStandard {
 
         if (pos < length) {
             throw new RuntimeException(
-                "Standard Parser: Unexpected '" + input[pos] + "' at pos " + pos + " in rule " + rule.getTokenType()
-            );
+                    "Standard Parser: Unexpected '"
+                            + input[pos]
+                            + "' at pos "
+                            + pos
+                            + " in rule "
+                            + rule.getType());
         }
 
-        return generator.nameToken(rule.getTokenType(), nfa);
+        return generator.nameToken(rule.getType(), nfa);
     }
 
     private AFNDE parseExpression() {
@@ -111,7 +115,7 @@ public class RuleParserStandard {
     }
 
     private AFNDE parseCharacterClass() {
-        pos++; 
+        pos++;
 
         boolean negate = false;
         if (input[pos] == '^') {
@@ -119,13 +123,13 @@ public class RuleParserStandard {
             pos++;
         }
 
-        boolean[] table = new boolean[128]; 
+        boolean[] table = new boolean[128];
 
         while (pos < length && input[pos] != ']') {
             char start = readChar();
 
             if (pos < length - 1 && input[pos] == '-' && input[pos + 1] != ']') {
-                pos++; 
+                pos++;
                 char end = readChar();
 
                 for (int c = start; c <= end; c++) {
@@ -136,7 +140,7 @@ public class RuleParserStandard {
             }
         }
 
-        pos++; 
+        pos++;
 
         AFNDE result = null;
 
@@ -170,8 +174,6 @@ public class RuleParserStandard {
     }
 
     private RuntimeException error(String expected) {
-        return new RuntimeException(
-            "Expected '" + expected + "' at pos " + pos
-        );
+        return new RuntimeException("Expected '" + expected + "' at pos " + pos);
     }
 }

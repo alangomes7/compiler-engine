@@ -1,14 +1,13 @@
 package core.lexer.models.automata;
 
+import core.lexer.models.atomic.State;
+import core.lexer.models.atomic.Transition;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
-
-import core.lexer.models.atomic.State;
-import core.lexer.models.atomic.Transition;
 
 public class AFNDE {
     private final String tokenName;
@@ -20,7 +19,7 @@ public class AFNDE {
         this.tokenName = tokenName;
         this.startState = startState;
         this.finalState = finalState;
-        
+
         this.alphabet = new Alphabet();
         computeAlphabet();
     }
@@ -33,15 +32,26 @@ public class AFNDE {
         }
     }
 
-    public String getTokenName() { return tokenName; }
-    public State getStartState() { return startState; }
-    public State getFinalState() { return finalState; }
-    public Alphabet getAlphabet() { return alphabet; }
+    public String getTokenName() {
+        return tokenName;
+    }
+
+    public State getStartState() {
+        return startState;
+    }
+
+    public State getFinalState() {
+        return finalState;
+    }
+
+    public Alphabet getAlphabet() {
+        return alphabet;
+    }
 
     public Set<State> getAllStates() {
         Set<State> visited = new LinkedHashSet<>();
         Deque<State> stack = new ArrayDeque<>();
-        
+
         stack.push(startState);
         visited.add(startState);
 
@@ -62,14 +72,14 @@ public class AFNDE {
         sb.append("=== AFNDE: ").append(tokenName).append(" ===\n");
         sb.append("Alphabet: ").append(alphabet.getSymbols()).append("\n");
         sb.append("Start State: q").append(startState.getId()).append("\n");
-        
+
         sb.append("Final State: ");
         if (finalState != null) {
             sb.append("q").append(finalState.getId()).append("\n");
         } else {
             sb.append("Multiple (Master Scanner)\n");
         }
-        
+
         sb.append("Transitions:\n");
 
         Set<State> visited = new HashSet<>();
@@ -80,7 +90,7 @@ public class AFNDE {
 
         while (!queue.isEmpty()) {
             State current = queue.poll();
-            
+
             sb.append("  q").append(current.getId());
             if (current.isFinal() || current == finalState) {
                 sb.append(" [FINAL]");
@@ -92,9 +102,12 @@ public class AFNDE {
                 sb.append("    (no transitions)\n");
             } else {
                 for (Transition t : transitions) {
-                    sb.append("    --(").append(t.getSymbol().getValue()).append(")--> q")
-                    .append(t.getTarget().getId()).append("\n");
-                    
+                    sb.append("    --(")
+                            .append(t.getSymbol().getValue())
+                            .append(")--> q")
+                            .append(t.getTarget().getId())
+                            .append("\n");
+
                     if (visited.add(t.getTarget())) {
                         queue.add(t.getTarget());
                     }

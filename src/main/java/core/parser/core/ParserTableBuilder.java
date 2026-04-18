@@ -1,22 +1,17 @@
 package core.parser.core;
 
-import java.util.List;
-import java.util.Set;
-
 import core.parser.models.FirstFollowTable;
 import core.parser.models.Grammar;
 import core.parser.models.ParseTable;
 import core.parser.models.Production;
 import core.parser.models.atomic.Symbol;
+import java.util.List;
+import java.util.Set;
 
-/**
- * Reads the grammar and the FirstFollowTable and creates a populated Parser Table object model.
- */
+/** Reads the grammar and the FirstFollowTable and creates a populated Parser Table object model. */
 public class ParserTableBuilder {
 
-    /**
-     * Builds the LL(1) Parsing Table using the Grammar and its First/Follow sets.
-     */
+    /** Builds the LL(1) Parsing Table using the Grammar and its First/Follow sets. */
     public static ParseTable build(Grammar grammar, FirstFollowTable firstFollowTable) {
         ParseTable parseTable = new ParseTable();
 
@@ -33,7 +28,8 @@ public class ParserTableBuilder {
                 }
             }
 
-            // 2. If EPSILON is in FIRST(RHS), for each terminal 'b' in FOLLOW(LHS), add M[A, b] = production
+            // 2. If EPSILON is in FIRST(RHS), for each terminal 'b' in FOLLOW(LHS), add M[A, b] =
+            // production
             if (firstRhs.contains(Symbol.EPSILON)) {
                 Set<Symbol> followLhs = firstFollowTable.getFollow(lhs);
                 for (Symbol symbol : followLhs) {
@@ -45,10 +41,9 @@ public class ParserTableBuilder {
         return parseTable;
     }
 
-    /**
-     * Helper to calculate the FIRST set of a sequence of symbols (the RHS of a production).
-     */
-    private static Set<Symbol> computeFirstOfSequence(List<Symbol> sequence, FirstFollowTable table) {
+    /** Helper to calculate the FIRST set of a sequence of symbols (the RHS of a production). */
+    private static Set<Symbol> computeFirstOfSequence(
+            List<Symbol> sequence, FirstFollowTable table) {
         java.util.Set<Symbol> result = new java.util.HashSet<>();
         boolean allNullable = true;
 

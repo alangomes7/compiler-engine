@@ -1,11 +1,10 @@
 package core.parser.models;
 
+import core.parser.models.atomic.Symbol;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-
-import core.parser.models.atomic.Symbol;
 
 public class Grammar {
     private final Symbol startSymbol;
@@ -18,7 +17,7 @@ public class Grammar {
         this.terminals = new HashSet<>();
         this.nonTerminals = new HashSet<>();
         this.productions = new ArrayList<>();
-        
+
         // The start symbol is always a non-terminal
         this.nonTerminals.add(startSymbol);
     }
@@ -26,7 +25,7 @@ public class Grammar {
     public void addProduction(Production production) {
         this.productions.add(production);
         this.nonTerminals.add(production.getLhs());
-        
+
         for (Symbol symbol : production.getRhs()) {
             if (symbol.isTerminal() && !symbol.equals(Symbol.EPSILON)) {
                 this.terminals.add(symbol);
@@ -36,14 +35,23 @@ public class Grammar {
         }
     }
 
-    public Symbol getStartSymbol() { return startSymbol; }
-    public Set<Symbol> getTerminals() { return terminals; }
-    public Set<Symbol> getNonTerminals() { return nonTerminals; }
-    public List<Production> getProductions() { return productions; }
+    public Symbol getStartSymbol() {
+        return startSymbol;
+    }
 
-    /**
-     * Helper to get all productions for a specific Non-Terminal
-     */
+    public Set<Symbol> getTerminals() {
+        return terminals;
+    }
+
+    public Set<Symbol> getNonTerminals() {
+        return nonTerminals;
+    }
+
+    public List<Production> getProductions() {
+        return productions;
+    }
+
+    /** Helper to get all productions for a specific Non-Terminal */
     public List<Production> getProductionsFor(Symbol nonTerminal) {
         List<Production> result = new ArrayList<>();
         for (Production p : productions) {

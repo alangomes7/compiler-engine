@@ -1,8 +1,7 @@
 package core.parser.models.tree;
 
 /**
- * Represents the final result of the Syntactic Analysis.
- * Wraps the root Node of the generated tree.
+ * Represents the final result of the Syntactic Analysis. Wraps the root Node of the generated tree.
  */
 public class ParseTree {
     private final Node root;
@@ -15,9 +14,7 @@ public class ParseTree {
         return root;
     }
 
-    /**
-     * Prints the entire tree structure starting from the root to the standard output.
-     */
+    /** Prints the entire tree structure starting from the root to the standard output. */
     public void print() {
         if (root != null) {
             root.print("", true);

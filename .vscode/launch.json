@@ -1,24 +1,8 @@
 {
-  "configurations": [
-    {
-      "type": "java",
-      "name": "Launcher",
-      "request": "launch",
-      "mainClass": "compiler.app/app.Launcher",
-      "projectName": "compiler-engine"
-    },
-    {
-      "type": "java",
-      "name": "MainApp",
-      "request": "launch",
-      "mainClass": "compiler.app/app.MainApp",
-      "projectName": "compiler-engine"
-    },
-    {
-      "name": "Run JavaFX via Maven",
-      "type": "node-terminal",
-      "request": "launch",
-      "command": "mvn clean javafx:run -U"
-    }
-  ]
+  "type": "java",
+  "name": "Run / Debug JavaFX",
+  "request": "launch",
+  "mainClass": "app.Launcher",
+  "projectName": "compiler-engine",
+  "preLaunchTask": "Maven: Run JavaFX"
 }

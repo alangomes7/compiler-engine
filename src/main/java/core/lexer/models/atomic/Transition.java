@@ -11,7 +11,15 @@ public class Transition {
         this.symbol = symbol;
     }
 
-    public State getSource() { return source; }
-    public State getTarget() { return target; }
-    public Symbol getSymbol() { return symbol; }
+    public State getSource() {
+        return source;
+    }
+
+    public State getTarget() {
+        return target;
+    }
+
+    public Symbol getSymbol() {
+        return symbol;
+    }
 }

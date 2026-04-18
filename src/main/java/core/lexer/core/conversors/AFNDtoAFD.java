@@ -1,5 +1,10 @@
 package core.lexer.core.conversors;
 
+import core.lexer.models.atomic.State;
+import core.lexer.models.atomic.Symbol;
+import core.lexer.models.atomic.Transition;
+import core.lexer.models.automata.AFD;
+import core.lexer.models.automata.AFND;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.BitSet;
@@ -9,12 +14,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import core.lexer.models.atomic.State;
-import core.lexer.models.atomic.Symbol;
-import core.lexer.models.atomic.Transition;
-import core.lexer.models.automata.AFD;
-import core.lexer.models.automata.AFND;
 
 public class AFNDtoAFD {
 
@@ -31,15 +30,14 @@ public class AFNDtoAFD {
             this.isFinal = isFinal;
             this.token = token;
             this.transitions = new HashMap<>();
-            tempTrans.forEach((sym, list) -> 
-                transitions.put(sym, list.stream().mapToInt(i -> i).toArray())
-            );
+            tempTrans.forEach(
+                    (sym, list) -> transitions.put(sym, list.stream().mapToInt(i -> i).toArray()));
         }
     }
 
     public AFD convert(AFND afnd) {
         dfaStateCounter = 0;
-        
+
         Set<State> allStates = getAllStates(afnd.getStartState());
         int maxId = allStates.stream().mapToInt(State::getId).max().orElse(0);
         NfaStateData[] nfaData = new NfaStateData[maxId + 1];
@@ -47,14 +45,18 @@ public class AFNDtoAFD {
         for (State s : allStates) {
             Map<Symbol, List<Integer>> tempTrans = new HashMap<>();
             for (Transition t : s.getTransitions()) {
-                tempTrans.computeIfAbsent(t.getSymbol(), k -> new ArrayList<>()).add(t.getTarget().getId());
-            }
-            nfaData[s.getId()] = new NfaStateData(
-                s.getId(), 
-                s.isFinal() || (afnd.getFinalStates() != null && afnd.getFinalStates().contains(s)),
-                s.getAcceptedToken(),
                 tempTrans
-            );
+                        .computeIfAbsent(t.getSymbol(), k -> new ArrayList<>())
+                        .add(t.getTarget().getId());
+            }
+            nfaData[s.getId()] =
+                    new NfaStateData(
+                            s.getId(),
+                            s.isFinal()
+                                    || (afnd.getFinalStates() != null
+                                            && afnd.getFinalStates().contains(s)),
+                            s.getAcceptedToken(),
+                            tempTrans);
         }
 
         Map<BitSet, State> dfaStateMap = new HashMap<>();
@@ -74,13 +76,14 @@ public class AFNDtoAFD {
             State currentDfaState = dfaStateMap.get(currentSubset);
 
             Map<Symbol, BitSet> nextSubsets = new HashMap<>();
-            
+
             for (int i = currentSubset.nextSetBit(0); i >= 0; i = currentSubset.nextSetBit(i + 1)) {
                 NfaStateData data = nfaData[i];
                 if (data == null) continue;
-                
+
                 for (Map.Entry<Symbol, int[]> entry : data.transitions.entrySet()) {
-                    BitSet targetBitSet = nextSubsets.computeIfAbsent(entry.getKey(), k -> new BitSet());
+                    BitSet targetBitSet =
+                            nextSubsets.computeIfAbsent(entry.getKey(), k -> new BitSet());
                     for (int targetId : entry.getValue()) {
                         targetBitSet.set(targetId);
                     }

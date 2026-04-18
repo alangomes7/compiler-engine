@@ -1,18 +1,15 @@
 package core.parser.core.grammar;
 
+import core.parser.models.Grammar;
+import core.parser.models.Production;
+import core.parser.models.atomic.Symbol;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import core.parser.models.Grammar;
-import core.parser.models.Production;
-import core.parser.models.atomic.Symbol;
-
-/**
- * Reads a grammar file (supports multi-line productions and EBNF-like syntax).
- */
+/** Reads a grammar file (supports multi-line productions and EBNF-like syntax). */
 public class GrammarReader {
 
     public static Grammar readFromFile(String filePath) throws IOException {
@@ -58,7 +55,8 @@ public class GrammarReader {
         }
 
         if (grammar == null) {
-            throw new IllegalArgumentException("Grammar file is empty or contains no valid productions.");
+            throw new IllegalArgumentException(
+                    "Grammar file is empty or contains no valid productions.");
         }
 
         return grammar;
@@ -78,9 +76,7 @@ public class GrammarReader {
         }
     }
 
-    /**
-     * Splits RHS by '|' but ignores pipes inside quotes.
-     */
+    /** Splits RHS by '|' but ignores pipes inside quotes. */
     private static String[] splitAlternatives(String rhs) {
         List<String> result = new ArrayList<>();
         StringBuilder current = new StringBuilder();
@@ -106,11 +102,7 @@ public class GrammarReader {
         return result.toArray(String[]::new);
     }
 
-    /**
-     * Tokenizer that preserves:
-     * - quoted strings
-     * - symbols like (), {}, [], ?, *, +
-     */
+    /** Tokenizer that preserves: - quoted strings - symbols like (), {}, [], ?, *, + */
     private static List<Symbol> tokenize(String input) {
         List<Symbol> symbols = new ArrayList<>();
 
@@ -174,14 +166,11 @@ public class GrammarReader {
     }
 
     private static boolean isTerminal(String token) {
-        return token.startsWith("\"") ||
-               token.startsWith("'") ||
-               token.matches("[^a-zA-Z].*");
+        return token.startsWith("\"") || token.startsWith("'") || token.matches("[^a-zA-Z].*");
     }
 
     private static String stripQuotes(String s) {
-        if ((s.startsWith("\"") && s.endsWith("\"")) ||
-            (s.startsWith("'") && s.endsWith("'"))) {
+        if ((s.startsWith("\"") && s.endsWith("\"")) || (s.startsWith("'") && s.endsWith("'"))) {
             return s.substring(1, s.length() - 1);
         }
         return s;
