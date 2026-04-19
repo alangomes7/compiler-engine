@@ -8,9 +8,9 @@ import ui.core.graph.automata.AutomataVisualizer;
 import ui.core.graph.tree.InteractiveTreeView;
 import ui.core.services.FileService;
 import ui.core.state.AnalysisState;
-import ui.core.table.FirstFollowTableManager;
-import ui.core.table.ParserTableManager;
-import ui.core.table.SymbolTableManager;
+import ui.core.tables.FirstFollowTableManager;
+import ui.core.tables.ParserTableManager;
+import ui.core.tables.SymbolTableManager;
 import ui.util.UiUtils;
 
 public class ExportHandler {

@@ -1,4 +1,4 @@
-package ui.core.table;
+package ui.core.tables;
 
 import static ui.core.services.FileService.escapeCsv;
 

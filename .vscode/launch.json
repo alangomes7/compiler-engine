@@ -4,5 +4,14 @@
   "request": "launch",
   "mainClass": "app.Launcher",
   "projectName": "compiler-engine",
-  "preLaunchTask": "Maven: Run JavaFX"
+  "preLaunchTask": "Maven: Run JavaFX",
+  "configurations": [
+    {
+      "type": "java",
+      "name": "Main",
+      "request": "launch",
+      "mainClass": "compiler.engine/app.Main",
+      "projectName": "compiler-engine"
+    }
+  ]
 }

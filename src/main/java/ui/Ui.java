@@ -23,9 +23,9 @@ import ui.core.handlers.VisualizationHandler;
 import ui.core.services.LexerService;
 import ui.core.services.ParserService;
 import ui.core.state.AnalysisState;
-import ui.core.table.FirstFollowTableManager;
-import ui.core.table.ParserTableManager;
-import ui.core.table.SymbolTableManager;
+import ui.core.tables.FirstFollowTableManager;
+import ui.core.tables.ParserTableManager;
+import ui.core.tables.SymbolTableManager;
 import ui.util.BackgroundTaskExecutor;
 import ui.util.UiUtils;
 
