@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="UTF-8"?>
-
 <?import java.lang.*?>
 <?import javafx.geometry.*?>
 <?import javafx.scene.control.*?>
@@ -19,7 +18,6 @@
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
-
 <StackPane xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ui.Ui">
    <children>
       <VBox spacing="10">
@@ -288,6 +286,7 @@
                   </TabPane>
                </items>
             </SplitPane>
+            <!-- Main action buttons row with Cancel button -->
             <HBox alignment="CENTER_LEFT" spacing="10">
                <children>
                   <Button fx:id="runLexerBtn" onAction="#handleRunLexer" style="-fx-font-weight: bold;" text="4. Run Lexer Analysis" />
@@ -295,15 +294,18 @@
                   <Button fx:id="clearTablesBtn" onAction="#handleClearTables" style="-fx-text-fill: red;" text="Clear Tables" />
                   <Button fx:id="exportCsvBtn" onAction="#handleExportCSV" text="Export Tables (.csv)" />
                   <Button fx:id="generateReportBtn" onAction="#handleGenerateFullReport" text="Generate Full Report" />
+                  <Button fx:id="cancelOperationBtn" onAction="#handleCancelOperation" style="-fx-background-color: #ff4444; -fx-text-fill: white; -fx-font-weight: bold;" text="Cancel Operation" visible="false" managed="false" />
                </children>
             </HBox>
          </children>
       </VBox>
+      <!-- Loading Overlay -->
       <VBox fx:id="loadingOverlay" alignment="CENTER" spacing="15" style="-fx-background-color: rgba(0, 0, 0, 0.6);" visible="false">
          <children>
             <ProgressIndicator fx:id="mainSpinner" />
             <Label fx:id="loadingLabel" style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: white;" text="Loading..." />
             <Label fx:id="loadingTimeLabel" style="-fx-font-size: 14px; -fx-text-fill: lightgray;" text="0.00s" />
+            <Button fx:id="overlayCancelBtn" onAction="#handleCancelOperation" style="-fx-background-color: #ff4444; -fx-text-fill: white; -fx-font-weight: bold;" text="Cancel" />
          </children>
       </VBox>
    </children>

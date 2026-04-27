@@ -1,5 +1,16 @@
 package core.lexer;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import core.lexer.core.conversors.DFAMinimizer;
 import core.lexer.core.conversors.NFAEtoNFA;
 import core.lexer.core.conversors.NFAtoDFA;
@@ -11,16 +22,7 @@ import core.lexer.models.atomic.State;
 import core.lexer.models.automata.DFA;
 import core.lexer.models.automata.NFA;
 import core.lexer.models.automata.NFAE;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import models.atomic.Constants;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Main lexical analyzer that converts an input string into a stream of tokens.

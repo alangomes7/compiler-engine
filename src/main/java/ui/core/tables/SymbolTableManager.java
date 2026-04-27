@@ -10,9 +10,6 @@ import javafx.scene.control.TableColumn;
 /**
  * Configures the columns of the symbol table TableView (lexer output). Provides a static method to
  * export the symbol table as CSV.
- *
- * @author Generated
- * @version 1.0
  */
 public class SymbolTableManager {
 

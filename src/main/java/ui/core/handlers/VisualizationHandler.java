@@ -6,11 +6,42 @@ import ui.core.graph.tree.InteractiveTreeView;
 import ui.core.state.AnalysisState;
 
 /**
- * Handles the generation of visual tree representations: the grammar structure tree and the parse
- * tree of the input.
+ * Handles the generation of visual tree representations.
  *
- * @author Generated
- * @version 1.0
+ * <p>This handler is responsible for creating interactive tree visualizations of two types of
+ * hierarchical structures:
+ *
+ * <ul>
+ *   <li><b>Grammar Tree:</b> Visual representation of the grammar's production rules, showing how
+ *       non-terminals expand to sequences of symbols
+ *   <li><b>Input Parse Tree:</b> Concrete parse tree showing how the input text was parsed
+ *       according to the grammar rules
+ * </ul>
+ *
+ * <p>Both tree visualizations are interactive, allowing users to:
+ *
+ * <ul>
+ *   <li>Expand and collapse nodes
+ *   <li>Pan and zoom the view
+ *   <li>Export snapshots via the export handler
+ * </ul>
+ *
+ * <p>Typical usage:
+ *
+ * <pre>
+ * VisualizationHandler visualizer = new VisualizationHandler(ui, state, stateController);
+ *
+ * // After loading grammar
+ * visualizer.handleGenerateGrammarTree();
+ *
+ * // After successful syntax analysis
+ * visualizer.handleGenerateInputTree();
+ * </pre>
+ *
+ * @see Ui
+ * @see AnalysisState
+ * @see UiStateController
+ * @see InteractiveTreeView
  */
 public class VisualizationHandler {
     private final Ui ui;
@@ -21,8 +52,8 @@ public class VisualizationHandler {
      * Constructs a VisualizationHandler with references to the main UI, analysis state, and state
      * controller.
      *
-     * @param ui the main UI instance
-     * @param state the shared analysis state
+     * @param ui the main UI instance providing access to services and containers
+     * @param state the shared analysis state for tracking tree availability
      * @param stateController the controller for updating UI components based on state changes
      */
     public VisualizationHandler(Ui ui, AnalysisState state, UiStateController stateController) {
@@ -32,8 +63,24 @@ public class VisualizationHandler {
     }
 
     /**
-     * Generates a tree view of the grammar (productions for each non‑terminal) and displays it in
-     * the grammar tree container.
+     * Generates a tree view of the grammar (productions for each non‑terminal) and displays it.
+     *
+     * <p>The grammar tree visualizes the structure of the loaded grammar, showing each non-terminal
+     * and its production rules. The tree is generated recursively, with:
+     *
+     * <ul>
+     *   <li>Root node: the grammar's start symbol
+     *   <li>Production nodes: labeled with "::="
+     *   <li>Symbol nodes: terminals and non-terminals in the RHS
+     * </ul>
+     *
+     * <p>This operation runs asynchronously and may take time for large grammars. Progress is shown
+     * via the background task executor.
+     *
+     * <p>Requires that a grammar has been loaded.
+     *
+     * <p>On successful generation, {@code hasGrammarTree} is set to {@code true} and the tree is
+     * displayed in the grammar tree container.
      */
     public void handleGenerateGrammarTree() {
         ui.getTaskExecutor()
@@ -59,8 +106,25 @@ public class VisualizationHandler {
     }
 
     /**
-     * Generates a parse tree from the last successful syntax analysis result and displays it in the
-     * input tree container. Does nothing if no parse result is available.
+     * Generates a parse tree from the last successful syntax analysis result and displays it.
+     *
+     * <p>The input parse tree shows how the input text was parsed according to the grammar rules.
+     * Each node in the tree represents either:
+     *
+     * <ul>
+     *   <li>A non-terminal that is expanded using a production rule
+     *   <li>A terminal token that was matched in the input
+     * </ul>
+     *
+     * <p>This operation is quick (just retrieving the cached parse result) and runs asynchronously
+     * to keep the UI responsive.
+     *
+     * <p>Requires that syntax analysis has been run successfully and a parse result is available.
+     * If no parse result exists, an error message is displayed in the output area and the operation
+     * is aborted.
+     *
+     * <p>On successful generation, {@code hasInputTree} is set to {@code true} and the tree is
+     * displayed in the input tree container.
      */
     public void handleGenerateInputTree() {
         if (state.getCurrentParseResult() == null || state.getCurrentParseResult().tree == null) {

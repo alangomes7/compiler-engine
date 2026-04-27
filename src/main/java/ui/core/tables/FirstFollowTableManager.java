@@ -17,9 +17,6 @@ import javafx.util.Callback;
 /**
  * Manages the FIRST/FOLLOW table UI component. Dynamically updates the table columns and cell
  * values based on a live FIRST/FOLLOW table supplier.
- *
- * @author Generated
- * @version 1.0
  */
 public class FirstFollowTableManager {
 

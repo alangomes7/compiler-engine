@@ -20,9 +20,6 @@ import models.atomic.Constants;
 /**
  * Interactive JavaFX component for displaying a parse tree. Supports zoom, pan, and individual node
  * dragging. The tree is laid out recursively with automatic positioning based on subtree widths.
- *
- * @author Generated
- * @version 1.1
  */
 public class InteractiveTreeView extends Pane {
 

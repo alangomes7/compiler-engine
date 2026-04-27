@@ -20,9 +20,6 @@ import javafx.scene.control.TableView;
  * Dynamically builds and populates the LL(1) parsing table (a grid with non‑terminals as rows and
  * terminals as columns). Columns are created on‑the‑fly based on the terminals present in the parse
  * table. Conflicts (multiple productions per cell) are highlighted.
- *
- * @author Generated
- * @version 1.0
  */
 public class ParserTableManager {
 
