@@ -15,7 +15,15 @@ import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.scene.transform.Transform;
+import models.atomic.Constants;
 
+/**
+ * Interactive JavaFX component for displaying a parse tree. Supports zoom, pan, and individual node
+ * dragging. The tree is laid out recursively with automatic positioning based on subtree widths.
+ *
+ * @author Generated
+ * @version 1.1
+ */
 public class InteractiveTreeView extends Pane {
 
     private double dragContextX;
@@ -27,6 +35,11 @@ public class InteractiveTreeView extends Pane {
     private static final double LEVEL_GAP = 80;
     private static final double SIBLING_GAP = 20;
 
+    /**
+     * Constructs an interactive view for the given parse tree root.
+     *
+     * @param root the root node of the parse tree (may be null)
+     */
     public InteractiveTreeView(Node root) {
         contentGroup = new Group();
         this.getChildren().add(contentGroup);
@@ -38,6 +51,12 @@ public class InteractiveTreeView extends Pane {
         }
     }
 
+    /**
+     * Captures a high‑resolution snapshot of the current tree view. Temporarily resets zoom/pan to
+     * identity, scales for 4K output, then restores.
+     *
+     * @return a WritableImage containing the rendered tree
+     */
     public WritableImage generateSnapshot() {
         double oldScaleX = contentGroup.getScaleX();
         double oldScaleY = contentGroup.getScaleY();
@@ -69,6 +88,13 @@ public class InteractiveTreeView extends Pane {
         return image;
     }
 
+    /**
+     * Recursively calculates the total width required for a node's subtree. Used for horizontal
+     * positioning.
+     *
+     * @param node the root of the subtree
+     * @return the width in pixels
+     */
     private double calculateSubtreeWidth(Node node) {
         if (node.getChildren().isEmpty()) {
             return NODE_WIDTH;
@@ -80,7 +106,16 @@ public class InteractiveTreeView extends Pane {
         return width - SIBLING_GAP;
     }
 
-    // CHANGED: Now returns the generated StackPane so the parent can bind to it
+    /**
+     * Recursively draws the tree starting at the given node. Creates the node UI, positions it, and
+     * draws connecting lines to children.
+     *
+     * @param node the current tree node
+     * @param x the X coordinate of the node's centre
+     * @param y the Y coordinate of the node's top
+     * @param subtreeWidth the total width of this node's subtree (used for centering children)
+     * @return the StackPane representing the node (for binding lines)
+     */
     private StackPane drawTree(Node node, double x, double y, double subtreeWidth) {
         StackPane nodeUI = createNodeUI(node);
         nodeUI.setLayoutX(x - NODE_WIDTH / 2);
@@ -98,16 +133,16 @@ public class InteractiveTreeView extends Pane {
                 // Recursively draw child and get its UI element
                 StackPane childUI = drawTree(child, childCenterX, childY, childWidth);
 
-                // CHANGED: Draw connecting line dynamically using bindings
+                // Draw connecting line dynamically using bindings
                 Line line = new Line();
                 line.setStroke(Color.GRAY);
                 line.setStrokeWidth(1.5);
 
-                // Bind line start to the bottom-center of the parent node
+                // Bind line start to the bottom-centre of the parent node
                 line.startXProperty().bind(nodeUI.layoutXProperty().add(NODE_WIDTH / 2));
                 line.startYProperty().bind(nodeUI.layoutYProperty().add(NODE_HEIGHT));
 
-                // Bind line end to the top-center of the child node
+                // Bind line end to the top-centre of the child node
                 line.endXProperty().bind(childUI.layoutXProperty().add(NODE_WIDTH / 2));
                 line.endYProperty().bind(childUI.layoutYProperty());
 
@@ -120,6 +155,14 @@ public class InteractiveTreeView extends Pane {
         return nodeUI;
     }
 
+    /**
+     * Creates a draggable UI node (rectangle + label) for a parse tree node. Terminal nodes are
+     * light green, non‑terminals light blue, and Epsilon nodes are light gray. Includes a tooltip
+     * showing symbol type.
+     *
+     * @param node the parse tree node
+     * @return a StackPane that can be placed on the scene
+     */
     private StackPane createNodeUI(Node node) {
         StackPane stack = new StackPane();
 
@@ -128,7 +171,17 @@ public class InteractiveTreeView extends Pane {
         rect.setArcHeight(10);
 
         boolean isTerminal = node.getSymbol().isTerminal();
-        rect.setFill(isTerminal ? Color.LIGHTGREEN : Color.LIGHTBLUE);
+        boolean isEpsilon = node.getSymbol().getName().equals(Constants.EPSILON);
+
+        // Color Logic: Gray for Epsilon, Green for Terminals, Blue for Non-Terminals
+        if (isEpsilon) {
+            rect.setFill(Color.LIGHTGRAY);
+        } else if (isTerminal) {
+            rect.setFill(Color.LIGHTGREEN);
+        } else {
+            rect.setFill(Color.LIGHTBLUE);
+        }
+
         rect.setStroke(Color.DARKBLUE);
         rect.setStrokeWidth(2);
 
@@ -142,15 +195,19 @@ public class InteractiveTreeView extends Pane {
         label.setStyle("-fx-text-alignment: center;");
 
         stack.getChildren().addAll(rect, label);
-        Tooltip.install(
-                stack,
-                new Tooltip(
-                        isTerminal
-                                ? "Terminal: " + node.getSymbol().getName()
-                                : "Non-Terminal: " + node.getSymbol().getName()));
 
-        // CHANGED: Add drag functionality for individual nodes
-        final double[] dragDelta = new double[2]; // Using array to hold mutable state inside lambda
+        String tooltipText;
+        if (isEpsilon) {
+            tooltipText = "Epsilon Transition";
+        } else if (isTerminal) {
+            tooltipText = "Terminal: " + node.getSymbol().getName();
+        } else {
+            tooltipText = "Non-Terminal: " + node.getSymbol().getName();
+        }
+        Tooltip.install(stack, new Tooltip(tooltipText));
+
+        // Add drag functionality for individual nodes
+        final double[] dragDelta = new double[2]; // Array to hold mutable state inside lambda
 
         stack.setOnMousePressed(
                 e -> {
@@ -169,6 +226,9 @@ public class InteractiveTreeView extends Pane {
         return stack;
     }
 
+    /**
+     * Configures the pane to support mouse panning (drag on background) and zoom (scroll wheel).
+     */
     private void setupZoomAndPan() {
         this.setOnMousePressed(
                 event -> {

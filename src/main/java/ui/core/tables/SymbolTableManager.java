@@ -7,9 +7,23 @@ import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.scene.control.TableColumn;
 
-/** Configures the columns of the symbol table TableView. */
+/**
+ * Configures the columns of the symbol table TableView (lexer output). Provides a static method to
+ * export the symbol table as CSV.
+ *
+ * @author Generated
+ * @version 1.0
+ */
 public class SymbolTableManager {
 
+    /**
+     * Sets up the cell value factories for the four columns of the symbol table.
+     *
+     * @param lineCol column for the token's line number
+     * @param colCol column for the token's column number
+     * @param lexemeCol column for the token's lexeme (actual text)
+     * @param typeCol column for the token's type (e.g., "IDENTIFIER")
+     */
     public static void setupColumns(
             TableColumn<Token, Integer> lineCol,
             TableColumn<Token, Integer> colCol,
@@ -24,6 +38,13 @@ public class SymbolTableManager {
                 data -> new SimpleIntegerProperty(data.getValue().getCol()).asObject());
     }
 
+    /**
+     * Exports the symbol table data (tokens) to a CSV file.
+     *
+     * @param path output file path
+     * @param symbolTableViewer the TableView containing the tokens (items)
+     * @throws java.io.IOException if writing fails
+     */
     public static void exportSymbolTableCsv(
             String path, javafx.scene.control.TableView<Token> symbolTableViewer)
             throws java.io.IOException {

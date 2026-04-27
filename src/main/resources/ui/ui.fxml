@@ -1,4 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
+
+<?import java.lang.*?>
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
@@ -14,6 +19,7 @@
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
+
 <StackPane xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ui.Ui">
    <children>
       <VBox spacing="10">
@@ -47,9 +53,9 @@
                         <TextArea fx:id="inputArea" promptText="Load a .txt file or paste source code here..." style="-fx-font-family: monospace;" HBox.hgrow="ALWAYS" />
                      </children>
                   </HBox>
-                  <TabPane tabClosingPolicy="UNAVAILABLE" VBox.vgrow="ALWAYS">
+                  <TabPane fx:id="mainTabPane" tabClosingPolicy="UNAVAILABLE" VBox.vgrow="ALWAYS">
                      <tabs>
-                        <Tab text="Console Log">
+                        <Tab fx:id="consoleTab" text="Console Log">
                            <content>
                               <VBox spacing="10">
                                  <padding>
@@ -58,8 +64,10 @@
                                  <children>
                                     <TextArea fx:id="consoleArea" editable="false" style="-fx-font-family: monospace;" VBox.vgrow="ALWAYS" />
                                     <HBox spacing="10">
-                                       <Button fx:id="saveConsoleLogBtn" onAction="#handleSaveConsoleLog" text="Save Console Log" />
-                                       <Button fx:id="clearConsoleLogBtn" onAction="#handleClearConsoleLog" text="Clear Console Log" />
+                                       <children>
+                                          <Button fx:id="saveConsoleLogBtn" onAction="#handleSaveConsoleLog" text="Save Console Log" />
+                                          <Button fx:id="clearConsoleLogBtn" onAction="#handleClearConsoleLog" text="Clear Console Log" />
+                                       </children>
                                     </HBox>
                                  </children>
                               </VBox>
@@ -74,8 +82,10 @@
                                  <children>
                                     <TextArea fx:id="outputArea" editable="false" style="-fx-font-family: monospace;" VBox.vgrow="ALWAYS" />
                                     <HBox spacing="10">
-                                       <Button fx:id="saveOutputBtn" onAction="#handleSaveOutput" text="Save Output" />
-                                       <Button fx:id="clearOutputBtn" onAction="#handleClearOutput" text="Clear Output" />
+                                       <children>
+                                          <Button fx:id="saveOutputBtn" onAction="#handleSaveOutput" text="Save Output" />
+                                          <Button fx:id="clearOutputBtn" onAction="#handleClearOutput" text="Clear Output" />
+                                       </children>
                                     </HBox>
                                  </children>
                               </VBox>
@@ -153,8 +163,10 @@
                                     </HBox>
                                     <TextArea fx:id="validatorOutputArea" editable="false" promptText="Os resultados da validação de compatibilidade aparecerão aqui..." style="-fx-font-family: monospace;" VBox.vgrow="ALWAYS" />
                                     <HBox spacing="10">
-                                       <Button fx:id="saveValidationBtn" onAction="#handleSaveValidation" text="Save Validation" />
-                                       <Button fx:id="clearValidationBtn" onAction="#handleClearValidation" text="Clear Validation" />
+                                       <children>
+                                          <Button fx:id="saveValidationBtn" onAction="#handleSaveValidation" text="Save Validation" />
+                                          <Button fx:id="clearValidationBtn" onAction="#handleClearValidation" text="Clear Validation" />
+                                       </children>
                                     </HBox>
                                  </children>
                               </VBox>

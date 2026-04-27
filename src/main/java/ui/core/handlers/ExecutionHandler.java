@@ -1,7 +1,11 @@
 package ui.core.handlers;
 
+import core.lexer.models.atomic.Token;
 import core.parser.models.FirstFollowTable;
 import core.parser.models.ParseTable;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import ui.Ui;
 import ui.core.controllers.UiStateController;
 import ui.core.state.AnalysisState;
@@ -52,26 +56,52 @@ public class ExecutionHandler {
                 .execute(
                         "Running Syntax Analysis...",
                         log -> {
-                            log.accept("Building First/Follow tables...");
-                            FirstFollowTable ffTable =
-                                    ui.getParserService().buildFirstFollowTable();
-                            state.setCurrentFirstFollowTable(ffTable);
+                            // 1. Only build First/Follow if it doesn't already exist
+                            FirstFollowTable ffTable = state.getCurrentFirstFollowTable();
+                            if (ffTable == null) {
+                                log.accept("Building First/Follow tables...");
+                                ffTable = ui.getParserService().buildFirstFollowTable();
+                                state.setCurrentFirstFollowTable(ffTable);
+                            }
 
-                            log.accept("Building Parse Table...");
-                            ParseTable parseTable =
-                                    ui.getParserService()
-                                            .buildParseTable(
-                                                    ffTable, ui.getLexerService().getSymbolTable());
-                            state.setCurrentParseTable(parseTable);
+                            // 2. Only build Parse Table if it doesn't already exist
+                            ParseTable parseTable = state.getCurrentParseTable();
+                            if (parseTable == null) {
+                                log.accept("Building Parse Table...");
+                                parseTable =
+                                        ui.getParserService()
+                                                .buildParseTable(ffTable, Collections.emptyList());
+                                state.setCurrentParseTable(parseTable);
+                            }
+
+                            // 3. Prepare token stream and append End Of File marker ($)
+                            log.accept("Preparing Token Stream...");
+                            List<Token> tokenStream =
+                                    new ArrayList<>(ui.getLexerService().getSymbolTable());
+
+                            if (tokenStream.isEmpty()
+                                    || !tokenStream
+                                            .get(tokenStream.size() - 1)
+                                            .getLexeme()
+                                            .equals("$")) {
+                                int lastLine =
+                                        tokenStream.isEmpty()
+                                                ? 1
+                                                : tokenStream.get(tokenStream.size() - 1).getLine();
+                                int lastCol =
+                                        tokenStream.isEmpty()
+                                                ? 1
+                                                : tokenStream.get(tokenStream.size() - 1).getCol()
+                                                        + 1;
+                                tokenStream.add(new Token("$", "$", lastLine, lastCol));
+                            }
 
                             log.accept("Parsing tokens...");
-                            return ui.getParserService()
-                                    .parseTokens(parseTable, ui.getLexerService().getSymbolTable());
+                            return ui.getParserService().parseTokens(parseTable, tokenStream);
                         },
                         result -> {
                             state.setCurrentParseResult(result);
 
-                            // Update UI tables
                             ui.getFirstFollowTable()
                                     .getItems()
                                     .setAll(ui.getParserService().getGrammar().getNonTerminals());
@@ -114,8 +144,7 @@ public class ExecutionHandler {
                                         .classifyGrammarWithParserTable(
                                                 ui.getParserService()
                                                         .buildParseTable(
-                                                                ffTable,
-                                                                java.util.Collections.emptyList()));
+                                                                ffTable, Collections.emptyList()));
                             }
                             return ui.getParserService()
                                     .classifyGrammarWithParserTable(state.getCurrentParseTable());

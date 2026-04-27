@@ -2,7 +2,7 @@ package ui.core.graph.automata;
 
 import core.lexer.models.atomic.State;
 import core.lexer.models.atomic.Transition;
-import core.lexer.models.automata.AFD;
+import core.lexer.models.automata.DFA;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
+import java.util.stream.Collectors;
 import javafx.beans.binding.Bindings;
 import javafx.beans.binding.DoubleBinding;
 import javafx.scene.Group;
@@ -29,6 +30,14 @@ import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.scene.transform.Transform;
 
+/**
+ * Interactive JavaFX component for displaying and manipulating a DFA graph. Supports zoom, pan,
+ * node dragging, and high‑resolution snapshot generation. The graph is laid out using a simple
+ * breadth‑first layering algorithm.
+ *
+ * @author Generated
+ * @version 1.0
+ */
 public class InteractiveAutomataView extends Pane {
 
     private double dragContextX;
@@ -36,52 +45,51 @@ public class InteractiveAutomataView extends Pane {
     private final Group contentGroup;
     private final Map<State, StackPane> nodeMap = new HashMap<>();
 
-    public InteractiveAutomataView(AFD afd) {
+    /**
+     * Constructs an interactive view for the given DFA.
+     *
+     * @param dfa the deterministic finite automaton to display (may be null)
+     */
+    public InteractiveAutomataView(DFA dfa) {
         contentGroup = new Group();
         this.getChildren().add(contentGroup);
 
         setupZoomAndPan();
 
-        if (afd != null) {
-            buildGraph(afd);
+        if (dfa != null) {
+            buildGraph(dfa);
         }
     }
 
-    /** Takes a snapshot of the entire interactive graph and returns it as a WritableImage. */
+    /**
+     * Captures a high‑resolution snapshot of the current graph view. Temporarily resets zoom/pan to
+     * identity, scales for 4K output, then restores.
+     *
+     * @return a WritableImage containing the rendered graph
+     */
     public WritableImage generateSnapshot() {
-        // 1. Save the current pan and zoom state
         double oldScaleX = contentGroup.getScaleX();
         double oldScaleY = contentGroup.getScaleY();
         double oldTranslateX = contentGroup.getTranslateX();
         double oldTranslateY = contentGroup.getTranslateY();
 
-        // 2. Reset the view to its default state for a clean export
         contentGroup.setScaleX(1.0);
         contentGroup.setScaleY(1.0);
         contentGroup.setTranslateX(0.0);
         contentGroup.setTranslateY(0.0);
 
-        // 3. Configure the snapshot parameters
         SnapshotParameters parameters = new SnapshotParameters();
-        parameters.setFill(Color.WHITE); // Solid white background
+        parameters.setFill(Color.WHITE);
 
-        // Get the total unclipped bounds of the entire graph
         javafx.geometry.Bounds bounds = contentGroup.getLayoutBounds();
-
         if (bounds.getWidth() > 0 && bounds.getHeight() > 0) {
-            // Ensure at least a 3.0x scale for crispness on large graphs.
-            // If the graph is small, it will still scale up to 3840px.
-            // If the graph is huge, it will scale by 5.0x, exceeding 4K to preserve detail.
             double scaleFactorTo4K = 3840.0 / bounds.getWidth();
             double finalScale = Math.max(3.0, scaleFactorTo4K);
-
             parameters.setTransform(Transform.scale(finalScale, finalScale));
         }
 
-        // 4. Take the snapshot of the contentGroup (the whole graph), not the Pane
         WritableImage image = contentGroup.snapshot(parameters, null);
 
-        // 5. Restore the user's previous pan and zoom state
         contentGroup.setScaleX(oldScaleX);
         contentGroup.setScaleY(oldScaleY);
         contentGroup.setTranslateX(oldTranslateX);
@@ -90,13 +98,23 @@ public class InteractiveAutomataView extends Pane {
         return image;
     }
 
-    private void buildGraph(AFD afd) {
+    /**
+     * Builds the visual graph from the DFA: computes node layers (BFS), positions nodes, creates
+     * all UI elements (nodes and edges), and sets up interactivity.
+     *
+     * @param dfa the DFA to visualise
+     */
+    private void buildGraph(DFA dfa) {
         Map<State, Integer> stateLayers = new HashMap<>();
         Map<Integer, List<State>> layerToStates = new HashMap<>();
         Queue<State> queue = new LinkedList<>();
 
-        State startState = afd.getStartState();
-        if (startState != null) {
+        // Group transitions locally to fast-track BFS layer calculation
+        Map<State, List<Transition>> transitionsBySource =
+                dfa.getTransitions().stream().collect(Collectors.groupingBy(Transition::getSource));
+
+        Set<State> initialStates = dfa.getInitialStates();
+        for (State startState : initialStates) {
             queue.add(startState);
             stateLayers.put(startState, 0);
             layerToStates.computeIfAbsent(0, k -> new ArrayList<>()).add(startState);
@@ -106,7 +124,8 @@ public class InteractiveAutomataView extends Pane {
             State current = queue.poll();
             int currentLayer = stateLayers.get(current);
 
-            for (Transition t : current.getTransitions()) {
+            List<Transition> out = transitionsBySource.getOrDefault(current, new ArrayList<>());
+            for (Transition t : out) {
                 State target = t.getTarget();
                 if (!stateLayers.containsKey(target)) {
                     stateLayers.put(target, currentLayer + 1);
@@ -123,7 +142,7 @@ public class InteractiveAutomataView extends Pane {
         double layerSpacingX = 220;
         double nodeSpacingY = 120;
 
-        Set<State> allStates = stateLayers.keySet();
+        Set<State> allStates = dfa.getStates();
 
         for (Map.Entry<Integer, List<State>> entry : layerToStates.entrySet()) {
             int layer = entry.getKey();
@@ -133,11 +152,8 @@ public class InteractiveAutomataView extends Pane {
             double currentY = startY - ((numNodes - 1) * nodeSpacingY) / 2.0;
 
             for (State state : statesInLayer) {
-                boolean isStart = state.equals(afd.getStartState());
-                boolean isFinal =
-                        state.isFinal()
-                                || (afd.getFinalStates() != null
-                                        && afd.getFinalStates().contains(state));
+                boolean isStart = state.isInitial();
+                boolean isFinal = state.isFinal();
 
                 StackPane nodeUI = createNodeUI(state, isStart, isFinal);
 
@@ -150,10 +166,12 @@ public class InteractiveAutomataView extends Pane {
             }
         }
 
+        // Draw edges
         for (State source : allStates) {
             Map<State, List<String>> groupedTransitions = new HashMap<>();
+            List<Transition> out = transitionsBySource.getOrDefault(source, new ArrayList<>());
 
-            for (Transition t : source.getTransitions()) {
+            for (Transition t : out) {
                 String symbol =
                         t.getSymbol() == null || t.getSymbol().getValue().isEmpty()
                                 ? "ε"
@@ -172,7 +190,6 @@ public class InteractiveAutomataView extends Pane {
                                 + ", {"
                                 + summarizeTokens(entry.getValue())
                                 + "}";
-
                 createEdgeUI(source, target, labelStr);
             }
         }
@@ -182,6 +199,14 @@ public class InteractiveAutomataView extends Pane {
         }
     }
 
+    /**
+     * Creates a draggable node (circle + label) for a state.
+     *
+     * @param state the automaton state
+     * @param isStart true if this is an initial state
+     * @param isFinal true if this is a final state
+     * @return a StackPane that can be placed on the scene
+     */
     private StackPane createNodeUI(State state, boolean isStart, boolean isFinal) {
         StackPane stack = new StackPane();
 
@@ -190,7 +215,7 @@ public class InteractiveAutomataView extends Pane {
         circle.setStroke(isFinal ? Color.RED : Color.DARKBLUE);
         circle.setStrokeWidth(isFinal ? 4 : 2);
 
-        String stateName = "q" + String.valueOf(state.getId());
+        String stateName = "q" + state.getId();
         String labelText;
 
         if (isStart && isFinal) {
@@ -222,11 +247,26 @@ public class InteractiveAutomataView extends Pane {
                     e.consume();
                 });
 
-        Tooltip.install(stack, new Tooltip("State: " + labelText));
+        Tooltip.install(
+                stack,
+                new Tooltip(
+                        "State: "
+                                + labelText
+                                + (state.getAcceptedToken() != null
+                                        ? "\nToken: " + state.getAcceptedToken()
+                                        : "")));
 
         return stack;
     }
 
+    /**
+     * Creates a visual edge (line or self‑loop) between two states, with a label. Handles both
+     * normal edges and self‑loops using a quadratic curve.
+     *
+     * @param source the source state
+     * @param target the target state
+     * @param text the label to display on the edge
+     */
     private void createEdgeUI(State source, State target, String text) {
         StackPane sourceNode = nodeMap.get(source);
         StackPane targetNode = nodeMap.get(target);
@@ -248,14 +288,11 @@ public class InteractiveAutomataView extends Pane {
             curve.endXProperty().bind(sourceNode.layoutXProperty().add(35));
             curve.endYProperty().bind(sourceNode.layoutYProperty().add(10));
 
-            // Arrow for self-loop
             Polygon arrow = new Polygon(0, 0, -10, 5, -10, -5);
             arrow.setFill(Color.GRAY);
             arrow.layoutXProperty().bind(curve.endXProperty());
             arrow.layoutYProperty().bind(curve.endYProperty());
-            arrow.setRotate(
-                    107); // Fixed angle pointing down and slightly left along the curve's end
-            // trajectory
+            arrow.setRotate(107);
 
             label.layoutXProperty().bind(sourceNode.layoutXProperty().add(20));
             label.layoutYProperty().bind(sourceNode.layoutYProperty().subtract(50));
@@ -272,15 +309,12 @@ public class InteractiveAutomataView extends Pane {
             line.endXProperty().bind(targetNode.layoutXProperty().add(25));
             line.endYProperty().bind(targetNode.layoutYProperty().add(25));
 
-            // Calculate arrow bindings dynamically
             DoubleBinding dx = line.endXProperty().subtract(line.startXProperty());
             DoubleBinding dy = line.endYProperty().subtract(line.startYProperty());
             DoubleBinding length =
                     Bindings.createDoubleBinding(
                             () -> Math.sqrt(dx.get() * dx.get() + dy.get() * dy.get()), dx, dy);
 
-            // Position arrow just outside the target node border (radius is ~25, we use 27 for
-            // padding)
             DoubleBinding arrowX =
                     Bindings.createDoubleBinding(
                             () -> {
@@ -309,7 +343,6 @@ public class InteractiveAutomataView extends Pane {
                     Bindings.createDoubleBinding(
                             () -> Math.toDegrees(Math.atan2(dy.get(), dx.get())), dx, dy);
 
-            // Arrow shape
             Polygon arrow = new Polygon(0, 0, -10, 5, -10, -5);
             arrow.setFill(Color.GRAY);
             arrow.layoutXProperty().bind(arrowX);
@@ -325,6 +358,9 @@ public class InteractiveAutomataView extends Pane {
         }
     }
 
+    /**
+     * Configures the pane to support mouse panning (drag on background) and zoom (scroll wheel).
+     */
     private void setupZoomAndPan() {
         this.setOnMousePressed(
                 event -> {
@@ -346,10 +382,7 @@ public class InteractiveAutomataView extends Pane {
                 (ScrollEvent event) -> {
                     double zoomFactor = 1.05;
                     double deltaY = event.getDeltaY();
-
-                    if (deltaY < 0) {
-                        zoomFactor = 1 / zoomFactor;
-                    }
+                    if (deltaY < 0) zoomFactor = 1 / zoomFactor;
 
                     contentGroup.setScaleX(contentGroup.getScaleX() * zoomFactor);
                     contentGroup.setScaleY(contentGroup.getScaleY() * zoomFactor);
@@ -357,6 +390,12 @@ public class InteractiveAutomataView extends Pane {
                 });
     }
 
+    /**
+     * Helper to concatenate a list of symbol strings into a compact, colon‑separated string.
+     *
+     * @param symbols the list of symbols
+     * @return a string with brackets removed and values separated by colons
+     */
     private String summarizeTokens(List<String> symbols) {
         return String.join(":", symbols.toString().replaceAll("\\[|\\]", ""));
     }

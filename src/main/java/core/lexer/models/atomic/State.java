@@ -1,56 +1,92 @@
 package core.lexer.models.atomic;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import lombok.Getter;
+import lombok.Setter;
 
+/**
+ * Represents a state in a finite automaton (NFA/DFA). Each state has a unique identifier, can be
+ * initial and/or final, and contains a list of outgoing transitions.
+ *
+ * @author Generated
+ * @version 1.0
+ */
+@Getter
 public class State {
+
     private final int id;
+    private boolean isInitial;
     private boolean isFinal;
-    private String acceptedToken;
-    private final List<Transition> transitions;
-    private final Set<Symbol> symbols;
+    @Setter private String acceptedToken;
 
+    /**
+     * Constructs a new non‑initial, non‑final state with the given ID.
+     *
+     * @param id unique identifier for this state
+     */
     public State(int id) {
+        this(id, false, false);
+    }
+
+    /**
+     * Constructs a new state with the given ID and initial/final flags.
+     *
+     * @param id unique identifier
+     * @param isInitial true if this state is an initial state
+     * @param isFinal true if this state is a final (accepting) state
+     */
+    public State(int id, boolean isInitial, boolean isFinal) {
         this.id = id;
-        this.isFinal = false;
-        this.acceptedToken = null;
-        this.transitions = new ArrayList<>();
-        this.symbols = new HashSet<>();
-    }
-
-    public void addTransition(Symbol symbol, State target) {
-        Transition transition = new Transition(this, target, symbol);
-        this.transitions.add(transition);
-        this.symbols.add(symbol);
-    }
-
-    public void setFinal(boolean isFinal) {
+        this.isInitial = isInitial;
         this.isFinal = isFinal;
     }
 
-    public void setAcceptedToken(String acceptedToken) {
-        this.acceptedToken = acceptedToken;
+    /**
+     * Sets whether this state is an initial state.
+     *
+     * @param initial true to mark as initial, false otherwise
+     */
+    public void setInitial(boolean initial) {
+        this.isInitial = initial;
     }
 
-    public String getAcceptedToken() {
-        return acceptedToken;
+    /**
+     * Sets whether this state is a final (accepting) state.
+     *
+     * @param isFinal true to mark as final, false otherwise
+     */
+    public void setFinalState(boolean isFinal) {
+        this.isFinal = isFinal;
     }
 
-    public int getId() {
-        return id;
+    /**
+     * Compares two states based on their unique ID.
+     *
+     * @param o the object to compare
+     * @return true if the IDs are equal, false otherwise
+     */
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof State)) return false;
+        return id == ((State) o).id;
     }
 
-    public boolean isFinal() {
-        return isFinal;
+    /**
+     * Returns the hash code based on the state's ID.
+     *
+     * @return hash code of the ID
+     */
+    @Override
+    public int hashCode() {
+        return Integer.hashCode(id);
     }
 
-    public List<Transition> getTransitions() {
-        return transitions;
-    }
-
-    public Set<Symbol> getSymbols() {
-        return symbols;
+    @Override
+    public String toString() {
+        return "q"
+                + id
+                + (isInitial ? "[INITIAL]" : "")
+                + (isFinal ? "[FINAL]" : "")
+                + (acceptedToken != null ? "(" + acceptedToken + ")" : "");
     }
 }

@@ -1,39 +1,38 @@
 # =========================
 # Keywords (Static Literals)
 # =========================
-FUNCTION  : function
-BEGIN_KW  : BEGIN
-END_KW    : END
-CASE      : case
-DEFAULT   : default
-DELETE    : delete
-BREAK     : break
-CONTINUE  : continue
-NEXT      : next
-RETURN    : return
-SWITCH    : switch
-IF        : if
-ELSE      : else
-WHILE     : while
-DO        : do
-FOR       : for
-PRINTF    : printf
-PRINT     : print
-IN        : in
-GETLINE   : getline
-
+FUNCTION   : function
+BEGIN_KW   : BEGIN   
+END_KW     : END     
+CASE       : case    
+DEFAULT    : default 
+DELETE     : delete  
+BREAK      : break   
+CONTINUE   : continue
+NEXT       : next    
+RETURN     : return  
+SWITCH     : switch  
+IF         : if      
+ELSE       : else    
+WHILE      : while   
+DO         : do      
+FOR        : for     
+PRINTF     : printf
+PRINT      : print
+IN         : in   
+GETLINE    : getline
 
 # =========================
 # Operators (Longest First!)
 # =========================
-ASSIGN_EXP : ^=
-ASSIGN_MOD : %=
-ASSIGN_MUL : *=
-ASSIGN_DIV : /=
-ASSIGN_ADD : +=
-ASSIGN_SUB : -=
+ASSIGN_EXP : ^=   
+ASSIGN_MOD : %=   
+ASSIGN_MUL : *=   
+ASSIGN_DIV : /=   
+ASSIGN_ADD : +=   
+ASSIGN_SUB : -=   
 
-LOGICAL_OR : ||
+LOGICAL_OR : ||   
 LOGICAL_AND: &&
 
 MATCH_NOT  : !~
@@ -58,14 +57,12 @@ NOT        : !
 DOLLAR     : $
 ASSIGN     : =
 
-
 # =========================
 # Delimiters
 # =========================
 APPEND     : >>
-REDIRECT   : >
-PIPE       : |
-
+REDIRECT   : > 
+PIPE       : | 
 LPAREN     : (
 RPAREN     : )
 LBRACE     : {
@@ -78,7 +75,6 @@ SEMICOLON  : ;
 COLON      : :
 QUESTION   : ?
 
-
 # =========================
 # Lexical Elements (Dynamic)
 # =========================
@@ -89,12 +85,11 @@ BIN        : 0[bB][01]+
 FLOAT      : [0-9]*\.[0-9]+
 INT        : [0-9]+
 STR        : "([^"\\]|\\["nrt\\])*"|'([^'\\]|\\['nrt\\])*'
-REGEX      : \/[^\n\/]+\/
-
+REGEX      : \/[^\n\/]+\/       
 
 # =========================
-# Ignored Tokens
+# Ignored & Special Tokens
 # =========================
-WHITESPACE : [ \t]+     -> skip
-COMMENT    : #[^\n]* -> skip
-NEWLINE    : [\r\n]+    -> skip
+WHITESPACE : [ \t]+      -> skip
+COMMENT    : #[^\r\n]* -> skip
+NEWLINE    : [\r\n]+

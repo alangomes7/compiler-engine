@@ -8,8 +8,23 @@ import java.nio.file.Files;
 import javafx.stage.FileChooser;
 import javafx.stage.Window;
 
+/**
+ * Provides common file operations for the UI layer: selecting files, reading content, saving
+ * strings, and CSV escaping.
+ *
+ * @author Generated
+ * @version 1.0
+ */
 public class FileService {
 
+    /**
+     * Opens a file chooser dialog and returns the selected file.
+     *
+     * @param owner the owner window (may be null)
+     * @param title the dialog title
+     * @param extensions file extension filters (e.g., "*.txt")
+     * @return the selected file, or null if the user cancelled
+     */
     public static File selectFile(Window owner, String title, String... extensions) {
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle(title);
@@ -21,13 +36,23 @@ public class FileService {
         return fileChooser.showOpenDialog(owner);
     }
 
+    /**
+     * Reads the entire content of a text file.
+     *
+     * @param file the file to read
+     * @return the file content as a string
+     * @throws Exception if the file cannot be read (delegates to Utils.readTextFile)
+     */
     public static String readFileContent(File file) throws Exception {
         return Utils.readTextFile(file.getAbsolutePath());
     }
 
     /**
-     * Helper to correctly escape internal double quotes. Wrapping values in quotes handles internal
-     * commas and line-breaks.
+     * Escapes a string for safe inclusion in a CSV field. Doubles any internal double‑quote
+     * characters.
+     *
+     * @param data the raw string (may be null)
+     * @return the escaped string (empty if data is null)
      */
     public static String escapeCsv(String data) {
         if (data == null) return "";
@@ -39,8 +64,8 @@ public class FileService {
      *
      * @param owner the owner window for the dialog
      * @param content the string to write
-     * @param initialFileName suggested file name (e.g. "output.txt")
-     * @param extensions optional file extensions for the filter (e.g. "*.txt")
+     * @param initialFileName suggested file name (e.g., "output.txt")
+     * @param extensions optional file extensions for the filter (e.g., "*.txt")
      * @return the saved File, or null if the user cancelled the dialog
      * @throws IOException if an I/O error occurs while writing the file
      */
@@ -65,7 +90,7 @@ public class FileService {
     }
 
     /**
-     * Writes a string directly to a file (overwrites existing content).
+     * Writes a string directly to a file (overwrites existing content). Uses UTF‑8 encoding.
      *
      * @param file the target file
      * @param content the string to write

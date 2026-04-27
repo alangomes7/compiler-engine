@@ -9,6 +9,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/** Reads lexical rule definitions from a file and parses them into {@link Rule} objects. */
 public class RuleReader {
 
     public static List<Rule> readRules(String filePath) {
@@ -18,18 +19,15 @@ public class RuleReader {
             lines = Files.readAllLines(Path.of(filePath));
         } catch (IOException e) {
             System.err.println("❌ Error reading token file: " + filePath);
-            System.err.println("   Reason: " + e.getMessage());
             return List.of();
         }
 
-        if (lines.isEmpty()) {
-            System.out.println("⚠️ Token file is empty: " + filePath);
-            return List.of();
-        }
+        if (lines.isEmpty()) return List.of();
 
         List<String> joinedLines = new ArrayList<>();
         StringBuilder current = new StringBuilder();
 
+        // Join multi-line definitions
         for (String rawLine : lines) {
             String trimmed = rawLine.trim();
             if (trimmed.isEmpty() || trimmed.startsWith("==")) continue;
@@ -61,8 +59,11 @@ public class RuleReader {
         for (String line : joinedLines) {
             String lower = line.toLowerCase();
 
+            // Track sections to determine if characters should be escaped
             if (line.startsWith("#") || !line.contains(":")) {
-                if (lower.contains("dynamic") || lower.contains("lexical elements")) {
+                if (lower.contains("dynamic")
+                        || lower.contains("lexical elements")
+                        || lower.contains("ignored")) {
                     isDynamicSection = true;
                     isMacroSection = false;
                 } else if (lower.contains("primitive sets")
@@ -72,8 +73,7 @@ public class RuleReader {
                     isMacroSection = true;
                 } else if (lower.contains("keywords")
                         || lower.contains("operators")
-                        || lower.contains("delimiters")
-                        || lower.contains("ignored")) {
+                        || lower.contains("delimiters")) {
                     isDynamicSection = false;
                     isMacroSection = false;
                 }
@@ -88,11 +88,24 @@ public class RuleReader {
             boolean skip = false;
             boolean isExtendedRule = false;
 
-            if (tokenName.startsWith("@DER")) {
+            // Extract tags
+            if (tokenName.startsWith("@")) {
+                String[] tokenParts = tokenName.split("\\s+", 2);
+                if (tokenParts.length == 2) {
+                    String tag = tokenParts[0].toUpperCase();
+                    tokenName = tokenParts[1].trim();
+
+                    if (tag.equals("@PRI") || tag.equals("@DER")) {
+                        isExtendedRule = true;
+                    } else if (tag.equals("@ESP")) {
+                        isExtendedRule = false;
+                    }
+                }
+            } else if (isMacroSection) {
                 isExtendedRule = true;
-                tokenName = tokenName.substring(4).trim();
             }
 
+            // Check for skip directive
             if (rightSide.contains("->")) {
                 String[] split = rightSide.split("->", 2);
                 rightSide = split[0].trim();
@@ -101,25 +114,15 @@ public class RuleReader {
 
             if (tokenName.isEmpty() || rightSide.isEmpty()) continue;
 
-            if (isMacroSection) {
-                macros.put(tokenName, rightSide);
-            } else {
-                String pattern;
+            // FIX 1: Only bypass escaping if the section is explicitly dynamic.
+            // Operators and Keywords tagged with @PRI still require escaping.
+            String pattern = isDynamicSection ? rightSide : escapeLiteral(rightSide);
 
-                if (isExtendedRule) {
-                    pattern = rightSide;
-                } else if (isDynamicSection) {
-                    pattern =
-                            rightSide
-                                    .replace("\\n", "\n")
-                                    .replace("\\r", "\r")
-                                    .replace("\\t", "\t");
-                } else {
-                    pattern = escapeLiteral(rightSide);
-                }
-
-                rules.add(new Rule(tokenName, pattern, skip, isExtendedRule, macros));
+            if (isExtendedRule || isMacroSection) {
+                macros.put(tokenName, pattern);
             }
+
+            rules.add(new Rule(tokenName, pattern, skip, isExtendedRule, macros));
         }
 
         return rules;
@@ -128,7 +131,6 @@ public class RuleReader {
     private static String escapeLiteral(String literal) {
         StringBuilder sb = new StringBuilder();
         String specialChars = "|()*+?[]{}.^$\\-";
-
         for (char c : literal.toCharArray()) {
             if (specialChars.indexOf(c) != -1) sb.append('\\');
             sb.append(c);

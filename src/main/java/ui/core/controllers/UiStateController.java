@@ -3,15 +3,32 @@ package ui.core.controllers;
 import ui.Ui;
 import ui.core.state.AnalysisState;
 
+/**
+ * Controls the UI state (enabled/disabled buttons, visibility, etc.) based on the current analysis
+ * state. Handles invalidation of analysis data when inputs change.
+ *
+ * @author Generated
+ * @version 1.0
+ */
 public class UiStateController {
     private final Ui ui;
     private final AnalysisState state;
 
+    /**
+     * Constructs a UI state controller.
+     *
+     * @param ui the main UI instance
+     * @param state the shared analysis state
+     */
     public UiStateController(Ui ui, AnalysisState state) {
         this.ui = ui;
         this.state = state;
     }
 
+    /**
+     * Invalidates all analysis data (FIRST/FOLLOW, parse table, parse results, etc.) and clears the
+     * corresponding UI components.
+     */
     public void invalidateAnalysisState() {
         ui.getParserTableManager().clear();
         state.setCurrentParseTable(null);
@@ -23,23 +40,28 @@ public class UiStateController {
         state.setHasFirstFollowData(false);
         state.setHasParseTableData(false);
         state.setHasGrammarTree(false);
-        state.setHasInputTree(false);
-        state.setParseRunSuccess(false);
         state.setHasValidationData(false);
 
         ui.getValidatorOutputArea().clear();
         invalidateInputState();
-        updateUIState();
     }
 
+    /** Invalidates data that depends on the input text (symbol table, parse tree, etc.). */
     public void invalidateInputState() {
         ui.getSymbolTableViewer().getItems().clear();
         ui.getInputTreeContainer().setCenter(null);
+
         state.setHasSymbolTableData(false);
         state.setLexerRunSuccess(false);
+
+        // Explicitly lock the Syntax Tree buttons when input changes
+        state.setParseRunSuccess(false);
+        state.setHasInputTree(false);
+
         updateUIState();
     }
 
+    /** Updates the enabled/disabled state of all UI buttons based on the current analysis state. */
     public void updateUIState() {
         if (!state.isTokenLoaded()) {
             disableAllExceptTokenLoad();
@@ -59,8 +81,8 @@ public class UiStateController {
         } else {
             ui.getValidateCompatibilityBtn().setDisable(false);
             ui.getGenerateGrammarTreeBtn().setDisable(false);
+            ui.getGenerateInputTreeBtn().setDisable(false);
             ui.getRunSyntaxBtn().setDisable(!state.isLexerRunSuccess());
-            ui.getGenerateInputTreeBtn().setDisable(!state.isParseRunSuccess());
         }
 
         boolean hasAutomaton = state.getCurrentAutomaton() != null;
@@ -87,6 +109,7 @@ public class UiStateController {
         ui.getSaveValidationBtn().setDisable(false);
     }
 
+    /** Disables all UI controls except the "Load Token File" button. */
     private void disableAllExceptTokenLoad() {
         ui.getLoadTokenBtn().setDisable(false);
         ui.getLoadGrammarBtn().setDisable(true);

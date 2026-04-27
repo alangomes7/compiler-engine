@@ -4,87 +4,107 @@ import core.parser.models.FirstFollowTable;
 import core.parser.models.Grammar;
 import core.parser.models.Production;
 import core.parser.models.atomic.Symbol;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
+/**
+ * Computes the FIRST and FOLLOW sets for a given LL(1) Context-Free Grammar. Uses fixed-point
+ * iteration to ensure sets propagate correctly through recursive and out-of-order non-terminal
+ * definitions.
+ */
 public class FirstFollowTableBuilder {
 
-    /**
-     * Computes and builds the First and Follow sets (the FirstFollow table) for a given Grammar.
-     */
-    public static FirstFollowTable build(Grammar grammar) {
-        FirstFollowTable table = new FirstFollowTable();
+    private final Grammar grammar;
+    private final Map<Symbol, Set<Symbol>> firstSets;
+    private final Map<Symbol, Set<Symbol>> followSets;
 
-        computeFirstSets(grammar, table);
-        computeFollowSets(grammar, table);
+    public FirstFollowTableBuilder(Grammar grammar) {
+        this.grammar = grammar;
+        this.firstSets = new HashMap<>();
+        this.followSets = new HashMap<>();
 
-        return table;
+        // Initialize sets for all non-terminals
+        for (Symbol nonTerminal : grammar.getNonTerminals()) {
+            firstSets.put(nonTerminal, new HashSet<>());
+            followSets.put(nonTerminal, new HashSet<>());
+        }
     }
 
-    private static void computeFirstSets(Grammar grammar, FirstFollowTable table) {
-        boolean changed;
+    /**
+     * Executes the building process for both sets and returns the populated table.
+     *
+     * @return A completed FirstFollowTable.
+     */
+    public FirstFollowTable build() {
+        computeFirstSets();
+        computeFollowSets();
+        return new FirstFollowTable(firstSets, followSets);
+    }
 
-        // Initialize FIRST sets for terminals: FIRST(a) = {a}
-        for (Symbol terminal : grammar.getTerminals()) {
-            table.addFirst(terminal, terminal);
-        }
-        table.addFirst(Symbol.EPSILON, Symbol.EPSILON);
-        table.addFirst(Symbol.EOF, Symbol.EOF);
+    // ==========================================
+    // 1. FIRST Set Computation
+    // ==========================================
+    private void computeFirstSets() {
+        boolean changed = true;
 
-        // Iteratively compute FIRST sets for non-terminals
-        do {
+        while (changed) {
             changed = false;
 
             for (Production production : grammar.getProductions()) {
                 Symbol lhs = production.getLhs();
                 List<Symbol> rhs = production.getRhs();
 
-                Set<Symbol> currentFirstLhs = table.getFirst(lhs);
-                int originalSize = currentFirstLhs.size();
+                // Safety check: skip if LHS is somehow not initialized
+                if (!firstSets.containsKey(lhs)) continue;
 
-                if (production.isEpsilonProduction()) {
-                    table.addFirst(lhs, Symbol.EPSILON);
+                Set<Symbol> currentFirstSet = firstSets.get(lhs);
+                int previousSize = currentFirstSet.size();
+
+                // Check for Epsilon rule (e.g., A -> ε)
+                if (rhs.isEmpty() || (rhs.size() == 1 && isEpsilon(rhs.get(0)))) {
+                    currentFirstSet.add(Symbol.EPSILON);
                 } else {
-                    boolean allNullable = true;
+                    boolean allDeriveEpsilon = true;
 
                     for (Symbol rhsSymbol : rhs) {
-                        Set<Symbol> firstOfRhsSymbol = table.getFirst(rhsSymbol);
+                        Set<Symbol> rhsSymbolFirst = getFirstOfSymbol(rhsSymbol);
 
-                        // Add everything except EPSILON
-                        for (Symbol s : firstOfRhsSymbol) {
-                            if (!s.equals(Symbol.EPSILON)) {
-                                table.addFirst(lhs, s);
+                        for (Symbol s : rhsSymbolFirst) {
+                            if (!isEpsilon(s)) {
+                                currentFirstSet.add(s);
                             }
                         }
 
-                        // If this symbol doesn't derive EPSILON, stop checking the sequence
-                        if (!firstOfRhsSymbol.contains(Symbol.EPSILON)) {
-                            allNullable = false;
+                        // If this symbol CANNOT derive epsilon, stop evaluating the sequence
+                        if (!setContainsEpsilon(rhsSymbolFirst)) {
+                            allDeriveEpsilon = false;
                             break;
                         }
                     }
 
-                    // If all symbols in RHS can derive EPSILON, then LHS can derive EPSILON
-                    if (allNullable) {
-                        table.addFirst(lhs, Symbol.EPSILON);
+                    if (allDeriveEpsilon) {
+                        currentFirstSet.add(Symbol.EPSILON);
                     }
                 }
 
-                if (table.getFirst(lhs).size() > originalSize) {
+                if (currentFirstSet.size() > previousSize) {
                     changed = true;
                 }
             }
-        } while (changed);
+        }
     }
 
-    private static void computeFollowSets(Grammar grammar, FirstFollowTable table) {
-        boolean changed;
+    // ==========================================
+    // 2. FOLLOW Set Computation
+    // ==========================================
+    private void computeFollowSets() {
+        // Rule 1: Place EOF in the FOLLOW set of the start symbol
+        if (grammar.getStartSymbol() != null && followSets.containsKey(grammar.getStartSymbol())) {
+            followSets.get(grammar.getStartSymbol()).add(Symbol.EOF);
+        }
 
-        // Rule 1: Place EOF in FOLLOW(StartSymbol)
-        table.addFollow(grammar.getStartSymbol(), Symbol.EOF);
+        boolean changed = true;
 
-        // Iteratively compute FOLLOW sets
-        do {
+        while (changed) {
             changed = false;
 
             for (Production production : grammar.getProductions()) {
@@ -94,47 +114,111 @@ public class FirstFollowTableBuilder {
                 for (int i = 0; i < rhs.size(); i++) {
                     Symbol currentSymbol = rhs.get(i);
 
-                    if (currentSymbol.isTerminal()) {
-                        continue; // FOLLOW sets are only for Non-Terminals
-                    }
+                    // Only calculate FOLLOW sets for Non-Terminals
+                    if (!currentSymbol.isTerminal() && !isEpsilon(currentSymbol)) {
 
-                    Set<Symbol> currentFollow = table.getFollow(currentSymbol);
-                    int originalSize = currentFollow.size();
+                        // Safety check
+                        if (!followSets.containsKey(currentSymbol)) continue;
 
-                    boolean nextDerivesEpsilon = true;
+                        Set<Symbol> currentFollowSet = followSets.get(currentSymbol);
+                        int previousSize = currentFollowSet.size();
 
-                    // Rule 2: If A -> α B β, then everything in FIRST(β) except EPSILON is in
-                    // FOLLOW(B)
-                    for (int j = i + 1; j < rhs.size(); j++) {
-                        Symbol nextSymbol = rhs.get(j);
-                        Set<Symbol> firstOfNext = table.getFirst(nextSymbol);
+                        List<Symbol> remainingSequence = rhs.subList(i + 1, rhs.size());
+                        Set<Symbol> firstOfRemaining = getFirstOfSequence(remainingSequence);
 
-                        for (Symbol s : firstOfNext) {
-                            if (!s.equals(Symbol.EPSILON)) {
-                                table.addFollow(currentSymbol, s);
+                        // Rule 2: Add FIRST(remaining) to FOLLOW(current)
+                        for (Symbol s : firstOfRemaining) {
+                            if (!isEpsilon(s)) {
+                                currentFollowSet.add(s);
                             }
                         }
 
-                        if (!firstOfNext.contains(Symbol.EPSILON)) {
-                            nextDerivesEpsilon = false;
-                            break;
+                        // Rule 3: If remaining derives Epsilon, add FOLLOW(LHS) to FOLLOW(current)
+                        if (setContainsEpsilon(firstOfRemaining) || remainingSequence.isEmpty()) {
+                            if (followSets.containsKey(lhs)) {
+                                currentFollowSet.addAll(followSets.get(lhs));
+                            }
                         }
-                    }
 
-                    // Rule 3: If A -> α B, or A -> α B β where FIRST(β) contains EPSILON,
-                    // then everything in FOLLOW(A) is in FOLLOW(B)
-                    if (nextDerivesEpsilon) {
-                        Set<Symbol> followOfLhs = table.getFollow(lhs);
-                        for (Symbol s : followOfLhs) {
-                            table.addFollow(currentSymbol, s);
+                        if (currentFollowSet.size() > previousSize) {
+                            changed = true;
                         }
-                    }
-
-                    if (table.getFollow(currentSymbol).size() > originalSize) {
-                        changed = true;
                     }
                 }
             }
-        } while (changed);
+        }
+    }
+
+    // ==========================================
+    // Utility Methods
+    // ==========================================
+    private Set<Symbol> getFirstOfSymbol(Symbol symbol) {
+        Set<Symbol> first = new HashSet<>();
+
+        if (isEpsilon(symbol)) {
+            first.add(Symbol.EPSILON);
+        } else if (symbol.isTerminal() || isEOF(symbol)) {
+            first.add(symbol);
+        } else {
+            // Non-Terminal: Fetch its calculated FIRST set
+            first.addAll(firstSets.getOrDefault(symbol, new HashSet<>()));
+        }
+        return first;
+    }
+
+    private Set<Symbol> getFirstOfSequence(List<Symbol> sequence) {
+        Set<Symbol> first = new HashSet<>();
+
+        if (sequence.isEmpty()) {
+            first.add(Symbol.EPSILON);
+            return first;
+        }
+
+        boolean allDeriveEpsilon = true;
+
+        for (Symbol symbol : sequence) {
+            Set<Symbol> symbolFirst = getFirstOfSymbol(symbol);
+
+            for (Symbol s : symbolFirst) {
+                if (!isEpsilon(s)) {
+                    first.add(s);
+                }
+            }
+
+            if (!setContainsEpsilon(symbolFirst)) {
+                allDeriveEpsilon = false;
+                break;
+            }
+        }
+
+        if (allDeriveEpsilon) {
+            first.add(Symbol.EPSILON);
+        }
+
+        return first;
+    }
+
+    // --- Safe Comparison Helpers ---
+    // These methods prevent bugs caused by memory-reference mismatches or missing equals() methods
+
+    private boolean isEpsilon(Symbol symbol) {
+        if (symbol == null) return false;
+        return symbol.equals(Symbol.EPSILON)
+                || "ε".equals(symbol.getName())
+                || "EPSILON".equals(symbol.getName());
+    }
+
+    private boolean isEOF(Symbol symbol) {
+        if (symbol == null) return false;
+        return symbol.equals(Symbol.EOF)
+                || "$".equals(symbol.getName())
+                || "EOF".equals(symbol.getName());
+    }
+
+    private boolean setContainsEpsilon(Set<Symbol> set) {
+        for (Symbol s : set) {
+            if (isEpsilon(s)) return true;
+        }
+        return false;
     }
 }

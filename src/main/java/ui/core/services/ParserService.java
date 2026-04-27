@@ -19,7 +19,13 @@ import java.util.List;
 import java.util.Set;
 import lombok.Getter;
 
+/**
+ * Service for grammar loading, FIRST/FOLLOW computation, parse table construction, grammar
+ * classification, and LL(1) parsing.
+ */
 public class ParserService {
+
+    /** The currently loaded grammar (may be null if not yet loaded). */
     @Getter private Grammar grammar;
 
     public void loadGrammar(String path) throws Exception {
@@ -30,9 +36,17 @@ public class ParserService {
         return grammar != null;
     }
 
+    /**
+     * Builds the FIRST and FOLLOW sets for the loaded grammar.
+     *
+     * @return a FirstFollowTable containing the computed sets
+     * @throws IllegalStateException if no grammar is loaded
+     */
     public FirstFollowTable buildFirstFollowTable() {
         if (grammar == null) throw new IllegalStateException("Grammar not loaded");
-        return FirstFollowTableBuilder.build(grammar);
+
+        // This line is the critical link between the service and your new Builder logic
+        return new FirstFollowTableBuilder(grammar).build();
     }
 
     public ParseTable buildParseTable(FirstFollowTable firstFollowTable, List<Token> tokens) {
@@ -40,9 +54,10 @@ public class ParserService {
     }
 
     public GrammarClassification classifyGrammarWithParserTable(ParseTable parseTable) {
-        if (parseTable == null)
+        if (parseTable == null) {
             throw new IllegalStateException(
                     "ParseTable must be not null before classifying the grammar.");
+        }
         return new GrammarClassificationBuilder()
                 .withGrammar(grammar)
                 .withParseTable(parseTable)
@@ -67,7 +82,6 @@ public class ParserService {
     private Node buildGrammarNode(Symbol symbol, Set<Symbol> visited) {
         Node node = new Node(symbol);
 
-        // Prevent infinite recursion loops in left/right recursive rules
         if (symbol.isTerminal() || visited.contains(symbol)) {
             return node;
         }

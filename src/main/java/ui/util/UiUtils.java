@@ -9,12 +9,28 @@ import java.time.format.DateTimeFormatter;
 import javafx.application.Platform;
 import javafx.scene.control.TextArea;
 
+/**
+ * Collection of utility methods for the UI layer: - Redirecting standard output to a TextArea -
+ * Updating line numbers - Saving snapshots to PNG - Generating timestamps for logs and filenames
+ *
+ * @author Generated
+ * @version 1.0
+ */
 public class UiUtils {
 
+    /**
+     * OutputStream that writes text to a TextArea on the JavaFX thread. Used to redirect System.out
+     * or System.err to the console UI.
+     */
     public static class TextAreaOutputStream extends OutputStream {
         private final TextArea console;
         private final StringBuilder buffer = new StringBuilder();
 
+        /**
+         * Constructs an output stream that writes to the given TextArea.
+         *
+         * @param console the target TextArea
+         */
         public TextAreaOutputStream(TextArea console) {
             this.console = console;
         }
@@ -39,7 +55,13 @@ public class UiUtils {
         }
     }
 
-    /** Updates line numbers in a companion TextArea based on the input TextArea content. */
+    /**
+     * Updates line numbers displayed in a companion TextArea based on the content of the input
+     * TextArea.
+     *
+     * @param input the main input text area
+     * @param lineNumbers the text area that will show line numbers (1,2,3,...)
+     */
     public static void updateLineNumbers(TextArea input, TextArea lineNumbers) {
         int lines = input.getText().split("\n", -1).length;
         StringBuilder sb = new StringBuilder();
@@ -47,7 +69,13 @@ public class UiUtils {
         lineNumbers.setText(sb.toString());
     }
 
-    /** Saves a JavaFX snapshot (WritableImage) to a PNG file. */
+    /**
+     * Saves a JavaFX snapshot (WritableImage) to a PNG file.
+     *
+     * @param snapshot the image to save
+     * @param outputFile the destination file
+     * @throws IOException if writing fails
+     */
     public static void saveSnapshot(javafx.scene.image.WritableImage snapshot, File outputFile)
             throws IOException {
         java.awt.image.BufferedImage bufferedImage =
@@ -57,12 +85,20 @@ public class UiUtils {
 
     // ==================== TIMESTAMP UTILITIES ====================
 
-    /** Returns a timestamp formatted for console/log display (HH:mm:ss). Example: "14:30:22" */
+    /**
+     * Returns a timestamp formatted for console/log display (HH:mm:ss). Example: "14:30:22"
+     *
+     * @return the current time as a formatted string
+     */
     public static String getDisplayTimestamp() {
         return LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"));
     }
 
-    /** Returns a timestamp suitable for filenames (yyyyMMdd_HHmmss). Example: "20250418_143022" */
+    /**
+     * Returns a timestamp suitable for filenames (yyyyMMdd_HHmmss). Example: "20250418_143022"
+     *
+     * @return the current date and time as a formatted string
+     */
     public static String getFileTimestamp() {
         return LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
     }
@@ -70,8 +106,8 @@ public class UiUtils {
     /**
      * Convenience method to generate a file name with a timestamp prefix or suffix.
      *
-     * @param baseName e.g. "export", "log"
-     * @param extension e.g. "txt", "png" (without dot)
+     * @param baseName e.g., "export", "log"
+     * @param extension e.g., "txt", "png" (without dot)
      * @param addTimestampBeforeExtension if true: "export_20250418_143022.txt", if false:
      *     "20250418_143022_export.txt"
      * @return complete filename string

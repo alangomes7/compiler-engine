@@ -8,9 +8,12 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 /** Reads a grammar file (supports multi-line productions and EBNF-like syntax). */
 public class GrammarReader {
+    private static final Set<String> BUILTIN_TERMINALS =
+            Set.of("identifier", "number", "string-const", "regex-const", "CONCAT", "newline");
 
     public static Grammar readFromFile(String filePath) throws IOException {
         Grammar grammar = null;
@@ -20,15 +23,29 @@ public class GrammarReader {
             String line;
             String currentLhs = null;
             StringBuilder currentRhs = new StringBuilder();
+            StringBuilder pendingLhs = new StringBuilder();
 
             while ((line = reader.readLine()) != null) {
                 line = stripComments(line).trim();
-                if (line.isEmpty()) continue;
+
+                // CRITICAL FIX 1: Flush current production on empty lines.
+                // EBNF files use blank lines to separate rules. This prevents
+                // the reader from merging a new rule's LHS into the previous RHS.
+                if (line.isEmpty()) {
+                    if (currentLhs != null) {
+                        if (grammar == null) {
+                            grammar = new Grammar(new Symbol(currentLhs, false));
+                        }
+                        addProductions(grammar, currentLhs, currentRhs.toString());
+                        currentLhs = null;
+                        currentRhs.setLength(0);
+                    }
+                    continue;
+                }
 
                 if (line.contains("::=")) {
-                    // Flush previous production
+                    // Flush previous production if we didn't hit a blank line
                     if (currentLhs != null) {
-                        // If grammar isn't initialized yet, the first LHS is our start symbol
                         if (grammar == null) {
                             grammar = new Grammar(new Symbol(currentLhs, false));
                         }
@@ -36,12 +53,33 @@ public class GrammarReader {
                     }
 
                     String[] parts = line.split("::=", 2);
-                    currentLhs = parts[0].trim();
+                    String lhsCandidate = parts[0].trim();
+
+                    // If LHS is empty (because ::= is on a new line), grab it from pending
+                    if (lhsCandidate.isEmpty()) {
+                        lhsCandidate = pendingLhs.toString().trim();
+                    }
+
+                    if (lhsCandidate.isEmpty()) {
+                        currentLhs = null;
+                        currentRhs.setLength(0);
+                        pendingLhs.setLength(0);
+                        continue;
+                    }
+
+                    currentLhs = lhsCandidate;
                     currentRhs = new StringBuilder(parts[1].trim());
+                    pendingLhs.setLength(0); // Clear pending buffer
 
                 } else if (currentLhs != null) {
-                    // Continuation line
-                    currentRhs.append(" ").append(line.trim());
+                    // continuation line for RHS
+                    currentRhs.append(" ").append(line);
+                } else {
+                    // No currentLhs yet, so this line is likely the LHS for the next ::=
+                    if (pendingLhs.length() > 0) {
+                        pendingLhs.append(" ");
+                    }
+                    pendingLhs.append(line);
                 }
             }
 
@@ -63,8 +101,10 @@ public class GrammarReader {
     }
 
     private static void addProductions(Grammar grammar, String lhsName, String rhsFull) {
+        if (lhsName.isEmpty()) return;
         Symbol lhs = new Symbol(lhsName, false);
 
+        // This properly creates brand new Production objects for every alternative separated by |
         String[] alternatives = splitAlternatives(rhsFull);
 
         for (String alt : alternatives) {
@@ -102,10 +142,12 @@ public class GrammarReader {
         return result.toArray(String[]::new);
     }
 
-    /** Tokenizer that preserves: - quoted strings - symbols like (), {}, [], ?, *, + */
+    /**
+     * Tokenizer that preserves quoted strings, special symbols, and treats hyphens as part of
+     * identifiers (non-terminals).
+     */
     private static List<Symbol> tokenize(String input) {
         List<Symbol> symbols = new ArrayList<>();
-
         StringBuilder buffer = new StringBuilder();
         boolean inQuotes = false;
         char quoteChar = 0;
@@ -135,14 +177,12 @@ public class GrammarReader {
                 continue;
             }
 
-            // Special symbols as standalone tokens
-            if ("(){}[]?,:+-*/%^=!<>".indexOf(c) >= 0) {
+            if ("(){}[]?,:+*/%^=!<>|".indexOf(c) >= 0) {
                 flushBuffer(buffer, symbols);
                 symbols.add(new Symbol(String.valueOf(c), true));
                 continue;
             }
 
-            // Whitespace
             if (Character.isWhitespace(c)) {
                 flushBuffer(buffer, symbols);
                 continue;
@@ -159,14 +199,24 @@ public class GrammarReader {
         if (buffer.length() == 0) return;
 
         String token = buffer.toString();
-        boolean isTerminal = isTerminal(token);
 
-        symbols.add(new Symbol(token, isTerminal));
+        // CRITICAL FIX 2: Explicitly catch the Epsilon character and map it to your constant
+        if (token.equals("ε") || token.equals("EPSILON")) {
+            symbols.add(Symbol.EPSILON);
+        } else {
+            boolean isTerminal = isTerminal(token);
+            symbols.add(new Symbol(token, isTerminal));
+        }
+
         buffer.setLength(0);
     }
 
     private static boolean isTerminal(String token) {
-        return token.startsWith("\"") || token.startsWith("'") || token.matches("[^a-zA-Z].*");
+        if (token.startsWith("\"") || token.startsWith("'")) return true;
+        if (token.matches("[0-9]+(\\.[0-9]+)?")) return true;
+        if (BUILTIN_TERMINALS.contains(token)) return true;
+        // Otherwise, a token starting with a letter is a non‑terminal
+        return !token.matches("[a-zA-Z_].*");
     }
 
     private static String stripQuotes(String s) {
@@ -176,14 +226,27 @@ public class GrammarReader {
         return s;
     }
 
+    /**
+     * Strips '#' comments, but ensures we ignore them if inside a quoted string. Removed ';' as a
+     * comment delimiter entirely to support EBNF syntax.
+     */
     private static String stripComments(String line) {
-        int hash = line.indexOf('#');
-        int semi = line.indexOf(';');
+        boolean inQuotes = false;
+        char quoteChar = 0;
 
-        int cut = -1;
-        if (hash >= 0) cut = hash;
-        if (semi >= 0) cut = (cut == -1) ? semi : Math.min(cut, semi);
+        for (int i = 0; i < line.length(); i++) {
+            char c = line.charAt(i);
 
-        return (cut >= 0) ? line.substring(0, cut) : line;
+            if ((c == '"' || c == '\'') && (quoteChar == 0 || c == quoteChar)) {
+                inQuotes = !inQuotes;
+                quoteChar = inQuotes ? c : 0;
+            }
+
+            // Only strip # comments, and only if we are outside quotes
+            if (!inQuotes && c == '#') {
+                return line.substring(0, i);
+            }
+        }
+        return line;
     }
 }

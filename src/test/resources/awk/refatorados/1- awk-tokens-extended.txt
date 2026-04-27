@@ -1,0 +1,177 @@
+# =========================================
+# LEXER – LL(1) Grammar Token Definitions
+# =========================================
+
+# =========================
+# Keywords (Static Literals)
+# =========================
+@ESP FUNCTION    : function
+@ESP BEGIN_KW    : BEGIN
+@ESP END_KW      : END
+@ESP PRINT       : print
+@ESP PRINTF      : printf
+@ESP FOR         : for
+@ESP IN          : in
+@ESP DO          : do
+@ESP WHILE       : while
+@ESP IF          : if
+@ESP ELSE        : else
+@ESP FI          : fi
+@ESP SWITCH      : switch
+@ESP BREAK       : break
+@ESP CONTINUE    : continue
+@ESP NEXT        : next
+@ESP RETURN      : return
+@ESP DELETE      : delete
+@ESP GETLINE     : getline
+
+# =========================
+# Operators (Longest First!)
+# =========================
+@PRI ASSIGN_EXP  : ^=
+@PRI ASSIGN_MOD  : %=
+@PRI ASSIGN_MUL  : *=
+@PRI ASSIGN_DIV  : /=
+@PRI ASSIGN_ADD  : +=
+@PRI ASSIGN_SUB  : -=
+@PRI ASSIGN      : =
+
+@PRI LOGICAL_OR  : ||
+@PRI LOGICAL_AND : &&
+
+@PRI MATCH_NOT   : !~
+@PRI RELOP_EQ    : ==
+@PRI RELOP_NE    : !=
+@PRI RELOP_GE    : >=
+@PRI RELOP_LE    : <=
+
+@PRI MATCH       : ~
+@PRI RELOP_GT    : >
+@PRI RELOP_LT    : <
+
+@PRI PLUS        : +
+@PRI MINUS       : -
+@PRI MULT        : *
+@PRI DIV         : /
+@PRI MOD         : %
+@PRI EXP         : ^
+@PRI NOT         : !
+@PRI DOLLAR      : $
+@PRI PIPE        : |
+@PRI APPEND      : >>
+
+# The next two tokens must be distinguished by context.
+# After an operand (identifier, number, ')', ']') the lexer emits the POST variant;
+# otherwise it emits the PRE variant.
+@PRI INC_PRE     : ++
+@PRI DEC_PRE     : --
+@PRI INC_POST    : ++
+@PRI DEC_POST    : --
+
+# Virtual token – inserted by the parser, never matched by the lexer
+@ESP CONCAT      : /* no lexeme */
+
+# =========================
+# Delimiters
+# =========================
+@PRI LPAREN      : (
+@PRI RPAREN      : )
+@PRI LBRACE      : {
+@PRI RBRACE      : }
+@PRI LBRACKET    : [
+@PRI RBRACKET    : ]
+
+@PRI COMMA       : ,
+@PRI SEMICOLON   : ;
+@PRI COLON       : :
+@PRI QUESTION    : ?
+
+# =========================
+# Explicit Primitive Sets
+# =========================
+@PRI DIGIT       : [0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9]
+
+@PRI LOWER       : [a | b | c | d | e | f | g | h | i | j | k | l | m | n | o | p | q | r | s | t | u | v | w | x | y | z]
+
+@PRI UPPER       : [A | B | C | D | E | F | G | H | I | J | K | L | M | N | O | P | Q | R | S | T | U | V | W | X | Y | Z]
+
+@PRI LETTER      : [LOWER | UPPER]
+
+@PRI UNDERSCORE  : [_]
+
+@PRI HEX_LOWER   : [a | b | c | d | e | f]
+@PRI HEX_UPPER   : [A | B | C | D | E | F]
+@DER HEX_DIGIT   : [DIGIT | HEX_LOWER | HEX_UPPER]
+
+@PRI OCT_DIGIT   : [0 | 1 | 2 | 3 | 4 | 5 | 6 | 7]
+@PRI BIN_DIGIT   : [0 | 1]
+
+@PRI SPACE       : [ ]
+@PRI TAB         : [\t]
+
+@PRI NEWLINE_CH  : [\r | \n]
+
+@PRI DQUOTE      : ["]
+@PRI SQUOTE      : [']
+
+@PRI SLASH       : [/]
+@PRI BACKSLASH   : [\\]
+@PRI HASH        : [#]
+@PRI DOT         : [.]
+
+# Isolated symbols for the universal set
+@PRI AMPERSAND   : [&]
+@PRI CARET       : [\^]
+@PRI TILDE       : [~]
+@PRI BACKTICK    : [`]
+@PRI AT_SIGN     : [@]
+
+# --- Universal Set (Explicit) ---
+@DER ANY_CHAR    : [LETTER | DIGIT | SPACE | TAB | NEWLINE_CH | DQUOTE | SQUOTE | SLASH | BACKSLASH | HASH | DOT | UNDERSCORE | COMMA | SEMICOLON | COLON | QUESTION | PIPE | LPAREN | RPAREN | LBRACE | RBRACE | LBRACKET | RBRACKET | PLUS | MINUS | MULT | DIV | MOD | EXP | NOT | DOLLAR | ASSIGN | MATCH | RELOP_GT | RELOP_LT | AMPERSAND | CARET | TILDE | BACKTICK | AT_SIGN]
+
+# =========================
+# Derived Sets (Explicit Negation)
+# =========================
+@DER NOT_DQUOTE_BSLASH   : [ANY_CHAR ^ [DQUOTE | BACKSLASH]]
+@DER NOT_SQUOTE_BSLASH   : [ANY_CHAR ^ [SQUOTE | BACKSLASH]]
+@DER NOT_NEWLINE         : [ANY_CHAR ^ [NEWLINE_CH]]
+
+# =========================
+# Escape Handling
+# =========================
+@DER ESCAPE_CHAR : [n | r | t | b | f | v | a | ? | 0 | DQUOTE | SQUOTE | BACKSLASH]
+@DER ESCAPE_OCT  : OCT_DIGIT OCT_DIGIT OCT_DIGIT
+@DER ESCAPE_HEX  : [x] HEX_DIGIT HEX_DIGIT
+@DER ESCAPE_UNI  : [U] HEX_DIGIT HEX_DIGIT HEX_DIGIT HEX_DIGIT
+
+@DER ESCAPE_SEQ  : BACKSLASH (ESCAPE_CHAR | ESCAPE_OCT | ESCAPE_HEX | ESCAPE_UNI)
+
+# =========================
+# Lexical Elements (Dynamic)
+# =========================
+@DER string-const : DQUOTE (NOT_DQUOTE_BSLASH | ESCAPE_SEQ)* DQUOTE
+                  | SQUOTE (NOT_SQUOTE_BSLASH | ESCAPE_SEQ)* SQUOTE
+
+@DER identifier    : LETTER (LETTER | DIGIT | UNDERSCORE)*
+
+@DER HEX_NUM       : [0][x | X] HEX_DIGIT+
+@DER OCT_NUM       : [0][o | O] OCT_DIGIT+
+@DER BIN_NUM       : [0][b | B] BIN_DIGIT+
+@DER FLOAT_NUM     : DIGIT* DOT DIGIT+
+@DER INT_NUM       : DIGIT+
+
+@DER number        : HEX_NUM | OCT_NUM | BIN_NUM | FLOAT_NUM | INT_NUM
+
+# A comment is a top-level syntactic element, so it is not skipped.
+@DER comment       : HASH NOT_NEWLINE*
+
+# Newline is a token used as a statement terminator.
+@DER newline       : NEWLINE_CH+
+
+# Whitespace is ignored.
+@DER WHITESPACE    : (SPACE | TAB)+ -> skip
+
+# Add negation set for regex
+@DER NOT_DIV_BSLASH : [ANY_CHAR ^ [DIV | BACKSLASH]]
+
+@DER regex-const : DIV (NOT_DIV_BSLASH | ESCAPE_SEQ)* DIV

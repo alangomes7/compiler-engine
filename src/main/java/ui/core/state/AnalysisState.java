@@ -1,11 +1,19 @@
 package ui.core.state;
 
-import core.lexer.models.automata.AFD;
+import core.lexer.models.automata.DFA;
 import core.parser.models.FirstFollowTable;
 import core.parser.models.ParseTable;
 import lombok.Data;
 import ui.core.services.ParserService.ParseResult;
 
+/**
+ * Central state holder for the entire application. Stores flags indicating which data is available
+ * and actual data objects (automaton, parse tables, parse results). Used to drive UI enablement and
+ * data caching.
+ *
+ * @author Generated
+ * @version 1.0
+ */
 @Data
 public class AnalysisState {
     // State flags
@@ -26,5 +34,5 @@ public class AnalysisState {
     private FirstFollowTable currentFirstFollowTable;
     private ParseTable currentParseTable;
     private ParseResult currentParseResult;
-    private AFD currentAutomaton;
+    private DFA currentAutomaton;
 }

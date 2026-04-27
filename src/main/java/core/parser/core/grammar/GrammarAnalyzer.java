@@ -37,6 +37,7 @@ public class GrammarAnalyzer {
     public static List<String> getCommonPrefixDetails(Grammar grammar) {
         List<String> details = new ArrayList<>();
         for (Symbol nonTerminal : grammar.getNonTerminals()) {
+            if (nonTerminal.getName().isEmpty()) continue;
             List<Production> productions = grammar.getProductionsFor(nonTerminal);
 
             for (int i = 0; i < productions.size(); i++) {

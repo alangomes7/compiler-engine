@@ -1,0 +1,172 @@
+# =========================
+# LEXER
+# @ESP : ESPECIFICATION
+# @PRI : PRIMITIVE
+# @DER : DERIVED
+# =========================
+
+# =========================
+# Keywords (Static Literals)
+# =========================
+@ESP FUNCTION  : function
+@ESP BEGIN_KW  : BEGIN
+@ESP END_KW    : END
+@ESP CASE      : case
+@ESP DEFAULT   : default
+@ESP DELETE    : delete
+@ESP BREAK     : break
+@ESP CONTINUE  : continue
+@ESP NEXT      : next
+@ESP RETURN    : return
+@ESP SWITCH    : switch
+@ESP IF        : if
+@ESP ELSE      : else
+@ESP WHILE     : while
+@ESP DO        : do
+@ESP FOR       : for
+@ESP PRINTF    : printf
+@ESP PRINT     : print
+@ESP IN        : in
+@ESP GETLINE   : getline
+
+# =========================
+# Operators (Longest First!)
+# =========================
+@PRI ASSIGN_EXP : ^=
+@PRI ASSIGN_MOD : %=
+@PRI ASSIGN_MUL : *=
+@PRI ASSIGN_DIV : /=
+@PRI ASSIGN_ADD : +=
+@PRI ASSIGN_SUB : -=
+
+@PRI LOGICAL_OR : ||
+@PRI LOGICAL_AND: &&
+
+@PRI MATCH_NOT  : !~
+@PRI RELOP_EQ   : ==
+@PRI RELOP_NE   : !=
+@PRI RELOP_GE   : >=
+@PRI RELOP_LE   : <=
+@PRI INC        : ++
+@PRI DEC        : --
+
+@PRI MATCH      : ~
+@PRI RELOP_GT   : >
+@PRI RELOP_LT   : <
+
+@PRI PLUS       : +
+@PRI MINUS      : -
+@PRI MULT       : *
+@PRI DIV        : /
+@PRI MOD        : %
+@PRI EXP        : ^
+@PRI NOT        : !
+@PRI DOLLAR     : $
+@PRI ASSIGN     : =
+
+# =========================
+# Delimiters
+# =========================
+@PRI APPEND     : >>
+@PRI REDIRECT   : >
+@PRI PIPE       : |
+@PRI LPAREN     : (
+@PRI RPAREN     : )
+@PRI LBRACE     : {
+@PRI RBRACE     : }
+@PRI LBRACKET   : [
+@PRI RBRACKET   : ]
+
+@PRI COMMA      : ,
+@PRI SEMICOLON  : ;
+@PRI COLON      : :
+@PRI QUESTION   : ?
+
+# =========================
+# Explicit Primitive Sets
+# =========================
+@PRI DIGIT      : [0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9]
+
+@PRI LOWER      : [a | b | c | d | e | f | g | h | i | j | k | l | m | n | o | p | q | r | s | t | u | v | w | x | y | z]
+
+@PRI UPPER      : [A | B | C | D | E | F | G | H | I | J | K | L | M | N | O | P | Q | R | S | T | U | V | W | X | Y | Z]
+
+@PRI LETTER     : [LOWER | UPPER]
+
+@PRI UNDERSCORE : [_]
+
+@PRI HEX_LOWER  : [a | b | c | d | e | f]
+@PRI HEX_UPPER  : [A | B | C | D | E | F]
+@DER HEX_DIGIT  : [DIGIT | HEX_LOWER | HEX_UPPER]
+
+@PRI OCT_DIGIT  : [0 | 1 | 2 | 3 | 4 | 5 | 6 | 7]
+@PRI BIN_DIGIT  : [0 | 1]
+
+@PRI SPACE      : [ ]
+@PRI TAB        : [\t]
+
+@PRI NEWLINE_CH : [\r | \n]
+
+@PRI DQUOTE     : ["]
+@PRI SQUOTE     : [']
+
+@PRI SLASH      : [/]
+@PRI BACKSLASH  : [\\]
+@PRI HASH       : [#]
+@PRI DOT        : [.]
+
+# Caracteres de Simbologia Isolados para o Universal Set
+@PRI AMPERSAND  : [&]
+@PRI CARET      : [\^]
+@PRI TILDE      : [~]
+@PRI BACKTICK   : [`]
+@PRI AT_SIGN    : [@]
+
+# --- Universal Set (Explicit) ---
+@DER ANY_CHAR   : [LETTER | DIGIT | ACCENT | SPACE | TAB | NEWLINE_CH | DQUOTE | SQUOTE | SLASH | BACKSLASH | HASH | DOT | UNDERSCORE | COMMA | SEMICOLON | COLON | QUESTION | PIPE | LPAREN | RPAREN | LBRACE | RBRACE | LBRACKET | RBRACKET | PLUS | MINUS | MULT | DIV | MOD | EXP | NOT | DOLLAR | ASSIGN | MATCH | RELOP_GT | RELOP_LT | AMPERSAND | CARET | TILDE | BACKTICK | AT_SIGN]
+
+# =========================
+# Derived Sets (Explicit Negation) (Longest First!)
+# =========================
+@DER NOT_DQUOTE_BSLASH  : [ANY_CHAR ^ [DQUOTE | BACKSLASH]]
+@DER NOT_SQUOTE_BSLASH  : [ANY_CHAR ^ [SQUOTE | BACKSLASH]]
+@DER NOT_NEWLINE_SLASH  : [ANY_CHAR ^ [NEWLINE_CH | SLASH]]
+@DER NOT_NEWLINE        : [ANY_CHAR ^ [NEWLINE_CH]]
+
+# =========================
+# Escape Handling (Longest First!)
+# =========================
+@DER ESCAPE_CHAR : [n | r | t | b | f | v | a | ? | 0 | DQUOTE | SQUOTE | BACKSLASH]
+@DER ESCAPE_OCT  : [OCT_DIGIT][OCT_DIGIT][OCT_DIGIT]
+@DER ESCAPE_HEX  : [x][HEX_DIGIT][HEX_DIGIT]
+@DER ESCAPE_UNI  : [U][HEX_DIGIT][HEX_DIGIT][HEX_DIGIT][HEX_DIGIT]
+
+@DER ESCAPE_SEQ  : [BACKSLASH]([ESCAPE_CHAR] | [ESCAPE_OCT] | [ESCAPE_HEX] | [ESCAPE_UNI])
+
+# =========================
+# Lexical Elements (Dynamic) (Longest First!)
+# =========================
+@DER STR : [DQUOTE]([NOT_DQUOTE_BSLASH] | [ESCAPE_SEQ])*[DQUOTE] | [SQUOTE]([NOT_SQUOTE_BSLASH] | [ESCAPE_SEQ])*[SQUOTE]
+
+@DER REGEX : [SLASH][NOT_NEWLINE_SLASH]+[SLASH]
+
+@DER ID : [LETTER | UNDERSCORE][LETTER | DIGIT | UNDERSCORE]*
+
+@DER HEX : [0][x | X][HEX_DIGIT]+
+
+@DER OCT : [0][o | O][OCT_DIGIT]+
+
+@DER BIN : [0][b | B][BIN_DIGIT]+
+
+@DER FLOAT : [DIGIT]*[DOT][DIGIT]+
+
+@DER INT : [DIGIT]+
+
+# =========================
+# Ignored & Special Tokens
+# =========================
+@DER WHITESPACE : [SPACE | TAB]+ -> skip
+
+@DER COMMENT : [HASH][NOT_NEWLINE]* -> skip
+
+@DER NEWLINE : [NEWLINE_CH]+

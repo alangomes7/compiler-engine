@@ -1,0 +1,222 @@
+awk-program
+    ::= program-parts
+
+program-parts
+    ::= program-part program-parts
+      | ε
+
+program-part
+    ::= top-level-element
+      | comment
+
+comment
+    ::= "#"
+
+top-level-element
+    ::= "function" identifier '(' opt-identifier-list ')' action
+      | "BEGIN" action
+      | "END" action
+      | regex-const action
+      | expression expression-construct-tail
+      | action
+
+expression-construct-tail
+    ::= ',' expression action
+      | action
+      | terminate
+
+opt-identifier-list
+    ::= identifier identifier-list-tail
+      | ε
+
+identifier-list-tail
+    ::= ',' identifier identifier-list-tail
+      | ε
+
+action
+    ::= '{' statement-list '}'
+
+statement-list
+    ::= statement statement-list-tail
+
+statement-list-tail
+    ::= statement statement-list-tail
+      | ε
+
+statement
+    ::= "print" opt-expr-list print-redirection terminate
+      | "printf" string-const opt-comma-expr-list print-redirection terminate
+      | "for" '(' for-content ')' action
+      | "do" action "while" '(' expression ')' terminate
+      | "while" '(' expression ')' action
+      | "if" '(' expression ')' action else-part "fi"
+      | "switch" '(' expression ')' action
+      | "break" terminate
+      | "continue" terminate
+      | "next" terminate
+      | "return" opt-return-expr terminate
+      | "delete" identifier terminate
+      | expression terminate
+      | action
+      | terminate
+
+terminate ::= ';' | newline
+
+else-part
+    ::= "else" action
+      | ε
+
+for-content
+    ::= opt-expr-list for-content-tail
+
+for-content-tail
+    ::= ';' opt-expr-list ';' opt-expr-list
+      | ε
+
+opt-return-expr
+    ::= expression
+      | ε
+
+opt-comma-expr-list
+    ::= ',' expr-list
+      | ε
+
+print-redirection
+    ::= ">>" expression
+      | ε
+
+opt-expr-list
+    ::= expression expr-list-tail
+      | ε
+
+expr-list
+    ::= expression expr-list-tail
+
+expr-list-tail
+    ::= ',' expression expr-list-tail
+      | ε
+
+expression
+    ::= assignment expression-pipe-tail
+
+expression-pipe-tail
+    ::= '|' assignment expression-pipe-tail
+      | ε
+
+assignment
+    ::= conditional assignment-tail
+
+assignment-tail
+    ::= "^=" assignment
+      | "%=" assignment
+      | "*=" assignment
+      | "/=" assignment
+      | "+=" assignment
+      | "-=" assignment
+      | "=" assignment
+      | ε
+
+conditional
+    ::= logical-or conditional-tail
+
+conditional-tail
+    ::= '?' expression ':' conditional
+      | ε
+
+logical-or
+    ::= logical-and logical-or-tail
+
+logical-or-tail
+    ::= "||" logical-and logical-or-tail
+      | ε
+
+logical-and
+    ::= in-expr logical-and-tail
+
+logical-and-tail
+    ::= "&&" in-expr logical-and-tail
+      | ε
+
+in-expr
+    ::= match-expr in-tail
+
+in-tail
+    ::= "in" identifier
+      | ε
+
+match-expr
+    ::= relop-expr match-tail
+
+match-tail
+    ::= '~' relop-expr match-tail
+      | "!~" relop-expr match-tail
+      | ε
+
+relop-expr
+    ::= concat-expr relop-tail
+
+relop-tail
+    ::= '<' concat-expr relop-tail
+      | "<=" concat-expr relop-tail
+      | "!=" concat-expr relop-tail
+      | "==" concat-expr relop-tail
+      | '>' concat-expr relop-tail
+      | ">=" concat-expr relop-tail
+      | ε
+
+concat-expr
+    ::= additive-expr concat-tail
+
+concat-tail
+    ::= "CONCAT" additive-expr concat-tail
+      | ε
+
+additive-expr
+    ::= multiplicative-expr additive-tail
+
+additive-tail
+    ::= '+' multiplicative-expr additive-tail
+      | '-' multiplicative-expr additive-tail
+      | ε
+
+multiplicative-expr
+    ::= exponential-expr multiplicative-tail
+
+multiplicative-tail
+    ::= '*' exponential-expr multiplicative-tail
+      | '/' exponential-expr multiplicative-tail
+      | '%' exponential-expr multiplicative-tail
+      | ε
+
+exponential-expr
+    ::= unary-expr exponential-tail
+
+exponential-tail
+    ::= '^' exponential-expr
+      | ε
+
+unary-expr
+    ::= '+' unary-expr
+      | '-' unary-expr
+      | '!' unary-expr
+      | "++_pre" unary-expr
+      | "--_pre" unary-expr
+      | primary postfix-tail
+
+postfix-tail
+    ::= "++_post" postfix-tail
+      | "--_post" postfix-tail
+      | ε
+
+primary
+    ::= identifier primary-id-tail
+      | "DOLLAR" primary
+      | number
+      | string-const
+      | "getline"
+      | '(' expression ')'
+
+primary-id-tail
+    ::= '(' opt-expr-list ')'
+      | '[' expr-list ']'
+      | ε

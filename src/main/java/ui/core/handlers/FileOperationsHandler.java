@@ -8,17 +8,36 @@ import ui.core.graph.automata.InteractiveAutomataView;
 import ui.core.services.FileService;
 import ui.core.state.AnalysisState;
 
+/**
+ * Handles file loading operations: token rule files, grammar files, and input files. Updates the
+ * analysis state, triggers automaton building, and refreshes the UI.
+ *
+ * @author Generated
+ * @version 1.0
+ */
 public class FileOperationsHandler {
     private final Ui ui;
     private final AnalysisState state;
     private final UiStateController stateController;
 
+    /**
+     * Constructs a FileOperationsHandler with references to the main UI, analysis state, and state
+     * controller.
+     *
+     * @param ui the main UI instance
+     * @param state the shared analysis state
+     * @param stateController the controller for updating UI components based on state changes
+     */
     public FileOperationsHandler(Ui ui, AnalysisState state, UiStateController stateController) {
         this.ui = ui;
         this.state = state;
         this.stateController = stateController;
     }
 
+    /**
+     * Loads a token rule file, builds the lexer automaton, and displays it interactively. Resets
+     * analysis state for new tokens and updates the UI accordingly.
+     */
     public void handleLoadTokenFile() {
         File file =
                 FileService.selectFile(
@@ -62,6 +81,7 @@ public class FileOperationsHandler {
                         });
     }
 
+    /** Resets all analysis‑related state flags when a new token file is loaded. */
     private void resetForNewToken() {
         state.setTokenLoaded(false);
         state.setLexerRunSuccess(false);
@@ -74,6 +94,7 @@ public class FileOperationsHandler {
         stateController.updateUIState();
     }
 
+    /** Loads a grammar definition file and stores it in the parser service. */
     public void handleLoadGrammarFile() {
         File file =
                 FileService.selectFile(
@@ -109,6 +130,10 @@ public class FileOperationsHandler {
                         });
     }
 
+    /**
+     * Loads an input source file and places its content into the input text area. Uses a
+     * programmatic change flag to prevent unwanted state resets.
+     */
     public void handleLoadInputFile() {
         File file =
                 FileService.selectFile(

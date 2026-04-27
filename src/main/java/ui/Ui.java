@@ -10,6 +10,8 @@ import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.control.Tab;
+import javafx.scene.control.TabPane;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextArea;
@@ -29,6 +31,13 @@ import ui.core.tables.SymbolTableManager;
 import ui.util.BackgroundTaskExecutor;
 import ui.util.UiUtils;
 
+/**
+ * Main JavaFX controller for the Compiler UI. Manages all UI components, coordinates between
+ * services and handlers, and maintains the application state.
+ *
+ * @author Generated
+ * @version 1.0
+ */
 @Getter
 public class Ui implements Initializable {
 
@@ -68,6 +77,10 @@ public class Ui implements Initializable {
     @FXML private Label inputFileLabel;
     @Getter @FXML private TextArea automataDetailsArea;
     @FXML private TextArea validatorOutputArea;
+
+    // Tabs
+    @FXML private TabPane mainTabPane;
+    @FXML private Tab consoleTab;
 
     // Tables
     @FXML private TableView<Token> symbolTableViewer;
@@ -111,6 +124,14 @@ public class Ui implements Initializable {
     private ExportHandler exportHandler;
     private VisualizationHandler visualizationHandler;
 
+    /**
+     * Initialises the UI controller after the FXML has been loaded. Sets up the window to be
+     * maximised, redirects System.out/err to the console area, initialises table managers,
+     * handlers, and sets up listeners.
+     *
+     * @param location the location used to resolve relative paths (unused)
+     * @param resources the resources used to localise the root object (unused)
+     */
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         // 1. Basic UI Setup
@@ -151,13 +172,14 @@ public class Ui implements Initializable {
         parserTableManager = new ParserTableManager(parserTable, parserTableNonTerminalCol);
 
         // 4. Setup Listeners
+        lineNumbersArea.scrollTopProperty().bindBidirectional(inputArea.scrollTopProperty());
         inputArea
                 .textProperty()
                 .addListener(
                         (obs, oldVal, newVal) -> {
                             UiUtils.updateLineNumbers(inputArea, lineNumbersArea);
                             if (!analysisState.isProgrammaticChange() && !newVal.equals(oldVal)) {
-                                stateController.invalidateAnalysisState();
+                                stateController.invalidateInputState();
                                 outputArea.setText("⚠️ Input changed. Please run Lexer again.");
                             }
                         });
@@ -169,91 +191,171 @@ public class Ui implements Initializable {
     // ==========================================
     // FXML Event Delegates (Routing)
     // ==========================================
+
+    /**
+     * Handles the "Load Token File" button click. Delegates to {@link
+     * FileOperationsHandler#handleLoadTokenFile()}.
+     */
     @FXML
     private void handleLoadTokenFile() {
+        mainTabPane.getSelectionModel().select(consoleTab);
         fileHandler.handleLoadTokenFile();
     }
 
+    /**
+     * Handles the "Load Grammar File" button click. Delegates to {@link
+     * FileOperationsHandler#handleLoadGrammarFile()}.
+     */
     @FXML
     private void handleLoadGrammarFile() {
+        mainTabPane.getSelectionModel().select(consoleTab);
         fileHandler.handleLoadGrammarFile();
     }
 
+    /**
+     * Handles the "Load Input File" button click. Delegates to {@link
+     * FileOperationsHandler#handleLoadInputFile()}.
+     */
     @FXML
     private void handleLoadInputFile() {
+        mainTabPane.getSelectionModel().select(consoleTab);
         fileHandler.handleLoadInputFile();
     }
 
+    /**
+     * Handles the "Run Lexer Analysis" button click. Delegates to {@link
+     * ExecutionHandler#handleRunLexer()}.
+     */
     @FXML
     private void handleRunLexer() {
+        mainTabPane.getSelectionModel().select(consoleTab);
         executionHandler.handleRunLexer();
     }
 
+    /**
+     * Handles the "Run Syntax Analysis" button click. Delegates to {@link
+     * ExecutionHandler#handleRunSyntaxAnalysis()}.
+     */
     @FXML
     private void handleRunSyntaxAnalysis() {
+        mainTabPane.getSelectionModel().select(consoleTab);
         executionHandler.handleRunSyntaxAnalysis();
     }
 
+    /**
+     * Handles the "Validate Compatibility" button click. Delegates to {@link
+     * ExecutionHandler#handleValidateCompatibility()}.
+     */
     @FXML
     private void handleValidateCompatibility() {
         executionHandler.handleValidateCompatibility();
     }
 
+    /**
+     * Handles the "Generate Grammar Tree" button click. Delegates to {@link
+     * VisualizationHandler#handleGenerateGrammarTree()}.
+     */
     @FXML
     private void handleGenerateGrammarTree() {
+        mainTabPane.getSelectionModel().select(consoleTab);
         visualizationHandler.handleGenerateGrammarTree();
     }
 
+    /**
+     * Handles the "Generate Input Tree" button click. Delegates to {@link
+     * VisualizationHandler#handleGenerateInputTree()}.
+     */
     @FXML
     private void handleGenerateInputTree() {
+        mainTabPane.getSelectionModel().select(consoleTab);
         visualizationHandler.handleGenerateInputTree();
     }
 
+    /**
+     * Handles the "Export Graph Image" button click. Delegates to {@link
+     * ExportHandler#handleExportGraphImage()}.
+     */
     @FXML
     private void handleExportGraphImage() {
         exportHandler.handleExportGraphImage();
     }
 
+    /**
+     * Handles the "Export Grammar Tree Image" button click. Delegates to {@link
+     * ExportHandler#handleExportGrammarTreeImage()}.
+     */
     @FXML
     private void handleExportGrammarTreeImage() {
         exportHandler.handleExportGrammarTreeImage();
     }
 
+    /**
+     * Handles the "Export Input Tree Image" button click. Delegates to {@link
+     * ExportHandler#handleExportInputTreeImage()}.
+     */
     @FXML
     private void handleExportInputTreeImage() {
         exportHandler.handleExportInputTreeImage();
     }
 
+    /**
+     * Handles the "Export Tables (.csv)" button click. Delegates to {@link
+     * ExportHandler#handleExportCSV()}.
+     */
     @FXML
     private void handleExportCSV() {
         exportHandler.handleExportCSV();
     }
 
+    /**
+     * Handles the "Export Graph Text" button click. Delegates to {@link
+     * ExportHandler#handleExportGraphText()}.
+     */
     @FXML
     private void handleExportGraphText() {
         exportHandler.handleExportGraphText();
     }
 
+    /**
+     * Handles the "Save Console Log" button click. Delegates to {@link
+     * ExportHandler#handleSaveConsoleLog()}.
+     */
     @FXML
     private void handleSaveConsoleLog() {
         exportHandler.handleSaveConsoleLog();
     }
 
+    /**
+     * Handles the "Save Output" button click. Delegates to {@link
+     * ExportHandler#handleSaveOutput()}.
+     */
     @FXML
     private void handleSaveOutput() {
         exportHandler.handleSaveOutput();
     }
 
+    /**
+     * Handles the "Save Validation" button click. Delegates to {@link
+     * ExportHandler#handleSaveValidation()}.
+     */
     @FXML
     private void handleSaveValidation() {
         exportHandler.handleSaveValidation();
     }
 
+    /**
+     * Handles the "Generate Full Report" button click. Delegates to {@link
+     * ExportHandler#handleGenerateFullReport()}.
+     */
     @FXML
     private void handleGenerateFullReport() {
         exportHandler.handleGenerateFullReport();
     }
 
+    /**
+     * Handles the "Clear Tables" button click. Invalidates all analysis state and clears
+     * output/console.
+     */
     @FXML
     private void handleClearTables() {
         stateController.invalidateAnalysisState();
@@ -262,16 +364,22 @@ public class Ui implements Initializable {
         stateController.updateUIState();
     }
 
+    /** Handles the "Clear Console Log" button click. */
     @FXML
     private void handleClearConsoleLog() {
         consoleArea.clear();
     }
 
+    /** Handles the "Clear Output" button click. */
     @FXML
     private void handleClearOutput() {
         outputArea.clear();
     }
 
+    /**
+     * Handles the "Clear Validation" button click. Clears the validation output area and marks
+     * validation data as absent.
+     */
     @FXML
     private void handleClearValidation() {
         validatorOutputArea.clear();

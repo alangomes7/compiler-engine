@@ -8,6 +8,13 @@
   "configurations": [
     {
       "type": "java",
+      "name": "Launcher",
+      "request": "launch",
+      "mainClass": "compiler.engine/app.Launcher",
+      "projectName": "compiler-engine"
+    },
+    {
+      "type": "java",
       "name": "Main",
       "request": "launch",
       "mainClass": "compiler.engine/app.Main",

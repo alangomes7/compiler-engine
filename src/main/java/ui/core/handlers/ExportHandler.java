@@ -13,15 +13,32 @@ import ui.core.tables.ParserTableManager;
 import ui.core.tables.SymbolTableManager;
 import ui.util.UiUtils;
 
+/**
+ * Handles exporting various analysis artifacts: automaton images, grammar/parse tree snapshots, CSV
+ * tables, console logs, and full reports.
+ *
+ * @author Generated
+ * @version 1.0
+ */
 public class ExportHandler {
     private final Ui ui;
     private final AnalysisState state;
 
+    /**
+     * Constructs an ExportHandler with references to the main UI and analysis state.
+     *
+     * @param ui the main UI instance
+     * @param state the shared analysis state
+     */
     public ExportHandler(Ui ui, AnalysisState state) {
         this.ui = ui;
         this.state = state;
     }
 
+    /**
+     * Exports the current DFA automaton as a PNG image using Graphviz. The image is saved in the
+     * "output" directory with a timestamped filename.
+     */
     public void handleExportGraphImage() {
         if (state.getCurrentAutomaton() == null) return;
         try {
@@ -33,18 +50,26 @@ public class ExportHandler {
         }
     }
 
+    /** Exports the grammar tree (visualisation of the grammar structure) as a PNG image. */
     public void handleExportGrammarTreeImage() {
         if (!state.isHasGrammarTree()) return;
         exportTreeSnapshot(
                 (InteractiveTreeView) ui.getGrammarTreeContainer().getCenter(), "grammar_tree");
     }
 
+    /** Exports the parse tree of the last successfully parsed input as a PNG image. */
     public void handleExportInputTreeImage() {
         if (!state.isHasInputTree()) return;
         exportTreeSnapshot(
                 (InteractiveTreeView) ui.getInputTreeContainer().getCenter(), "input_tree");
     }
 
+    /**
+     * Helper method to export an interactive tree view to a PNG file via a save dialog.
+     *
+     * @param view the tree view (must be an InteractiveTreeView)
+     * @param baseName the base name for the suggested file
+     */
     private void exportTreeSnapshot(InteractiveTreeView view, String baseName) {
         try {
             File file =
@@ -63,6 +88,10 @@ public class ExportHandler {
         }
     }
 
+    /**
+     * Exports the symbol table, FIRST/FOLLOW sets, and parse table as CSV files (saved in the
+     * project root).
+     */
     public void handleExportCSV() {
         try {
             if (state.isHasSymbolTableData()) {
@@ -85,6 +114,7 @@ public class ExportHandler {
         }
     }
 
+    /** Exports the Graphviz DOT representation of the current DFA to a text file. */
     public void handleExportGraphText() {
         if (state.getCurrentAutomaton() == null) return;
         try {
@@ -104,18 +134,28 @@ public class ExportHandler {
         }
     }
 
+    /** Saves the contents of the console log area to a text file. */
     public void handleSaveConsoleLog() {
         saveTextArea(ui.getConsoleArea(), "console_log", "*.txt");
     }
 
+    /** Saves the contents of the output area to a text file. */
     public void handleSaveOutput() {
         saveTextArea(ui.getOutputArea(), "output_log", "*.txt");
     }
 
+    /** Saves the contents of the validation output area to a text file. */
     public void handleSaveValidation() {
         saveTextArea(ui.getValidatorOutputArea(), "validation_report", "*.txt");
     }
 
+    /**
+     * Helper to save a TextArea's content to a file via a save dialog.
+     *
+     * @param area the TextArea to save
+     * @param baseName the base name for the suggested file
+     * @param extension the file extension filter (e.g., "*.txt")
+     */
     private void saveTextArea(
             javafx.scene.control.TextArea area, String baseName, String extension) {
         try {
@@ -131,6 +171,10 @@ public class ExportHandler {
         }
     }
 
+    /**
+     * Generates a comprehensive report combining output log, console log, and validation results.
+     * Prompts the user to save the report as a text file.
+     */
     public void handleGenerateFullReport() {
         try {
             StringBuilder report = new StringBuilder();

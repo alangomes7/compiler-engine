@@ -1,0 +1,97 @@
+# --- BEGIN block ---
+BEGIN {
+    print "Starting program";
+    x = 10;
+    y = 20;
+}
+
+# --- Function definition ---
+function sum(a, b) {
+    return a + b;
+}
+
+# --- Pattern-action (regex match) ---
+/error/ {
+    print "Error found:", $0;
+}
+
+# --- Pattern with condition ---
+x > 5 {
+    printf "x is greater than 5: %d\n", x;
+}
+
+# --- Main action ---
+{
+    # assignment + arithmetic
+    total = sum(x, y);
+
+    # ternary
+    max = (x > y) ? x : y;
+
+    # logical + match
+    if (total > 0 && $0 !~ /ignore/) {
+        print "Valid line:", $0;
+    } else {
+        print "Ignored line";
+    }
+
+    # for loop (C-style)
+    for (i = 0; i < 5; i++) {
+        print i;
+    }
+
+    # for-in loop
+    for (k in arr) {
+        print k, arr[k];
+    }
+
+    # while loop
+    while (x > 0) {
+        x--;
+    }
+
+    # do-while loop
+    do {
+        y--;
+    } while (y > 0);
+
+    # array assignment
+    arr["key"] = total;
+
+    # concatenation (implicit)
+    msg = "value=" total;
+
+    # redirection
+    print msg > "output.txt";
+    print msg >> "output.txt";
+
+    # pipe
+    print msg | "cat";
+
+    # getline usage
+    "input.txt" | getline line;
+    print line;
+
+    # delete
+    delete arr["key"];
+
+    # control flow
+    if (x == 0) {
+        next;
+    }
+
+    # switch
+    switch (k) {
+        case key1:
+            print "key1";
+        case key2:
+            print "key2";
+        default:
+            print "other";
+    }
+}
+
+# --- END block ---
+END {
+    print "Program finished";
+}

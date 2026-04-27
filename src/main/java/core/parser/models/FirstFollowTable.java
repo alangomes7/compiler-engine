@@ -1,49 +1,32 @@
 package core.parser.models;
 
 import core.parser.models.atomic.Symbol;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+/** Data model to hold the computed FIRST and FOLLOW sets for a grammar. */
 public class FirstFollowTable {
+
     private final Map<Symbol, Set<Symbol>> firstSets;
     private final Map<Symbol, Set<Symbol>> followSets;
 
-    public FirstFollowTable() {
-        this.firstSets = new HashMap<>();
-        this.followSets = new HashMap<>();
+    /**
+     * Constructs the table with the fully computed sets. * @param firstSets Map of Symbols to their
+     * FIRST sets
+     *
+     * @param followSets Map of Symbols to their FOLLOW sets
+     */
+    public FirstFollowTable(
+            Map<Symbol, Set<Symbol>> firstSets, Map<Symbol, Set<Symbol>> followSets) {
+        this.firstSets = firstSets;
+        this.followSets = followSets;
     }
 
-    public void addFirst(Symbol nonTerminal, Symbol terminal) {
-        firstSets.computeIfAbsent(nonTerminal, k -> new HashSet<>()).add(terminal);
-    }
-
-    public void addFollow(Symbol nonTerminal, Symbol terminal) {
-        followSets.computeIfAbsent(nonTerminal, k -> new HashSet<>()).add(terminal);
-    }
-
-    public Set<Symbol> getFirst(Symbol symbol) {
-        return firstSets.getOrDefault(symbol, new HashSet<>());
-    }
-
-    public Set<Symbol> getFollow(Symbol nonTerminal) {
-        return followSets.getOrDefault(nonTerminal, new HashSet<>());
-    }
-
-    public Map<Symbol, Set<Symbol>> getAllFirstSets() {
+    public Map<Symbol, Set<Symbol>> getFirstSets() {
         return firstSets;
     }
 
-    public Map<Symbol, Set<Symbol>> getAllFollowSets() {
+    public Map<Symbol, Set<Symbol>> getFollowSets() {
         return followSets;
-    }
-
-    public void printSets() {
-        System.out.println("=== First Sets ===");
-        firstSets.forEach((k, v) -> System.out.println("FIRST(" + k + ") = " + v));
-
-        System.out.println("\n=== Follow Sets ===");
-        followSets.forEach((k, v) -> System.out.println("FOLLOW(" + k + ") = " + v));
     }
 }
