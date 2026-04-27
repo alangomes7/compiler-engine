@@ -10,12 +10,13 @@ program-part
       | comment
 
 comment
-    ::= "#" ...
+    ::= "#"
 
 top-level-element
     ::= "function" identifier '(' opt-identifier-list ')' action
       | "BEGIN" action
       | "END" action
+      | regex-const action
       | expression expression-construct-tail
       | action
 
@@ -43,65 +44,45 @@ statement-list-tail
       | ε
 
 statement
-    ::= expression terminate
-      | "print" opt-print-expr-list print-redirection terminate
-      | "printf" string-const opt-comma-print-expr-list print-redirection terminate
+    ::= "print" opt-expr-list print-redirection terminate
+      | "printf" string-const opt-comma-expr-list print-redirection terminate
       | "for" '(' for-content ')' action
       | "do" action "while" '(' expression ')' terminate
       | "while" '(' expression ')' action
-      | "if" '(' expression ')' action if-tail
+      | "if" '(' expression ')' action else-part "fi"
       | "switch" '(' expression ')' action
       | "break" terminate
       | "continue" terminate
       | "next" terminate
       | "return" opt-return-expr terminate
       | "delete" identifier terminate
+      | expression terminate
       | action
       | terminate
 
-terminate
-    ::= ';' | newline
+terminate ::= ';' | newline
+
+else-part
+    ::= "else" action
+      | ε
 
 for-content
-    ::= expression for-expr-tail
-      | ';' opt-expr-list ';' opt-expr-list
+    ::= opt-expr-list for-content-tail
 
-for-expr-tail
+for-content-tail
     ::= ';' opt-expr-list ';' opt-expr-list
-      | ε
-
-opt-print-expr-list
-    ::= assignment print-expr-list-tail
-      | ε
-
-print-expr-list-tail
-    ::= ',' assignment print-expr-list-tail
-      | ε
-
-opt-comma-print-expr-list
-    ::= ',' assignment print-expr-list-tail
       | ε
 
 opt-return-expr
     ::= expression
       | ε
 
-if-tail
-    ::= "else" else-clause
-      | ε
-
-else-clause
-    ::= "if" '(' expression ')' action if-tail
-      | action
-
 opt-comma-expr-list
     ::= ',' expr-list
       | ε
 
 print-redirection
-    ::= '>' expression
-      | ">>" expression
-      | '|' expression
+    ::= ">>" expression
       | ε
 
 opt-expr-list
@@ -119,11 +100,7 @@ expression
     ::= assignment expression-pipe-tail
 
 expression-pipe-tail
-    ::= '|' "getline" opt-identifier
-      | ε
-
-opt-identifier
-    ::= identifier
+    ::= '|' assignment expression-pipe-tail
       | ε
 
 assignment
@@ -222,22 +199,21 @@ unary-expr
     ::= '+' unary-expr
       | '-' unary-expr
       | '!' unary-expr
-      | '~' unary-expr
-      | "++" unary-expr
-      | "--" unary-expr
+      | "++_pre" unary-expr
+      | "--_pre" unary-expr
       | primary postfix-tail
 
 postfix-tail
-    ::= "++" postfix-tail
-      | "--" postfix-tail
+    ::= "++_post" postfix-tail
+      | "--_post" postfix-tail
       | ε
 
 primary
     ::= identifier primary-id-tail
-      | '$' primary
+      | "DOLLAR" primary
       | number
       | string-const
-      | "getline" opt-identifier
+      | "getline"
       | '(' expression ')'
 
 primary-id-tail

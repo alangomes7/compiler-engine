@@ -44,7 +44,9 @@ public class FileService {
      * @throws Exception if the file cannot be read (delegates to Utils.readTextFile)
      */
     public static String readFileContent(File file) throws Exception {
-        return Utils.readTextFile(file.getAbsolutePath());
+        String fileContentRaw = Utils.readTextFile(file.getAbsolutePath());
+        String clean = StrayCharacterFilter.filter(fileContentRaw);
+        return clean;
     }
 
     /**
