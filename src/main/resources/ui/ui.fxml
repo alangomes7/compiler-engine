@@ -248,6 +248,7 @@
                                                          <children>
                                                             <Button fx:id="generateGrammarTreeBtn" onAction="#handleGenerateGrammarTree" text="Generate Grammar Tree" />
                                                             <Button fx:id="exportGrammarTreeBtn" onAction="#handleExportGrammarTreeImage" text="Export Grammar Tree" />
+                                                            <Button fx:id="clearGrammarTreeBtn" onAction="#handleClearGrammarTree" mnemonicParsing="false" text="Clear" />
                                                          </children>
                                                       </HBox>
                                                    </children>
@@ -270,6 +271,7 @@
                                                          <children>
                                                             <Button fx:id="generateInputTreeBtn" onAction="#handleGenerateInputTree" text="Generate Input Tree" />
                                                             <Button fx:id="exportInputTreeBtn" onAction="#handleExportInputTreeImage" text="Export Input Tree" />
+                                                            <Button fx:id="clearInputTreeBtn" onAction="#handleClearInputTree" mnemonicParsing="false" text="Clear" />
                                                          </children>
                                                       </HBox>
                                                    </children>
@@ -294,7 +296,7 @@
                   <Button fx:id="clearTablesBtn" onAction="#handleClearTables" style="-fx-text-fill: red;" text="Clear Tables" />
                   <Button fx:id="exportCsvBtn" onAction="#handleExportCSV" text="Export Tables (.csv)" />
                   <Button fx:id="generateReportBtn" onAction="#handleGenerateFullReport" text="Generate Full Report" />
-                  <Button fx:id="cancelOperationBtn" onAction="#handleCancelOperation" style="-fx-background-color: #ff4444; -fx-text-fill: white; -fx-font-weight: bold;" text="Cancel Operation" visible="false" managed="false" />
+                  <Button fx:id="cancelOperationBtn" managed="false" onAction="#handleCancelOperation" style="-fx-background-color: #ff4444; -fx-text-fill: white; -fx-font-weight: bold;" text="Cancel Operation" visible="false" />
                </children>
             </HBox>
          </children>

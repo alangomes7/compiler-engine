@@ -105,8 +105,10 @@ public class Ui implements Initializable {
     @FXML private Button exportGraphImageBtn;
     @FXML private Button generateGrammarTreeBtn;
     @FXML private Button exportGrammarTreeBtn;
+    @FXML private Button clearGrammarTreeBtn;
     @FXML private Button generateInputTreeBtn;
     @FXML private Button exportInputTreeBtn;
+    @FXML private Button clearInputTreeBtn;
     @FXML private Button saveValidationBtn;
     @FXML private Button clearValidationBtn;
     @FXML private Button cancelOperationBtn;
@@ -544,6 +546,28 @@ public class Ui implements Initializable {
     @FXML
     private void handleClearOutput() {
         outputArea.clear();
+    }
+
+    /**
+     * Handles the "Clear Grammar Tree" button click.
+     *
+     * <p>This method delegates to {@link VisualizationHandler#handleClearGrammarTree()}
+     * to remove the grammar tree visualization from the UI and free up memory.
+     */
+    @FXML
+    private void handleClearGrammarTree() {
+        visualizationHandler.handleClearGrammarTree();
+    }
+
+    /**
+     * Handles the "Clear Input Tree" button click.
+     *
+     * <p>This method delegates to {@link VisualizationHandler#handleClearInputTree()}
+     * to remove the input parse tree visualization from the UI and free up memory.
+     */
+    @FXML
+    private void handleClearInputTree() {
+        visualizationHandler.handleClearInputTree();
     }
 
     /**

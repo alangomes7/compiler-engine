@@ -179,7 +179,9 @@ public class UiStateController {
                         !hasAnyTableData && !state.isHasGrammarTree() && !state.isHasInputTree());
 
         ui.getExportGrammarTreeBtn().setDisable(!state.isHasGrammarTree());
+        ui.getClearGrammarTreeBtn().setDisable(!state.isHasGrammarTree());
         ui.getExportInputTreeBtn().setDisable(!state.isHasInputTree());
+        ui.getClearInputTreeBtn().setDisable(!state.isHasInputTree());
         ui.getClearValidationBtn().setDisable(!state.isHasValidationData());
 
         ui.getClearConsoleLogBtn().setDisable(false);
@@ -213,7 +215,9 @@ public class UiStateController {
         ui.getExportCsvBtn().setDisable(true);
         ui.getClearTablesBtn().setDisable(true);
         ui.getExportGrammarTreeBtn().setDisable(true);
+        ui.getClearGrammarTreeBtn().setDisable(true);
         ui.getExportInputTreeBtn().setDisable(true);
+        ui.getClearInputTreeBtn().setDisable(true);
         ui.getSaveConsoleLogBtn().setDisable(true);
         ui.getClearConsoleLogBtn().setDisable(true);
         ui.getSaveOutputBtn().setDisable(true);
