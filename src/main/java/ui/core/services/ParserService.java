@@ -1,7 +1,12 @@
 package ui.core.services;
 
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
 import core.lexer.models.atomic.Token;
 import core.parser.LL1Parser;
+import core.parser.RecursiveDescentParser;
 import core.parser.core.FirstFollowTableBuilder;
 import core.parser.core.ParserTableBuilder;
 import core.parser.core.grammar.GrammarClassification;
@@ -14,9 +19,7 @@ import core.parser.models.Production;
 import core.parser.models.atomic.Symbol;
 import core.parser.models.tree.Node;
 import core.parser.models.tree.ParseTree;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import core.parser.utils.TokenFilter;
 import lombok.Getter;
 
 /**
@@ -163,9 +166,15 @@ public class ParserService {
      */
     public ParseResult parseTokens(ParseTable parseTable, List<Token> tokens) {
         if (grammar == null) throw new IllegalStateException("Grammar not loaded");
+         ParseTree parseTree = null;
+         TokenFilter tokenFilter = new TokenFilter();
+         List<Token> cleanedTokens = tokenFilter.filter(tokens);
 
-        LL1Parser parser = new LL1Parser(grammar, parseTable);
-        ParseTree parseTree = parser.parse(tokens);
+        // LL1Parser parser = new LL1Parser(grammar, parseTable);
+        // parseTree = parser.parse(tokens);
+
+        RecursiveDescentParser parser = new RecursiveDescentParser(grammar, parseTable);
+        parseTree = parser.parse(cleanedTokens);
 
         return new ParseResult(parseTree, parser.getErrors());
     }
