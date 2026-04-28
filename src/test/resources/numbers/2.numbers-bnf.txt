@@ -1,62 +1,20 @@
 # =========================
-# Expressions
+# Program (multiple lines)
 # =========================
-expression             ::= logical_or_expr
+program        ::= line program
+                 | ε
 
-logical_or_expr        ::= logical_and_expr logical_or_tail
-logical_or_tail        ::= '||' logical_and_expr logical_or_tail 
-                         | ε
-
-logical_and_expr       ::= equality_expr logical_and_tail
-logical_and_tail       ::= '&&' equality_expr logical_and_tail 
-                         | ε
-
-equality_expr          ::= relational_expr equality_tail
-equality_tail          ::= '==' relational_expr equality_tail 
-                         | '!=' relational_expr equality_tail 
-                         | ε
-
-relational_expr        ::= match_expr relational_tail
-relational_tail        ::= '>=' match_expr relational_tail 
-                         | '<=' match_expr relational_tail 
-                         | '>' match_expr relational_tail 
-                         | '<' match_expr relational_tail 
-                         | ε
-
-match_expr             ::= additive_expr match_tail
-match_tail             ::= '~' additive_expr match_tail 
-                         | '!~' additive_expr match_tail 
-                         | ε
-
-additive_expr          ::= multiplicative_expr additive_tail
-additive_tail          ::= '+' multiplicative_expr additive_tail 
-                         | '-' multiplicative_expr additive_tail 
-                         | ε
-
-multiplicative_expr    ::= exponent_expr multiplicative_tail
-multiplicative_tail    ::= '*' exponent_expr multiplicative_tail 
-                         | '/' exponent_expr multiplicative_tail 
-                         | '%' exponent_expr multiplicative_tail 
-                         | ε
-
-# Exponentiation is typically right-associative
-exponent_expr          ::= unary_expr exponent_tail
-exponent_tail          ::= '^' exponent_expr 
-                         | ε
-
-unary_expr             ::= '+' unary_expr 
-                         | '-' unary_expr 
-                         | '!' unary_expr 
-                         | primary_expr
-
-# Wrap dynamic tokens in quotes to force them as Terminals
-primary_expr           ::= number 
-                         | 'IDENTIFIER' 
-                         | '(' expression ')'
+line           ::= signed_number NEWLINE
 
 # =========================
-# Numbers 
+# Signed Number
 # =========================
-number                 ::= 'INT'
-                         | 'FLOAT'
-                         | 'SCIENTIFIC'
+signed_number  ::= sign_opt number
+
+sign_opt       ::= '+' 
+                 | '-' 
+                 | ε
+
+number         ::= 'SCIENTIFIC'
+                 | 'FLOAT'
+                 | 'INT'

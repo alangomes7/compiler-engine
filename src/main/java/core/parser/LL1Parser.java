@@ -1,5 +1,9 @@
 package core.parser;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Stack;
+
 import core.lexer.models.atomic.Token;
 import core.parser.models.Grammar;
 import core.parser.models.ParseTable;
@@ -8,9 +12,6 @@ import core.parser.models.atomic.Symbol;
 import core.parser.models.tree.Node;
 import core.parser.models.tree.ParseTree;
 import core.parser.utils.TokenFilter;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Stack;
 import models.atomic.Constants;
 
 /**
@@ -53,7 +54,8 @@ public class LL1Parser {
         Stack<Node> stack = new Stack<>();
 
         // 0. Filter out irrelevant tokens (like comments and spaces)
-        List<Token> tokens = TokenFilter.filter(rawTokens);
+        TokenFilter tokenFilter = new TokenFilter();
+        List<Token> tokens = tokenFilter.filter(rawTokens);
 
         Node root = new Node(grammar.getStartSymbol());
         stack.push(new Node(Symbol.EOF));
