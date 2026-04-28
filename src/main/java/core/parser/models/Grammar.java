@@ -1,11 +1,12 @@
 package core.parser.models;
 
-import core.parser.models.atomic.Symbol;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+
+import core.parser.models.atomic.Symbol;
 
 /**
  * Represents a context‑free grammar (CFG) consisting of a start symbol, sets of terminals and
@@ -22,6 +23,9 @@ public class Grammar {
     private final Set<Symbol> terminals;
     private final Set<Symbol> nonTerminals;
     private final List<Production> productions;
+    
+    // Now a mutable HashSet to allow dynamic additions and exclusions
+    private static final Set<String> BUILTIN_TERMINALS = new HashSet<>(Set.of());
 
     /**
      * Constructs a grammar with a given start symbol. The start symbol is automatically added to
@@ -37,6 +41,28 @@ public class Grammar {
 
         // The start symbol is always a non‑terminal
         this.nonTerminals.add(startSymbol);
+    }
+
+    /**
+     * Adds a new built-in terminal to the configuration.
+     *
+     * @param terminal The terminal string to add.
+     */
+    public static void addBuiltinTerminal(String terminal) {
+        if (terminal != null && !terminal.trim().isEmpty()) {
+            BUILTIN_TERMINALS.add(terminal);
+        }
+    }
+
+    /**
+     * Removes an existing built-in terminal from the configuration.
+     *
+     * @param terminal The terminal string to exclude.
+     */
+    public static void excludeBuiltinTerminal(String terminal) {
+        if (terminal != null) {
+            BUILTIN_TERMINALS.remove(terminal);
+        }
     }
 
     /**

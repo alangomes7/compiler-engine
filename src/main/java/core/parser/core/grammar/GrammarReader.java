@@ -1,19 +1,17 @@
 package core.parser.core.grammar;
 
-import core.parser.models.Grammar;
-import core.parser.models.Production;
-import core.parser.models.atomic.Symbol;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
+
+import core.parser.models.Grammar;
+import core.parser.models.Production;
+import core.parser.models.atomic.Symbol;
 
 /** Reads a grammar file (supports multi-line productions and EBNF-like syntax). */
 public class GrammarReader {
-    private static final Set<String> BUILTIN_TERMINALS =
-            Set.of("identifier", "number", "string-const", "regex-const", "CONCAT", "newline");
 
     public static Grammar readFromFile(String filePath) throws IOException {
         Grammar grammar = null;
@@ -214,7 +212,6 @@ public class GrammarReader {
     private static boolean isTerminal(String token) {
         if (token.startsWith("\"") || token.startsWith("'")) return true;
         if (token.matches("[0-9]+(\\.[0-9]+)?")) return true;
-        if (BUILTIN_TERMINALS.contains(token)) return true;
         // Otherwise, a token starting with a letter is a non‑terminal
         return !token.matches("[a-zA-Z_].*");
     }
