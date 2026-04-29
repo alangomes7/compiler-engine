@@ -1,9 +1,5 @@
 package core.parser;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Stack;
-
 import core.lexer.models.atomic.Token;
 import core.parser.models.Grammar;
 import core.parser.models.ParseTable;
@@ -12,6 +8,9 @@ import core.parser.models.atomic.Symbol;
 import core.parser.models.tree.Node;
 import core.parser.models.tree.ParseTree;
 import core.parser.utils.TokenFilter;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Stack;
 import models.atomic.Constants;
 
 /**
@@ -146,12 +145,24 @@ public class LL1Parser {
         String normalizedType = tokenType;
         if ("comment".equals(tokenType)) {
             normalizedType = "#";
-        } else if (tokenType.endsWith("_NUM")) {
+        } else if ("NEWLINE_CH".equals(tokenType)) {
+            normalizedType = "newline";
+        } else if (tokenType != null && tokenType.endsWith("_NUM")) {
             // Catches INT_NUM, FLOAT_NUM, HEX_NUM, etc.
+            normalizedType = "number";
+        } else if ("DIGIT".equals(tokenType)) {
             normalizedType = "number";
         } else if ("LOWER".equals(tokenType) || "UPPER".equals(tokenType)) {
             // Lexer emits LOWER/UPPER for single-character variables, but parser expects identifier
             normalizedType = "identifier";
+        } else if ("INC_PRE".equals(tokenType)) {
+            normalizedType = "++_pre";
+        } else if ("DEC_PRE".equals(tokenType)) {
+            normalizedType = "--_pre";
+        } else if ("INC_POST".equals(tokenType)) {
+            normalizedType = "++_post";
+        } else if ("DEC_POST".equals(tokenType)) {
+            normalizedType = "--_post";
         }
 
         // 1. Try to match by Normalized Token Type first

@@ -18,6 +18,8 @@
 @ESP ELSE        : else
 @ESP FI          : fi
 @ESP SWITCH      : switch
+@ESP CASE        : case
+@ESP DEFAULT     : default
 @ESP BREAK       : break
 @ESP CONTINUE    : continue
 @ESP NEXT        : next
@@ -172,6 +174,6 @@
 @DER WHITESPACE    : (SPACE | TAB)+ -> skip
 
 # Add negation set for regex
-@DER NOT_DIV_BSLASH : [ANY_CHAR ^ [DIV | BACKSLASH]]
+@DER NOT_DIV_BSLASH : [ANY_CHAR ^ [NEWLINE_CH | SLASH]]
 
-@DER regex-const : DIV (NOT_DIV_BSLASH | ESCAPE_SEQ)* DIV
+@DER regex-const : SLASH (NOT_DIV_BSLASH | ESCAPE_SEQ)* SLASH

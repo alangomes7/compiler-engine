@@ -1,16 +1,5 @@
 package core.lexer;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import core.lexer.core.conversors.DFAMinimizer;
 import core.lexer.core.conversors.NFAEtoNFA;
 import core.lexer.core.conversors.NFAtoDFA;
@@ -22,7 +11,16 @@ import core.lexer.models.atomic.State;
 import core.lexer.models.automata.DFA;
 import core.lexer.models.automata.NFA;
 import core.lexer.models.automata.NFAE;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import models.atomic.Constants;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Main lexical analyzer that converts an input string into a stream of tokens.
@@ -329,8 +327,10 @@ public class Lexer {
                 }
 
                 if (!isSkipToken) {
+                    String resolvedTokenType =
+                            resolveIncDecTokenType(lastAcceptingToken, pendingSymbols);
                     pendingSymbols.add(
-                            new PendingSymbol(lexeme, lastAcceptingToken, currentLine, currentCol));
+                            new PendingSymbol(lexeme, resolvedTokenType, currentLine, currentCol));
                 }
 
                 // Update line/column counters
@@ -408,5 +408,49 @@ public class Lexer {
             this.line = line;
             this.col = col;
         }
+    }
+
+    /**
+     * Converts INC/DEC tokens to postfix variants when the previous emitted token closes an
+     * operand.
+     */
+    private String resolveIncDecTokenType(String rawTokenType, List<PendingSymbol> pendingSymbols) {
+        if (!"INC_PRE".equals(rawTokenType) && !"DEC_PRE".equals(rawTokenType)) {
+            return rawTokenType;
+        }
+
+        if (pendingSymbols.isEmpty()) {
+            return rawTokenType;
+        }
+
+        PendingSymbol previous = pendingSymbols.get(pendingSymbols.size() - 1);
+        if (!isOperandEndingToken(previous)) {
+            return rawTokenType;
+        }
+
+        return "INC_PRE".equals(rawTokenType) ? "INC_POST" : "DEC_POST";
+    }
+
+    private boolean isOperandEndingToken(PendingSymbol token) {
+        if (token == null || token.tokenType == null) {
+            return false;
+        }
+
+        String type = token.tokenType;
+        String lexeme = token.lexeme;
+        return "identifier".equals(type)
+                || "LOWER".equals(type)
+                || "UPPER".equals(type)
+                || "number".equals(type)
+                || "INT_NUM".equals(type)
+                || "FLOAT_NUM".equals(type)
+                || "HEX_NUM".equals(type)
+                || "OCT_NUM".equals(type)
+                || "BIN_NUM".equals(type)
+                || "DIGIT".equals(type)
+                || ")".equals(lexeme)
+                || "]".equals(lexeme)
+                || "RPAREN".equals(type)
+                || "RBRACKET".equals(type);
     }
 }

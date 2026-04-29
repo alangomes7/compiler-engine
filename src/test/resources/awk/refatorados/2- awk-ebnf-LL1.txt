@@ -3,6 +3,7 @@ awk-program
 
 program-parts
     ::= program-part program-parts
+      | "newline" program-parts
       | ε
 
 program-part
@@ -13,10 +14,10 @@ comment
     ::= "#"
 
 top-level-element
-    ::= "function" identifier '(' opt-identifier-list ')' action
+    ::= "function" "identifier" '(' opt-identifier-list ')' action
       | "BEGIN" action
       | "END" action
-      | regex-const action
+      | "regex-const" action
       | expression expression-construct-tail
       | action
 
@@ -26,11 +27,11 @@ expression-construct-tail
       | terminate
 
 opt-identifier-list
-    ::= identifier identifier-list-tail
+    ::= "identifier" identifier-list-tail
       | ε
 
 identifier-list-tail
-    ::= ',' identifier identifier-list-tail
+    ::= ',' "identifier" identifier-list-tail
       | ε
 
 action
@@ -45,25 +46,77 @@ statement-list-tail
 
 statement
     ::= "print" opt-expr-list print-redirection terminate
-      | "printf" string-const opt-comma-expr-list print-redirection terminate
+      | "printf" "string-const" opt-comma-expr-list print-redirection terminate
       | "for" '(' for-content ')' action
       | "do" action "while" '(' expression ')' terminate
       | "while" '(' expression ')' action
-      | "if" '(' expression ')' action else-part "fi"
-      | "switch" '(' expression ')' action
+      | "if" '(' expression ')' action else-part opt-fi
+      | "switch" '(' expression ')' switch-action
       | "break" terminate
       | "continue" terminate
       | "next" terminate
       | "return" opt-return-expr terminate
-      | "delete" identifier terminate
+      | "delete" delete-target terminate
       | expression terminate
       | action
       | terminate
 
-terminate ::= ';' | newline
+delete-target
+    ::= "identifier" delete-target-tail
+
+delete-target-tail
+    ::= '[' expr-list ']'
+      | ε
+
+switch-action
+    ::= '{' switch-pad switch-sections '}'
+
+switch-pad
+    ::= "newline" switch-pad
+      | ε
+
+switch-sections
+    ::= switch-section switch-sections
+      | ε
+
+switch-section
+    ::= switch-label switch-statement-list
+
+switch-label
+    ::= "case" expression ':'
+      | "default" ':'
+
+switch-statement-list
+    ::= switch-pad switch-statement-list-core
+
+switch-statement-list-core
+    ::= switch-statement switch-statement-list
+      | ε
+
+switch-statement
+    ::= "print" opt-expr-list print-redirection terminate
+      | "printf" "string-const" opt-comma-expr-list print-redirection terminate
+      | "for" '(' for-content ')' action
+      | "do" action "while" '(' expression ')' terminate
+      | "while" '(' expression ')' action
+      | "if" '(' expression ')' action else-part opt-fi
+      | "switch" '(' expression ')' switch-action
+      | "break" terminate
+      | "continue" terminate
+      | "next" terminate
+      | "return" opt-return-expr terminate
+      | "delete" delete-target terminate
+      | expression terminate
+      | action
+
+terminate ::= ';' | "newline"
 
 else-part
     ::= "else" action
+      | ε
+
+opt-fi
+    ::= "fi"
       | ε
 
 for-content
@@ -141,16 +194,20 @@ in-expr
     ::= match-expr in-tail
 
 in-tail
-    ::= "in" identifier
+    ::= "in" "identifier"
       | ε
 
 match-expr
     ::= relop-expr match-tail
 
 match-tail
-    ::= '~' relop-expr match-tail
-      | "!~" relop-expr match-tail
+    ::= '~' match-rhs match-tail
+      | "!~" match-rhs match-tail
       | ε
+
+match-rhs
+    ::= "regex-const"
+      | relop-expr
 
 relop-expr
     ::= concat-expr relop-tail
@@ -168,7 +225,20 @@ concat-expr
     ::= additive-expr concat-tail
 
 concat-tail
-    ::= "CONCAT" additive-expr concat-tail
+    ::= concat-factor concat-tail
+      | ε
+
+concat-factor
+    ::= "identifier" concat-id-tail
+      | "number"
+      | "string-const"
+      | "regex-const"
+      | "getline"
+      | "DOLLAR" primary
+
+concat-id-tail
+    ::= '(' opt-expr-list ')'
+      | '[' expr-list ']'
       | ε
 
 additive-expr
@@ -209,10 +279,10 @@ postfix-tail
       | ε
 
 primary
-    ::= identifier primary-id-tail
+    ::= "identifier" primary-id-tail
       | "DOLLAR" primary
-      | number
-      | string-const
+      | "number"
+      | "string-const"
       | "getline"
       | '(' expression ')'
 

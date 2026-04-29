@@ -1,14 +1,13 @@
 package core.parser.core.grammar;
 
+import core.parser.models.Grammar;
+import core.parser.models.Production;
+import core.parser.models.atomic.Symbol;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-
-import core.parser.models.Grammar;
-import core.parser.models.Production;
-import core.parser.models.atomic.Symbol;
 
 /** Reads a grammar file (supports multi-line productions and EBNF-like syntax). */
 public class GrammarReader {

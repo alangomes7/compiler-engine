@@ -153,9 +153,9 @@ public class VisualizationHandler {
     /**
      * Clears the currently displayed grammar tree visualization.
      *
-     * <p>Removes the interactive tree view from its container to free up memory,
-     * updates the corresponding state flag ({@code hasGrammarTree} to false), 
-     * and refreshes the UI state to disable related export and clear buttons.
+     * <p>Removes the interactive tree view from its container to free up memory, updates the
+     * corresponding state flag ({@code hasGrammarTree} to false), and refreshes the UI state to
+     * disable related export and clear buttons.
      */
     public void handleClearGrammarTree() {
         ui.getGrammarTreeContainer().setCenter(null);
@@ -167,9 +167,9 @@ public class VisualizationHandler {
     /**
      * Clears the currently displayed input parse tree visualization.
      *
-     * <p>Removes the interactive tree view from its container to free up memory,
-     * updates the corresponding state flag ({@code hasInputTree} to false), 
-     * and refreshes the UI state to disable related export and clear buttons.
+     * <p>Removes the interactive tree view from its container to free up memory, updates the
+     * corresponding state flag ({@code hasInputTree} to false), and refreshes the UI state to
+     * disable related export and clear buttons.
      */
     public void handleClearInputTree() {
         ui.getInputTreeContainer().setCenter(null);
