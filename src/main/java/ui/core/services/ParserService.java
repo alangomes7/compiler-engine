@@ -1,9 +1,5 @@
 package ui.core.services;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-
 import core.lexer.models.atomic.Token;
 import core.parser.LL1Parser;
 import core.parser.RecursiveDescentParser;
@@ -20,6 +16,9 @@ import core.parser.models.atomic.Symbol;
 import core.parser.models.tree.Node;
 import core.parser.models.tree.ParseTree;
 import core.parser.utils.TokenFilter;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import lombok.Getter;
 
 /**
@@ -30,12 +29,12 @@ import lombok.Getter;
  * It provides a complete pipeline for:
  *
  * <ul>
- * <li>Loading context-free grammars from files
- * <li>Computing FIRST and FOLLOW sets for grammar analysis
- * <li>Building LL(1) parse tables
- * <li>Classifying grammars (LL(1) vs non-LL(1))
- * <li>Parsing token streams to produce parse trees
- * <li>Generating grammar tree visualizations
+ *   <li>Loading context-free grammars from files
+ *   <li>Computing FIRST and FOLLOW sets for grammar analysis
+ *   <li>Building LL(1) parse tables
+ *   <li>Classifying grammars (LL(1) vs non-LL(1))
+ *   <li>Parsing token streams to produce parse trees
+ *   <li>Generating grammar tree visualizations
  * </ul>
  *
  * <p>The service maintains the loaded grammar state and must be reinitialized when a new grammar is
@@ -73,8 +72,8 @@ public class ParserService {
     @Getter private Grammar grammar;
 
     /**
-     * Adds a new built-in terminal to both the Grammar and GrammarReader configurations.
-     * Must be called before loading a grammar if you want it to affect the reading process.
+     * Adds a new built-in terminal to both the Grammar and GrammarReader configurations. Must be
+     * called before loading a grammar if you want it to affect the reading process.
      *
      * @param terminal The terminal string to add.
      */
@@ -101,7 +100,7 @@ public class ParserService {
      *
      * @param path the file path to the grammar definition
      * @throws Exception if the grammar file cannot be read or parsed, including syntax errors in
-     * the grammar definition
+     *     the grammar definition
      */
     public void loadGrammar(String path) throws Exception {
         this.grammar = GrammarReader.readFromFile(path);
@@ -158,7 +157,7 @@ public class ParserService {
      *
      * @param parseTable the parse table to analyze
      * @return a GrammarClassification object containing the classification result and any conflict
-     * information
+     *     information
      * @throws IllegalStateException if the parse table is null
      */
     public GrammarClassification classifyGrammarWithParserTable(ParseTable parseTable) {
@@ -185,7 +184,7 @@ public class ParserService {
      */
     public ParseResult parseTokens(ParseTable parseTable, List<Token> tokens) {
         if (grammar == null) throw new IllegalStateException("Grammar not loaded");
-        
+
         TokenFilter tokenFilter = new TokenFilter();
         List<Token> cleanedTokens = tokenFilter.filter(tokens);
 
@@ -204,7 +203,7 @@ public class ParserService {
      * grammar analysis.
      *
      * @return a ParseTree representing the grammar's recursive structure, or {@code null} if no
-     * grammar is loaded
+     *     grammar is loaded
      */
     public ParseTree buildFullGrammarTree() {
         if (grammar == null) return null;

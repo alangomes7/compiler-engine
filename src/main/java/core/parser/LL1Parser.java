@@ -1,9 +1,5 @@
 package core.parser;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Stack;
-
 import core.lexer.models.atomic.Token;
 import core.parser.models.Grammar;
 import core.parser.models.ParseTable;
@@ -12,6 +8,9 @@ import core.parser.models.atomic.Symbol;
 import core.parser.models.tree.Node;
 import core.parser.models.tree.ParseTree;
 import core.parser.utils.TokenFilter;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Stack;
 import models.atomic.Constants;
 
 /**

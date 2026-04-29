@@ -1,16 +1,16 @@
 package ui.util;
 
+import static ui.util.UiUtils.getDisplayTimestamp;
+
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Function;
-
 import javafx.animation.AnimationTimer;
 import javafx.application.Platform;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
 import javafx.scene.layout.VBox;
-import static ui.util.UiUtils.getDisplayTimestamp;
 
 /**
  * Executes long-running tasks in a background thread while showing a loading overlay and updating a
@@ -33,27 +33,27 @@ public class BackgroundTaskExecutor {
     private final AtomicBoolean isCancelled = new AtomicBoolean(false);
     private volatile boolean isRunning = false;
 
-/**
- * Constructs a task executor with references to UI components.
- *
- * @param loadingOverlay the overlay container to show/hide during task execution
- * @param loadingLabel label that displays the current task message
- * @param loadingTimeLabel label that displays the elapsed processing time
- * @param consoleArea text area where log messages will be appended
- * @param cancelButton button that allows canceling the current operation
- */
-public BackgroundTaskExecutor(
-        VBox loadingOverlay, 
-        Label loadingLabel, 
-        Label loadingTimeLabel, 
-        TextArea consoleArea,
-        Button cancelButton) {
-    this.loadingOverlay = loadingOverlay;
-    this.loadingLabel = loadingLabel;
-    this.loadingTimeLabel = loadingTimeLabel;
-    this.consoleArea = consoleArea;
-    this.cancelButton = cancelButton;
-}
+    /**
+     * Constructs a task executor with references to UI components.
+     *
+     * @param loadingOverlay the overlay container to show/hide during task execution
+     * @param loadingLabel label that displays the current task message
+     * @param loadingTimeLabel label that displays the elapsed processing time
+     * @param consoleArea text area where log messages will be appended
+     * @param cancelButton button that allows canceling the current operation
+     */
+    public BackgroundTaskExecutor(
+            VBox loadingOverlay,
+            Label loadingLabel,
+            Label loadingTimeLabel,
+            TextArea consoleArea,
+            Button cancelButton) {
+        this.loadingOverlay = loadingOverlay;
+        this.loadingLabel = loadingLabel;
+        this.loadingTimeLabel = loadingTimeLabel;
+        this.consoleArea = consoleArea;
+        this.cancelButton = cancelButton;
+    }
 
     /**
      * Executes a heavy task asynchronously.

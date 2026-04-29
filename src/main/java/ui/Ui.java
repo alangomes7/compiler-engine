@@ -1,12 +1,11 @@
 package ui;
 
+import core.lexer.models.atomic.Token;
+import core.parser.models.atomic.Symbol;
 import java.io.PrintStream;
 import java.net.URL;
 import java.util.ResourceBundle;
 import java.util.Set;
-
-import core.lexer.models.atomic.Token;
-import core.parser.models.atomic.Symbol;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.Button;
@@ -551,8 +550,8 @@ public class Ui implements Initializable {
     /**
      * Handles the "Clear Grammar Tree" button click.
      *
-     * <p>This method delegates to {@link VisualizationHandler#handleClearGrammarTree()}
-     * to remove the grammar tree visualization from the UI and free up memory.
+     * <p>This method delegates to {@link VisualizationHandler#handleClearGrammarTree()} to remove
+     * the grammar tree visualization from the UI and free up memory.
      */
     @FXML
     private void handleClearGrammarTree() {
@@ -562,8 +561,8 @@ public class Ui implements Initializable {
     /**
      * Handles the "Clear Input Tree" button click.
      *
-     * <p>This method delegates to {@link VisualizationHandler#handleClearInputTree()}
-     * to remove the input parse tree visualization from the UI and free up memory.
+     * <p>This method delegates to {@link VisualizationHandler#handleClearInputTree()} to remove the
+     * input parse tree visualization from the UI and free up memory.
      */
     @FXML
     private void handleClearInputTree() {

@@ -1,8 +1,5 @@
 package core.parser;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import core.lexer.models.atomic.Token;
 import core.parser.models.Grammar;
 import core.parser.models.ParseTable;
@@ -11,11 +8,11 @@ import core.parser.models.atomic.Symbol;
 import core.parser.models.tree.Node;
 import core.parser.models.tree.ParseTree;
 import core.parser.utils.TokenFilter;
+import java.util.ArrayList;
+import java.util.List;
 import models.atomic.Constants;
 
-/**
- * A generic predictive Recursive Descent Parser for LL(1) grammars..
- */
+/** A generic predictive Recursive Descent Parser for LL(1) grammars.. */
 public class RecursiveDescentParser {
     private final Grammar grammar;
     private final ParseTable parseTable;
@@ -37,13 +34,11 @@ public class RecursiveDescentParser {
         this.errors = new ArrayList<>();
     }
 
-    /**
-     * Parses the stream of tokens and builds the corresponding AST recursively.
-     */
+    /** Parses the stream of tokens and builds the corresponding AST recursively. */
     public ParseTree parse(List<Token> rawTokens) {
         this.errors.clear();
         this.lookaheadIndex = 0;
-        
+
         // 0. Filter out irrelevant tokens (like comments and spaces)
         TokenFilter tokenFilter = new TokenFilter();
         this.tokens = tokenFilter.filter(rawTokens);
@@ -55,21 +50,21 @@ public class RecursiveDescentParser {
         if (lookaheadIndex < tokens.size()) {
             Token remaining = tokens.get(lookaheadIndex);
             if (remaining != null && !isEofToken(remaining)) {
-                errors.add("Syntax Error: Unexpected tokens after program end. Found: " + remaining.getLexeme());
+                errors.add(
+                        "Syntax Error: Unexpected tokens after program end. Found: "
+                                + remaining.getLexeme());
             }
         }
 
         return new ParseTree(root);
     }
 
-    /**
-     * Routes the parsing flow depending on whether the symbol is a terminal or non-terminal.
-     */
+    /** Routes the parsing flow depending on whether the symbol is a terminal or non-terminal. */
     private Node parseSymbol(Symbol symbol) {
         if (symbol.equals(Symbol.EPSILON)) {
             return null;
         }
-        
+
         if (symbol.isTerminal() || symbol.equals(Symbol.EOF)) {
             return matchTerminal(symbol);
         } else {
@@ -82,7 +77,7 @@ public class RecursiveDescentParser {
      */
     private Node parseNonTerminal(Symbol nonTerminal) {
         Node currentNode = new Node(nonTerminal);
-        
+
         Token currentToken = (lookaheadIndex < tokens.size()) ? tokens.get(lookaheadIndex) : null;
         Symbol lookahead = resolveLookahead(currentToken);
 
@@ -90,7 +85,9 @@ public class RecursiveDescentParser {
         List<Production> productions = this.parseTable.getEntry(nonTerminal, lookahead);
 
         if (productions == null || productions.isEmpty()) {
-            recordError("No rule to derive '%s' with lookahead '%s'", currentToken, nonTerminal.getName());
+            recordError(
+                    "No rule to derive '%s' with lookahead '%s'",
+                    currentToken, nonTerminal.getName());
             return currentNode;
         }
 
@@ -101,10 +98,10 @@ public class RecursiveDescentParser {
             if (rhsSymbol.equals(Symbol.EPSILON)) {
                 continue;
             }
-            
+
             // Recurse into the RHS symbol
             Node childNode = parseSymbol(rhsSymbol);
-            
+
             if (childNode != null) {
                 currentNode.addChild(childNode);
             }
@@ -113,9 +110,7 @@ public class RecursiveDescentParser {
         return currentNode;
     }
 
-    /**
-     * Consumes a token if it successfully matches the expected terminal symbol.
-     */
+    /** Consumes a token if it successfully matches the expected terminal symbol. */
     private Node matchTerminal(Symbol expectedTerminal) {
         Node node = new Node(expectedTerminal);
         Token currentToken = (lookaheadIndex < tokens.size()) ? tokens.get(lookaheadIndex) : null;

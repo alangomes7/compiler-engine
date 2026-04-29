@@ -1,11 +1,10 @@
 package core.parser.utils;
 
+import core.lexer.models.atomic.Token;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
-
-import core.lexer.models.atomic.Token;
 
 /** Utility class to filter out tokens that should be ignored by the syntax analyzer. */
 public class TokenFilter {
@@ -13,9 +12,7 @@ public class TokenFilter {
     // Now a mutable HashSet to allow dynamic additions
     private final Set<String> ignoredTokenTypes;
 
-    /**
-     * Initializes the TokenFilter with the default set of ignored tokens.
-     */
+    /** Initializes the TokenFilter with the default set of ignored tokens. */
     public TokenFilter() {
         this.ignoredTokenTypes = new HashSet<>(Set.of());
     }
@@ -39,7 +36,8 @@ public class TokenFilter {
      */
     public List<Token> filter(List<Token> tokens) {
         if (tokens == null) {
-            return null; // Or return Collections.emptyList() depending on your project's null-handling conventions
+            return null; // Or return Collections.emptyList() depending on your project's
+            // null-handling conventions
         }
 
         return tokens.stream()

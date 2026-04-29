@@ -1,9 +1,13 @@
 package ui.core.handlers;
 
+import core.lexer.core.translators.RuleReader;
+import core.lexer.models.atomic.Rule;
 import core.lexer.models.atomic.Token;
 import core.lexer.models.automata.DFA;
+import core.parser.core.grammar.GrammarClassification;
 import core.parser.models.FirstFollowTable;
 import core.parser.models.ParseTable;
+import core.validator.GrammarLexerCompatibilityValidator;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -287,42 +291,55 @@ public class ExecutionHandler {
     }
 
     /**
-     * Validates grammar compatibility by checking if it is LL(1).
-     *
-     * <p>This method performs grammar validation to determine whether the loaded grammar is LL(1)
-     * compatible. An LL(1) grammar allows deterministic parsing with a single token of lookahead.
-     *
-     * <p>The validation process:
-     *
-     * <ul>
-     *   <li>Uses the cached parse table if available, otherwise builds a temporary one
-     *   <li>Classifies the grammar and identifies any conflicts
-     *   <li>Displays the classification result in the validator output area
-     * </ul>
-     *
-     * <p>On completion, {@code hasValidationData} is set to {@code true} and the UI is updated
-     * accordingly.
+     * Validates grammar compatibility by checking if it is LL(1). Additionally verifies if Lexer
+     * rules are compatible with the Grammar Terminals.
      */
     public void handleValidateCompatibility() {
         ui.getTaskExecutor()
                 .execute(
-                        "Validating Grammar...",
+                        "Validating Grammar & Compatibility...",
                         log -> {
+                            GrammarClassification classification;
                             if (state.getCurrentParseTable() == null) {
                                 log.accept("Building temporary Parse table for validation...");
                                 FirstFollowTable ffTable =
                                         ui.getParserService().buildFirstFollowTable();
-                                return ui.getParserService()
-                                        .classifyGrammarWithParserTable(
-                                                ui.getParserService()
-                                                        .buildParseTable(
-                                                                ffTable, Collections.emptyList()));
+                                classification =
+                                        ui.getParserService()
+                                                .classifyGrammarWithParserTable(
+                                                        ui.getParserService()
+                                                                .buildParseTable(
+                                                                        ffTable,
+                                                                        Collections.emptyList()));
+                            } else {
+                                classification =
+                                        ui.getParserService()
+                                                .classifyGrammarWithParserTable(
+                                                        state.getCurrentParseTable());
                             }
-                            return ui.getParserService()
-                                    .classifyGrammarWithParserTable(state.getCurrentParseTable());
+
+                            // ---> Validate Lexer & Grammar Compatibility <---
+                            String compReport = "";
+                            if (state.getTokenFilePath() != null
+                                    && ui.getParserService().isGrammarLoaded()) {
+                                log.accept("Validating Lexer and Grammar compatibility...");
+                                List<Rule> rules = RuleReader.readRules(state.getTokenFilePath());
+                                compReport =
+                                        GrammarLexerCompatibilityValidator.validate(
+                                                ui.getParserService().getGrammar(), rules);
+                            }
+
+                            return new Object[] {classification, compReport};
                         },
-                        classification -> {
-                            ui.getValidatorOutputArea().setText(classification.toString());
+                        resultArray -> {
+                            Object[] res = (Object[]) resultArray;
+                            GrammarClassification classification = (GrammarClassification) res[0];
+                            String compReport = (String) res[1];
+
+                            // Display both the classification analysis and the compatibility report
+                            String finalOutput = classification.toString() + "\n\n" + compReport;
+                            ui.getValidatorOutputArea().setText(finalOutput);
+
                             state.setHasValidationData(true);
                             stateController.updateUIState();
                         },
