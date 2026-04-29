@@ -1,8 +1,12 @@
 package ui.core.services;
 
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
 import core.lexer.models.atomic.Token;
+import core.parser.BacktrackingParser;
 import core.parser.LL1Parser;
-import core.parser.RecursiveDescentParser;
 import core.parser.core.FirstFollowTableBuilder;
 import core.parser.core.ParserTableBuilder;
 import core.parser.core.grammar.GrammarClassification;
@@ -16,9 +20,6 @@ import core.parser.models.atomic.Symbol;
 import core.parser.models.tree.Node;
 import core.parser.models.tree.ParseTree;
 import core.parser.utils.TokenFilter;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
 import lombok.Getter;
 
 /**
@@ -189,9 +190,10 @@ public class ParserService {
         List<Token> cleanedTokens = tokenFilter.filter(tokens);
 
         // Fixed syntax error and removed trailing strings/methods here
-        RecursiveDescentParser parser = new RecursiveDescentParser(grammar, parseTable);
-        ParseTree parseTree = parser.parse(cleanedTokens);
+        //RecursiveDescentParser parser = new RecursiveDescentParser(grammar, parseTable);
+        BacktrackingParser parser = new BacktrackingParser(grammar);
 
+        ParseTree parseTree = parser.parse(cleanedTokens);
         return new ParseResult(parseTree, parser.getErrors());
     }
 

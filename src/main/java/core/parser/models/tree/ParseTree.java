@@ -29,6 +29,21 @@ public class ParseTree {
     }
 
     /**
+     * Returns a string representation of the entire parse tree.
+     * If the root is {@code null}, returns "Empty Parse Tree".
+     *
+     * @return the string representation of the parse tree
+     */
+    @Override
+    public String toString() {
+        if (root != null) {
+            return root.toString();
+        } else {
+            return "Empty Parse Tree";
+        }
+    }
+
+    /**
      * Prints the entire tree structure starting from the root to standard output. If the root is
      * {@code null}, prints "Empty Parse Tree".
      */

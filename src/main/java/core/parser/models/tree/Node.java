@@ -48,6 +48,39 @@ public class Node {
     }
 
     /**
+     * Returns a string representation of the tree rooted at this node in a visual, tree‑like format.
+     *
+     * @return the string representation of the tree
+     */
+    @Override
+    public String toString() {
+        return buildTreeString("", true);
+    }
+
+    /**
+     * Recursively builds the tree structure string.
+     *
+     * @param prefix the indentation prefix (built recursively)
+     * @param isTail {@code true} if this node is the last child of its parent
+     * @return the formatted string for this level of the tree
+     */
+    private String buildTreeString(String prefix, boolean isTail) {
+        StringBuilder sb = new StringBuilder();
+        sb.append(prefix)
+          .append(isTail ? "└── " : "├── ")
+          .append(symbol.getName())
+          .append(lexeme != null ? " (\"" + lexeme + "\")" : "")
+          .append(System.lineSeparator());
+
+        for (int i = 0; i < children.size(); i++) {
+            sb.append(children.get(i).buildTreeString(
+                    prefix + (isTail ? "    " : "│   "), 
+                    i == children.size() - 1));
+        }
+        return sb.toString();
+    }
+
+    /**
      * Prints the tree rooted at this node in a visual, tree‑like format. Each node is shown with
      * its symbol name; terminal nodes also show the lexeme in quotes. Used primarily for debugging.
      *

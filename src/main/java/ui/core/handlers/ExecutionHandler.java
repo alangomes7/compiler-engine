@@ -1,12 +1,13 @@
 package ui.core.handlers;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
 import core.lexer.models.atomic.Token;
 import core.lexer.models.automata.DFA;
 import core.parser.models.FirstFollowTable;
 import core.parser.models.ParseTable;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 import ui.Ui;
 import ui.core.controllers.UiStateController;
 import ui.core.graph.automata.AutomataVisualizer;
@@ -277,6 +278,11 @@ public class ExecutionHandler {
                                                         + String.join("\n", result.errors));
                                 state.setParseRunSuccess(false);
                             }
+                            
+                            if (result.tree != null) {
+                                ui.getOutputArea().setText(ui.getOutputArea().getText() + "\nParser tree: \n" + result.tree.toString());
+                            }
+                            
                             stateController.updateUIState();
                         },
                         err -> {
