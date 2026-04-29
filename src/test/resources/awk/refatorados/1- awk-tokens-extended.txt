@@ -177,3 +177,10 @@
 @DER NOT_DIV_BSLASH : [ANY_CHAR ^ [NEWLINE_CH | SLASH]]
 
 @DER regex-const : SLASH (NOT_DIV_BSLASH | ESCAPE_SEQ)* SLASH
+
+# =========================
+# Context-Sensitive Rules
+# =========================
+# Format: @CTX <OriginalToken> -> <NewToken> AFTER <Token1>, <Token2>, ...
+@CTX INC_PRE -> INC_POST AFTER identifier, LOWER, UPPER, number, INT_NUM, FLOAT_NUM, HEX_NUM, OCT_NUM, BIN_NUM, DIGIT, RPAREN, RBRACKET, ), ]
+@CTX DEC_PRE -> DEC_POST AFTER identifier, LOWER, UPPER, number, INT_NUM, FLOAT_NUM, HEX_NUM, OCT_NUM, BIN_NUM, DIGIT, RPAREN, RBRACKET, ), ]

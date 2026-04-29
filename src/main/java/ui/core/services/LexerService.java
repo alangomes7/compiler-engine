@@ -1,12 +1,16 @@
 package ui.core.services;
 
+import java.util.List;
+import java.util.function.Consumer;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import core.lexer.Lexer;
 import core.lexer.core.translators.RuleReader;
 import core.lexer.models.atomic.Rule;
 import core.lexer.models.atomic.Token;
 import core.lexer.models.automata.DFA;
-import java.util.List;
-import java.util.function.Consumer;
 
 /**
  * Service for building the lexer from rule files and scanning input.
@@ -44,6 +48,8 @@ import java.util.function.Consumer;
  */
 public class LexerService {
 
+    private static final Logger log = LoggerFactory.getLogger(LexerService.class);
+
     private Lexer lexer;
 
     /**
@@ -61,19 +67,25 @@ public class LexerService {
      * feedback during the (potentially time-consuming) lexer construction process.
      *
      * @param filePath the path to the token rules file; must not be null
-     * @param log a consumer for status messages (e.g., UI log area); can be used to display
+     * @param logCallback a consumer for status messages (e.g., UI log area); can be used to display
      *     progress updates
      * @return the minimized DFA used by the lexer (for visualization or export)
      * @throws Exception if rule reading or lexer construction fails, including file I/O errors or
      *     invalid rule syntax
      * @throws IllegalStateException if the lexer cannot be initialized
      */
-    public DFA buildLexer(String filePath, Consumer<String> log) throws Exception {
-        log.accept("📥 Reading rules...");
+    public DFA buildLexer(String filePath, Consumer<String> logCallback) throws Exception {
+        log.info("📥 Reading rules...");
+        logCallback.accept("📥 Reading rules...");
         List<Rule> rules = RuleReader.readRules(filePath);
 
-        log.accept("Creating lexer...");
+        log.info("Creating lexer...");
+        logCallback.accept("Creating lexer...");
         this.lexer = new Lexer(rules);
+
+        log.info("Loading context-sensitive rules...");
+        logCallback.accept("Loading context-sensitive rules...");
+        RuleReader.loadContextRulesIntoLexer(this.lexer, filePath);
 
         return this.lexer.getMasterAutomaton();
     }

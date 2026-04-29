@@ -1,13 +1,17 @@
 package core.lexer.core.translators;
 
-import core.lexer.models.atomic.Rule;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+
+import core.lexer.Lexer;
+import core.lexer.models.atomic.Rule;
 
 /** Reads lexical rule definitions from a file and parses them into {@link Rule} objects. */
 public class RuleReader {
@@ -41,7 +45,7 @@ public class RuleReader {
                 continue;
             }
 
-            if (trimmed.contains(":")) {
+            if (trimmed.contains(":") || trimmed.startsWith("@CTX")) {
                 if (current.length() > 0) joinedLines.add(current.toString());
                 current = new StringBuilder(trimmed);
             } else {
@@ -60,7 +64,7 @@ public class RuleReader {
             String lower = line.toLowerCase();
 
             // Track sections to determine if characters should be escaped
-            if (line.startsWith("#") || !line.contains(":")) {
+            if (line.startsWith("#") || (!line.contains(":") && !line.startsWith("@CTX"))) {
                 if (lower.contains("dynamic")
                         || lower.contains("lexical elements")
                         || lower.contains("ignored")) {
@@ -78,6 +82,11 @@ public class RuleReader {
                     isMacroSection = false;
                 }
                 continue;
+            }
+
+            // Skip context rules during standard NFA parsing
+            if (line.startsWith("@CTX")) {
+                continue; 
             }
 
             String[] parts = line.split(":", 2);
@@ -114,8 +123,6 @@ public class RuleReader {
 
             if (tokenName.isEmpty() || rightSide.isEmpty()) continue;
 
-            // FIX 1: Only bypass escaping if the section is explicitly dynamic.
-            // Operators and Keywords tagged with @PRI still require escaping.
             String pattern = isDynamicSection ? rightSide : escapeLiteral(rightSide);
 
             if (isExtendedRule || isMacroSection) {
@@ -126,6 +133,42 @@ public class RuleReader {
         }
 
         return rules;
+    }
+
+    /**
+     * Parses @CTX lines from the token file and injects them directly into the instantiated Lexer.
+     * Call this immediately after initializing the Lexer.
+     */
+    public static void loadContextRulesIntoLexer(Lexer lexer, String filePath) {
+        try {
+            List<String> lines = Files.readAllLines(Path.of(filePath));
+            for (String line : lines) {
+                String trimmed = line.trim();
+                if (trimmed.startsWith("@CTX")) {
+                    // Expected Format: @CTX INC_PRE -> INC_POST AFTER identifier, LOWER, number, ...
+                    String content = trimmed.substring(4).trim();
+                    String[] parts = content.split("->");
+                    if (parts.length < 2) continue;
+                    
+                    String originalToken = parts[0].trim();
+                    
+                    String[] afterSplit = parts[1].split("AFTER");
+                    if (afterSplit.length < 2) continue;
+                    
+                    String targetToken = afterSplit[0].trim();
+                    String[] triggersArray = afterSplit[1].split(",");
+                    
+                    Set<String> triggers = new HashSet<>();
+                    for (String t : triggersArray) {
+                        triggers.add(t.trim());
+                    }
+                    
+                    lexer.addContextRule(originalToken, targetToken, triggers);
+                }
+            }
+        } catch (IOException e) {
+            System.err.println("❌ Error loading context rules from: " + filePath);
+        }
     }
 
     private static String escapeLiteral(String literal) {
