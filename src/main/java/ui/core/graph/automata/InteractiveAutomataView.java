@@ -30,43 +30,6 @@ import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.scene.transform.Transform;
 
-/**
- * Interactive JavaFX component for displaying and manipulating a DFA graph.
- *
- * <p>This component provides a rich interactive visualization of a deterministic finite automaton
- * with the following features:
- *
- * <ul>
- *   <li><b>Pan and Zoom:</b> Drag the background to pan, scroll wheel to zoom
- *   <li><b>Draggable Nodes:</b> Each state node can be individually repositioned
- *   <li><b>Automatic Layout:</b> BFS layering algorithm for initial node placement
- *   <li><b>Grouped Transitions:</b> Multiple transitions between same states are merged
- *   <li><b>High-Resolution Snapshot:</b> Generate 4K-quality PNG images of the graph
- *   <li><b>Visual Distinction:</b> Start states (light green), final states (light blue/red border)
- * </ul>
- *
- * <p>The layout uses a breadth-first layering algorithm that:
- *
- * <ol>
- *   <li>Assigns layer numbers based on distance from start states
- *   <li>Positions nodes within each layer with vertical spacing
- *   <li>Draws edges with arrows pointing toward targets
- * </ol>
- *
- * <p>Typical usage:
- *
- * <pre>
- * DFA automaton = lexerService.getMasterAutomaton();
- * InteractiveAutomataView view = new InteractiveAutomataView(automaton);
- * container.setCenter(view);
- *
- * // Generate exportable snapshot
- * WritableImage snapshot = view.generateSnapshot();
- * </pre>
- *
- * @see DFA
- * @see InteractiveTreeView
- */
 public class InteractiveAutomataView extends Pane {
 
     private double dragContextX;
@@ -74,12 +37,6 @@ public class InteractiveAutomataView extends Pane {
     private final Group contentGroup;
     private final Map<State, StackPane> nodeMap = new HashMap<>();
 
-    /**
-     * Constructs an interactive view for the given DFA.
-     *
-     * @param dfa the deterministic finite automaton to display (may be null, in which case nothing
-     *     is shown)
-     */
     public InteractiveAutomataView(DFA dfa) {
         contentGroup = new Group();
         this.getChildren().add(contentGroup);
@@ -91,19 +48,6 @@ public class InteractiveAutomataView extends Pane {
         }
     }
 
-    /**
-     * Captures a high‑resolution snapshot of the current graph view.
-     *
-     * <p>This method temporarily resets the zoom and pan transformations to identity, captures the
-     * graph at a high resolution (scaled to approximately 4K width), and then restores the original
-     * view state. This ensures that exported images are of publication quality regardless of the
-     * current zoom level.
-     *
-     * <p>The snapshot includes all nodes, edges, and labels exactly as they appear in the layout,
-     * but at a larger scale for crisp rendering.
-     *
-     * @return a WritableImage containing the rendered graph at high resolution
-     */
     public WritableImage generateSnapshot() {
         double oldScaleX = contentGroup.getScaleX();
         double oldScaleY = contentGroup.getScaleY();
@@ -135,27 +79,11 @@ public class InteractiveAutomataView extends Pane {
         return image;
     }
 
-    /**
-     * Builds the visual graph from the DFA.
-     *
-     * <p>This method performs all graph layout and rendering:
-     *
-     * <ol>
-     *   <li>Computes layers using BFS from start states
-     *   <li>Positions nodes within each layer using vertical spacing
-     *   <li>Creates draggable node UI elements for each state
-     *   <li>Draws edges with grouped transition labels
-     *   <li>Handles self-loops with quadratic curves
-     * </ol>
-     *
-     * @param dfa the DFA to visualise; must not be null
-     */
     private void buildGraph(DFA dfa) {
         Map<State, Integer> stateLayers = new HashMap<>();
         Map<Integer, List<State>> layerToStates = new HashMap<>();
         Queue<State> queue = new LinkedList<>();
 
-        // Group transitions locally to fast-track BFS layer calculation
         Map<State, List<Transition>> transitionsBySource =
                 dfa.getTransitions().stream().collect(Collectors.groupingBy(Transition::getSource));
 
@@ -212,7 +140,6 @@ public class InteractiveAutomataView extends Pane {
             }
         }
 
-        // Draw edges
         for (State source : allStates) {
             Map<State, List<String>> groupedTransitions = new HashMap<>();
             List<Transition> out = transitionsBySource.getOrDefault(source, new ArrayList<>());
@@ -245,23 +172,6 @@ public class InteractiveAutomataView extends Pane {
         }
     }
 
-    /**
-     * Creates a draggable node (circle + label) for a state.
-     *
-     * <p>Nodes have the following visual characteristics:
-     *
-     * <ul>
-     *   <li>Start states: light green fill
-     *   <li>Final states: double circle with red border
-     *   <li>Both start and final: light green fill, double circle, red border
-     *   <li>Normal states: light blue fill
-     * </ul>
-     *
-     * @param state the automaton state
-     * @param isStart true if this is an initial state
-     * @param isFinal true if this is a final state
-     * @return a StackPane that can be placed on the scene with drag functionality
-     */
     private StackPane createNodeUI(State state, boolean isStart, boolean isFinal) {
         StackPane stack = new StackPane();
 
@@ -314,23 +224,6 @@ public class InteractiveAutomataView extends Pane {
         return stack;
     }
 
-    /**
-     * Creates a visual edge (line or self‑loop) between two states, with a label.
-     *
-     * <p>This method handles two types of edges:
-     *
-     * <ul>
-     *   <li><b>Normal edges:</b> Straight line between nodes with an arrow at the target
-     *   <li><b>Self-loops:</b> Quadratic curve above the node with an arrow pointing back
-     * </ul>
-     *
-     * <p>Edge labels are positioned at the midpoint of the line (or above the node for self-loops)
-     * and include a compact representation of all symbols on that transition.
-     *
-     * @param source the source state
-     * @param target the target state
-     * @param text the label to display on the edge
-     */
     private void createEdgeUI(State source, State target, String text) {
         StackPane sourceNode = nodeMap.get(source);
         StackPane targetNode = nodeMap.get(target);
@@ -422,12 +315,6 @@ public class InteractiveAutomataView extends Pane {
         }
     }
 
-    /**
-     * Configures the pane to support mouse panning and zooming.
-     *
-     * <p>Pan: Click and drag on the background (not on a node) to move the entire graph. Zoom: Use
-     * the mouse scroll wheel to zoom in and out around the cursor.
-     */
     private void setupZoomAndPan() {
         this.setOnMousePressed(
                 event -> {
@@ -457,12 +344,6 @@ public class InteractiveAutomataView extends Pane {
                 });
     }
 
-    /**
-     * Helper to concatenate a list of symbol strings into a compact, colon‑separated string.
-     *
-     * @param symbols the list of symbols
-     * @return a string with brackets removed and values separated by colons
-     */
     private String summarizeTokens(List<String> symbols) {
         return String.join(":", symbols.toString().replaceAll("\\[|\\]", ""));
     }

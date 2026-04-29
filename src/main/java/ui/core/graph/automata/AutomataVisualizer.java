@@ -17,53 +17,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-/**
- * Utility class for generating Graphviz DOT representations and exporting images of deterministic
- * finite automata (DFA).
- *
- * <p>This class provides functionality to visualize DFAs as high-quality, colored diagrams suitable
- * for documentation or presentation. Key features include:
- *
- * <ul>
- *   <li>Grouped transitions with compact regex-like labels
- *   <li>Visual distinction for start states (light green) and final states (light blue/red outline)
- *   <li>Support for large-scale exports up to 4K resolution (3840px width)
- *   <li>Character range collapsing (e.g., "a", "b", "c" becomes "[a-c]")
- * </ul>
- *
- * <p>Typical usage:
- *
- * <pre>
- * // Generate DOT format string
- * String dot = AutomataVisualizer.generateDotFormat(dfa);
- * System.out.println(dot);
- *
- * // Export to PNG image
- * AutomataVisualizer.exportToImage(dfa, "my_automaton.png");
- * </pre>
- *
- * @see DFA
- * @see GraphvizSanitizer
- */
 public class AutomataVisualizer {
 
-    /**
-     * Generates a coloured, high‑quality DOT representation of the DFA.
-     *
-     * <p>The DOT format is a plain text graph description language understood by Graphviz tools.
-     * The generated representation includes:
-     *
-     * <ul>
-     *   <li>Node shapes: circles with color coding (light green for start, light blue for others)
-     *   <li>Double circles for final states with red borders
-     *   <li>Invisible start nodes with arrows pointing to initial states
-     *   <li>Grouped transitions that merge multiple symbols between the same source and target
-     * </ul>
-     *
-     * @param dfa the deterministic finite automaton to visualise; must not be null
-     * @return a string in Graphviz DOT format describing the automaton
-     * @throws NullPointerException if dfa is null
-     */
     public static String generateDotFormat(DFA dfa) {
         StringBuilder dot = new StringBuilder();
         dot.append("digraph ").append(dfa.getTokenName()).append(" {\n");
@@ -74,7 +29,6 @@ public class AutomataVisualizer {
         Set<State> initialStates = dfa.getInitialStates();
         Set<State> finalStates = dfa.getFinalStates();
 
-        // Emit each node with its specific attributes
         for (State s : allStates) {
             boolean isStart = initialStates.contains(s);
             boolean isFinal = finalStates.contains(s);
@@ -101,7 +55,6 @@ public class AutomataVisualizer {
             }
         }
 
-        // Start arrow (invisible start nodes for all initial states)
         for (State startState : initialStates) {
             dot.append("    start_").append(startState.getId()).append(" [shape=point];\n");
             dot.append("    start_")
@@ -111,7 +64,6 @@ public class AutomataVisualizer {
                     .append("\";\n");
         }
 
-        // Group transitions by Source AND Target
         Map<State, Map<State, List<String>>> groupedTransitions = new HashMap<>();
 
         for (Transition t : dfa.getTransitions()) {
@@ -124,7 +76,6 @@ public class AutomataVisualizer {
                     .add(sym);
         }
 
-        // Emit edges
         for (Map.Entry<State, Map<State, List<String>>> sourceEntry :
                 groupedTransitions.entrySet()) {
             State source = sourceEntry.getKey();
@@ -148,28 +99,6 @@ public class AutomataVisualizer {
         return dot.toString();
     }
 
-    /**
-     * Merges a list of symbol strings into a compact regex‑like representation.
-     *
-     * <p>This method performs intelligent grouping of characters:
-     *
-     * <ul>
-     *   <li>Single characters are grouped into character classes
-     *   <li>Consecutive ranges are collapsed (e.g., "a", "b", "c" → "[a-c]")
-     *   <li>Multi-character symbols are preserved as separate entries
-     * </ul>
-     *
-     * <p>Examples:
-     *
-     * <ul>
-     *   <li>["a", "b", "c"] → "[a-c]"
-     *   <li>["a", "c", "d", "if"] → "[a, c-d], if"
-     *   <li>["+", "-", "*"] → "[+\\-*]"? (escaped as needed)
-     * </ul>
-     *
-     * @param symbols the list of symbols to merge; may be null or empty
-     * @return a concise string representation, or an empty string if the list is empty
-     */
     private static String summarizeToRegex(List<String> symbols) {
         if (symbols == null || symbols.isEmpty()) return "";
         Set<Character> charSet = new HashSet<>();
@@ -211,16 +140,6 @@ public class AutomataVisualizer {
         return regex.toString();
     }
 
-    /**
-     * Formats a single character for safe inclusion inside a regex character class.
-     *
-     * <p>This method escapes special characters that have meaning inside regex character classes:
-     * newline, carriage return, tab, space, ']', '-', '^', and backslash. Non-printable characters
-     * are represented as hexadecimal escapes.
-     *
-     * @param c the character to format
-     * @return the escaped string representation safe for inclusion in "[...]"
-     */
     private static String formatRegexChar(char c) {
         switch (c) {
             case '\n' -> {
@@ -254,22 +173,6 @@ public class AutomataVisualizer {
         }
     }
 
-    /**
-     * Exports the DFA to a PNG image file.
-     *
-     * <p>The image is saved in the "output" directory with the specified filename. The output
-     * directory is created automatically if it does not exist. The image is rendered at 3840px
-     * width (4K) for high‑quality output.
-     *
-     * <p>This method uses the Graphviz library to render the DOT representation and produces a
-     * publication-quality diagram.
-     *
-     * @param dfa the automaton to visualise; must not be null
-     * @param outputFilename the filename (e.g., "minimized_dfa.png"); should include the .png
-     *     extension
-     * @throws IOException if the output directory cannot be created or the image cannot be written
-     *     (errors are caught and printed to stderr)
-     */
     public static void exportToImage(DFA dfa, String outputFilename) {
         try {
             String dotFormat = generateDotFormat(dfa);

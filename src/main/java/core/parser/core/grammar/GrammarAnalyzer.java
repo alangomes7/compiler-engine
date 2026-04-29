@@ -13,7 +13,6 @@ public class GrammarAnalyzer {
         throw new UnsupportedOperationException("Utility class cannot be instantiated");
     }
 
-    /** Analyzes the grammar and returns a structured GrammarErrors object. */
     public static GrammarErrors analyzeGrammar(Grammar grammar) {
         return new GrammarErrors(getLeftRecursionDetails(grammar), getCommonPrefixDetails(grammar));
     }

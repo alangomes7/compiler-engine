@@ -35,7 +35,7 @@ public class GrammarClassificationBuilder {
         GrammarType type = GrammarType.TYPE_2_CONTEXT_FREE;
         ParserAlgorithm recommendedParser;
         GrammarSemantics semantics;
-        GrammarErrors errors = new GrammarErrors(); // Default to no errors
+        GrammarErrors errors = new GrammarErrors();
 
         if (isLL1(this.parseTable)) {
             recommendedParser = ParserAlgorithm.LL1;
@@ -43,10 +43,8 @@ public class GrammarClassificationBuilder {
         } else {
             recommendedParser = ParserAlgorithm.LALR1_OR_LR1;
 
-            // Retrieve full error details
             errors = GrammarAnalyzer.analyzeGrammar(this.grammar);
 
-            // Assign semantics based on the generated GrammarErrors object
             if (!errors.getLeftRecursionDetails().isEmpty()) {
                 semantics = GrammarSemantics.LEFT_RECURSIVE;
             } else if (!errors.getCommonPrefixDetails().isEmpty()) {
@@ -73,7 +71,7 @@ public class GrammarClassificationBuilder {
         for (Map<Symbol, List<Production>> row : table.values()) {
             for (List<Production> cell : row.values()) {
                 if (cell.size() > 1) {
-                    return false; // Conflict found, not LL(1)
+                    return false;
                 }
             }
         }

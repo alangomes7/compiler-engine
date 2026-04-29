@@ -1,10 +1,5 @@
 package core.parser;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-
 import core.lexer.models.atomic.Token;
 import core.parser.models.Grammar;
 import core.parser.models.Production;
@@ -12,12 +7,12 @@ import core.parser.models.atomic.Symbol;
 import core.parser.models.tree.Node;
 import core.parser.models.tree.ParseTree;
 import core.parser.utils.TokenFilter;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import models.atomic.Constants;
 
-/**
- * A Top-Down Recursive Descent Parser with Backtracking.
- * Includes Deepest-Failure tracking to provide accurate syntax error reporting.
- */
 public class BacktrackingParser {
     private final Grammar grammar;
     private final List<String> errors;
@@ -25,7 +20,6 @@ public class BacktrackingParser {
     private List<Token> tokens;
     private int lookaheadIndex;
 
-    // --- Error Tracking for Backtracking ---
     private int maxLookaheadIndex = 0;
     private final Set<String> expectedAtMax = new HashSet<>();
 
@@ -40,30 +34,29 @@ public class BacktrackingParser {
         this.maxLookaheadIndex = 0;
         this.expectedAtMax.clear();
 
-        // Filter out comments and whitespaces
         TokenFilter tokenFilter = new TokenFilter();
         this.tokens = tokenFilter.filter(rawTokens);
 
         Node root = parseSymbol(grammar.getStartSymbol());
 
-        // If it didn't consume all tokens, an error occurred. Report the DEEPEST error reached!
-        if (root == null || (lookaheadIndex < tokens.size() && !isEofToken(tokens.get(lookaheadIndex)))) {
-            Token failToken = (maxLookaheadIndex < tokens.size()) ? tokens.get(maxLookaheadIndex) : null;
-            
+        if (root == null
+                || (lookaheadIndex < tokens.size() && !isEofToken(tokens.get(lookaheadIndex)))) {
+            Token failToken =
+                    (maxLookaheadIndex < tokens.size()) ? tokens.get(maxLookaheadIndex) : null;
+
             String failLexeme = (failToken != null) ? failToken.getLexeme() : "EOF";
             String failType = (failToken != null) ? failToken.getType() : "EOF";
             int line = (failToken != null) ? failToken.getLine() : -1;
             int col = (failToken != null) ? failToken.getCol() : -1;
 
             String expected = String.join(", ", expectedAtMax);
-            
-            errors.add(String.format(
-                "Syntax Error at line %d:%d. Deepest parse reached token '%s' (Type: %s).\nExpected one of: [%s]",
-                line, col, failLexeme, failType, expected
-            ));
-            
-            // Return whatever partial tree we built
-            return root != null ? new ParseTree(root) : null; 
+
+            errors.add(
+                    String.format(
+                            "Syntax Error at line %d:%d. Deepest parse reached token '%s' (Type: %s).\nExpected one of: [%s]",
+                            line, col, failLexeme, failType, expected));
+
+            return root != null ? new ParseTree(root) : null;
         }
 
         return new ParseTree(root);
@@ -97,17 +90,17 @@ public class BacktrackingParser {
                     currentNode.addChild(childNode);
                 } else {
                     matchSuccess = false;
-                    break; 
+                    break;
                 }
             }
 
             if (matchSuccess) {
-                return currentNode; // Successfully parsed this production
+                return currentNode;
             } else {
-                this.lookaheadIndex = savedIndex; // BACKTRACK!
+                this.lookaheadIndex = savedIndex;
             }
         }
-        return null; // Exhausted all productions
+        return null;
     }
 
     private Node matchTerminal(Symbol expectedTerminal) {
@@ -121,8 +114,6 @@ public class BacktrackingParser {
             return node;
         }
 
-        // --- TRACK FARTHEST FAILURE ---
-        // If the match fails, log it only if it's the furthest point the parser has reached
         if (lookaheadIndex > maxLookaheadIndex) {
             maxLookaheadIndex = lookaheadIndex;
             expectedAtMax.clear();
@@ -140,31 +131,26 @@ public class BacktrackingParser {
         String lexeme = token.getLexeme();
         String tokenType = token.getType();
 
-        // --- NORMALIZATION ---
-        // The Lexer emits types like 'INT_NUM' or 'NEWLINE_CH', but the EBNF grammar 
-        // strictly defines terminals as 'number' or 'newline'. We must bridge this gap.
         String normalizedType = tokenType;
         if ("comment".equals(tokenType)) normalizedType = "#";
         else if ("NEWLINE_CH".equals(tokenType)) normalizedType = "newline";
         else if (tokenType != null && tokenType.endsWith("_NUM")) normalizedType = "number";
         else if ("DIGIT".equals(tokenType)) normalizedType = "number";
-        else if ("LOWER".equals(tokenType) || "UPPER".equals(tokenType)) normalizedType = "identifier";
+        else if ("LOWER".equals(tokenType) || "UPPER".equals(tokenType))
+            normalizedType = "identifier";
         else if ("INC_PRE".equals(tokenType)) normalizedType = "++_pre";
         else if ("DEC_PRE".equals(tokenType)) normalizedType = "--_pre";
         else if ("INC_POST".equals(tokenType)) normalizedType = "++_post";
         else if ("DEC_POST".equals(tokenType)) normalizedType = "--_post";
 
-        // 1. Check normalized type (e.g., matching INT_NUM to "number")
         for (Symbol terminal : grammar.getTerminals()) {
             if (terminal.getName().equals(normalizedType)) return terminal;
         }
 
-        // 2. Check exact lexeme (for operators like "+", "-", "==", "if")
         for (Symbol terminal : grammar.getTerminals()) {
             if (terminal.getName().equals(lexeme)) return terminal;
         }
 
-        // 3. Fallback to raw token type
         for (Symbol terminal : grammar.getTerminals()) {
             if (terminal.getName().equals(tokenType)) return terminal;
         }

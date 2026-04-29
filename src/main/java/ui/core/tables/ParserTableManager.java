@@ -16,43 +16,23 @@ import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 
-/**
- * Dynamically builds and populates the LL(1) parsing table (a grid with non‑terminals as rows and
- * terminals as columns). Columns are created on‑the‑fly based on the terminals present in the parse
- * table. Conflicts (multiple productions per cell) are highlighted.
- */
 public class ParserTableManager {
 
     private final TableView<Symbol> table;
     private final TableColumn<Symbol, String> nonTerminalCol;
 
-    /**
-     * Constructs a manager for the parse table UI component.
-     *
-     * @param table the TableView to display the parse table
-     * @param nonTerminalCol the column that will hold the non‑terminal names (row headers)
-     */
     public ParserTableManager(TableView<Symbol> table, TableColumn<Symbol, String> nonTerminalCol) {
         this.table = table;
         this.nonTerminalCol = nonTerminalCol;
         setupBaseColumn();
     }
 
-    /** Configures the fixed non‑terminal column. */
     private void setupBaseColumn() {
         nonTerminalCol.setCellValueFactory(
                 data -> new SimpleStringProperty(data.getValue().getName()));
     }
 
-    /**
-     * Populates the table with the given parse table data. Dynamically adds a column for each
-     * terminal symbol that appears in the parse table. Cells displaying multiple productions
-     * (conflicts) are styled with a red background.
-     *
-     * @param parseTable the LL(1) parse table (may be null)
-     */
     public void populate(ParseTable parseTable) {
-        // Reset to only the non‑terminal column
         table.getColumns().setAll(List.of(nonTerminalCol));
         if (parseTable == null || parseTable.getTable().isEmpty()) {
             table.getItems().clear();
@@ -61,7 +41,6 @@ public class ParserTableManager {
 
         Map<Symbol, Map<Symbol, List<Production>>> innerTable = parseTable.getTable();
 
-        // Collect all terminal symbols that appear in the table
         Set<Symbol> terminals =
                 innerTable.values().stream()
                         .flatMap(row -> row.keySet().stream())
@@ -75,7 +54,6 @@ public class ParserTableManager {
                     return t1.getName().compareTo(t2.getName());
                 });
 
-        // Create a column for each terminal
         for (Symbol terminal : sortedTerminals) {
             TableColumn<Symbol, String> terminalCol = new TableColumn<>(terminal.getName());
             terminalCol.setCellValueFactory(
@@ -119,40 +97,26 @@ public class ParserTableManager {
         table.setItems(FXCollections.observableArrayList(innerTable.keySet()));
     }
 
-    /** Clears the table (removes all rows and all columns except the non‑terminal column). */
     public void clear() {
         table.getItems().clear();
         table.getColumns().setAll(List.of(nonTerminalCol));
     }
 
-    /**
-     * Exports the current parse table to a CSV file. The CSV includes row headers (non‑terminals)
-     * and a column for each terminal.
-     *
-     * @param path output file path
-     * @param currentParseTable the current parse table (may be null)
-     * @param parserTable the TableView containing the displayed parse table (used to access columns
-     *     and items)
-     * @throws java.io.IOException if writing fails
-     */
     public static void exportParseTableCsv(
             String path, ParseTable currentParseTable, TableView<Symbol> parserTable)
             throws java.io.IOException {
         if (currentParseTable == null) return;
         try (java.io.PrintWriter writer = new java.io.PrintWriter(new java.io.FileWriter(path))) {
 
-            // The parse table generates columns dynamically, so we fetch them directly from the UI
             java.util.List<javafx.scene.control.TableColumn<Symbol, ?>> columns =
                     parserTable.getColumns();
 
-            // Write Headers
             java.util.List<String> headers = new java.util.ArrayList<>();
             for (javafx.scene.control.TableColumn<Symbol, ?> col : columns) {
                 headers.add("\"" + escapeCsv(col.getText()) + "\"");
             }
             writer.println(String.join(",", headers));
 
-            // Write Data Row by Row
             for (Symbol s : parserTable.getItems()) {
                 java.util.List<String> rowData = new java.util.ArrayList<>();
                 for (javafx.scene.control.TableColumn<Symbol, ?> col : columns) {

@@ -22,7 +22,7 @@ public class GrammarClassification {
         this.recommendedParser = recommendedParser;
         this.type = type;
         this.semantics = semantics;
-        this.errors = new GrammarErrors(); // Initialize empty to avoid nulls
+        this.errors = new GrammarErrors();
     }
 
     @Override

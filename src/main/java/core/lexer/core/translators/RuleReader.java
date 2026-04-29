@@ -1,5 +1,7 @@
 package core.lexer.core.translators;
 
+import core.lexer.Lexer;
+import core.lexer.models.atomic.Rule;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -9,9 +11,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import core.lexer.Lexer;
-import core.lexer.models.atomic.Rule;
 
 /** Reads lexical rule definitions from a file and parses them into {@link Rule} objects. */
 public class RuleReader {
@@ -86,7 +85,7 @@ public class RuleReader {
 
             // Skip context rules during standard NFA parsing
             if (line.startsWith("@CTX")) {
-                continue; 
+                continue;
             }
 
             String[] parts = line.split(":", 2);
@@ -145,24 +144,25 @@ public class RuleReader {
             for (String line : lines) {
                 String trimmed = line.trim();
                 if (trimmed.startsWith("@CTX")) {
-                    // Expected Format: @CTX INC_PRE -> INC_POST AFTER identifier, LOWER, number, ...
+                    // Expected Format: @CTX INC_PRE -> INC_POST AFTER identifier, LOWER, number,
+                    // ...
                     String content = trimmed.substring(4).trim();
                     String[] parts = content.split("->");
                     if (parts.length < 2) continue;
-                    
+
                     String originalToken = parts[0].trim();
-                    
+
                     String[] afterSplit = parts[1].split("AFTER");
                     if (afterSplit.length < 2) continue;
-                    
+
                     String targetToken = afterSplit[0].trim();
                     String[] triggersArray = afterSplit[1].split(",");
-                    
+
                     Set<String> triggers = new HashSet<>();
                     for (String t : triggersArray) {
                         triggers.add(t.trim());
                     }
-                    
+
                     lexer.addContextRule(originalToken, targetToken, triggers);
                 }
             }

@@ -1,16 +1,5 @@
 package core.lexer;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import core.lexer.core.conversors.DFAMinimizer;
 import core.lexer.core.conversors.NFAEtoNFA;
 import core.lexer.core.conversors.NFAtoDFA;
@@ -22,11 +11,20 @@ import core.lexer.models.atomic.State;
 import core.lexer.models.automata.DFA;
 import core.lexer.models.automata.NFA;
 import core.lexer.models.automata.NFAE;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import models.atomic.Constants;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
- * Main lexical analyzer that converts an input string into a stream of tokens.
- * Includes dynamic context-sensitive token resolution.
+ * Main lexical analyzer that converts an input string into a stream of tokens. Includes dynamic
+ * context-sensitive token resolution.
  */
 public class Lexer {
 
@@ -207,7 +205,7 @@ public class Lexer {
                 }
 
                 if (stateIdx == -1) break;
-                
+
                 State currentState = dfaStates.get(stateIdx);
                 if (currentState.isFinal()) {
                     lastAcceptingIndex = i;
@@ -221,8 +219,10 @@ public class Lexer {
                 boolean isSkipToken = skipTokens.contains(lastAcceptingToken);
 
                 if (!isSkipToken) {
-                    String resolvedTokenType = resolveContextToken(lastAcceptingToken, pendingSymbols);
-                    pendingSymbols.add(new PendingSymbol(lexeme, resolvedTokenType, currentLine, currentCol));
+                    String resolvedTokenType =
+                            resolveContextToken(lastAcceptingToken, pendingSymbols);
+                    pendingSymbols.add(
+                            new PendingSymbol(lexeme, resolvedTokenType, currentLine, currentCol));
                 }
 
                 for (int i = currentIndex; i <= lastAcceptingIndex; i++) {
@@ -260,7 +260,11 @@ public class Lexer {
                 }
 
                 String malformedChunk = new String(chars, errorStart, currentIndex - errorStart);
-                log.error("[{}, {}]: Lexical Error: Invalid sequence '{}'", errorLine, errorCol, malformedChunk);
+                log.error(
+                        "[{}, {}]: Lexical Error: Invalid sequence '{}'",
+                        errorLine,
+                        errorCol,
+                        malformedChunk);
             }
         }
 
