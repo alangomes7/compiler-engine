@@ -22,10 +22,6 @@ import models.atomic.Constants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * Main lexical analyzer that converts an input string into a stream of tokens. Includes dynamic
- * context-sensitive token resolution.
- */
 public class Lexer {
 
     private static final Logger log = LoggerFactory.getLogger(Lexer.class);
@@ -36,14 +32,12 @@ public class Lexer {
     private final Set<String> dynamicTokens;
     private final Set<String> skipTokens;
 
-    // ---------- Fast scanning structures ----------
     private List<State> dfaStates;
     private Map<State, Integer> dfaStateToIdx;
     private int[][] transitionTable;
     private Map<Character, Integer>[] extendedTransitionTable;
     private int startStateIdx;
 
-    // ---------- Context-Sensitive Rules -----------
     private final Map<String, ContextRule> contextRules = new HashMap<>();
 
     public Lexer(List<Rule> rules) {

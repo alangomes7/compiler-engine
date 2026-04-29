@@ -7,10 +7,6 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/**
- * Parser for extended regular expression rules. Supports macro expansion, character classes, and
- * extended syntax features such as custom character class shorthands.
- */
 public class RuleParserExtended {
 
     private final ReToNFAE generator;
@@ -31,7 +27,7 @@ public class RuleParserExtended {
 
         if (this.length == 0) {
             System.err.println(
-                    "⚠️ Warning: Token '" + rule.getTokenType() + "' resolved to an empty regex.");
+                    "Warning: Token '" + rule.getTokenType() + "' resolved to an empty regex.");
             return generator.symbol("");
         }
 
@@ -189,7 +185,6 @@ public class RuleParserExtended {
         return generator.symbol(String.valueOf(c));
     }
 
-    /** FIX 2: Added bracket depth tracking to handle nested classes seamlessly. */
     private NFAE parseCharacterClass() {
         pos++;
         if (pos >= length)
@@ -212,12 +207,12 @@ public class RuleParserExtended {
             }
             if (input[pos] == ']') {
                 depth--;
-                if (depth == 0) break; // Reached the end of the outermost class
+                if (depth == 0) break;
                 pos++;
                 continue;
             }
             if (input[pos] == '|') {
-                pos++; // Skip unescaped syntactic OR operators inside the class definitions
+                pos++;
                 continue;
             }
 
@@ -235,7 +230,7 @@ public class RuleParserExtended {
         }
 
         if (depth > 0) throw new RuntimeException("Unclosed character class '[' (missing ']')");
-        pos++; // Consume the final closing ']'
+        pos++;
 
         NFAE result = null;
 

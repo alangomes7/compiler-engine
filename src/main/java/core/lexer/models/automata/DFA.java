@@ -7,32 +7,15 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-/**
- * Deterministic Finite Automaton (DFA). For each state and input symbol, there is at most one
- * transition. Uses a transition table for O(1) lookup.
- *
- * @author Generated
- * @version 1.0
- */
 public class DFA extends Automaton {
 
     private final Map<Integer, Map<Symbol, State>> transitionTable;
 
-    /**
-     * Constructs a DFA for a specific token name.
-     *
-     * @param tokenName the name of the token recognised by this DFA
-     */
     public DFA(String tokenName) {
         super(tokenName);
         this.transitionTable = new HashMap<>();
     }
 
-    /**
-     * Adds a transition to the automaton and updates the transition table.
-     *
-     * @param transition the transition to add
-     */
     @Override
     public void addTransition(Transition transition) {
         super.addTransition(transition);
@@ -41,13 +24,6 @@ public class DFA extends Automaton {
                 .put(transition.getSymbol(), transition.getTarget());
     }
 
-    /**
-     * Returns the next state reached from the given state on input character.
-     *
-     * @param current the current state
-     * @param c the input character (must belong to the alphabet)
-     * @return the next state, or null if no transition exists or symbol not in alphabet
-     */
     public State getNextState(State current, char c) {
         Symbol inputSymbol = new Symbol(String.valueOf(c));
 
@@ -62,11 +38,6 @@ public class DFA extends Automaton {
         return null;
     }
 
-    /**
-     * Returns a string representation of this DFA.
-     *
-     * @return a formatted string containing alphabet, start/final states, and transitions
-     */
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();

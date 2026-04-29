@@ -13,28 +13,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 
-/**
- * Converts an NFA to a DFA using the subset construction. Subsets are represented as {@link BitSet}
- * for fast hashing and equality.
- *
- * @author Generated
- * @version 2.0
- */
 public class NFAtoDFA {
 
     private int dfaStateCounter = 0;
 
-    /**
-     * Converts the given NFA into an equivalent DFA.
-     *
-     * @param nfa the nondeterministic automaton
-     * @return a new DFA
-     */
     public DFA convert(NFA nfa) {
         dfaStateCounter = 0;
         DFA dfa = new DFA(nfa.getTokenName() + "_DFA");
 
-        // Assign integer IDs to NFA states for BitSet indexing
         List<State> nfaStates = new ArrayList<>(nfa.getStates());
         Map<State, Integer> nfaStateIdx = new HashMap<>();
         for (int i = 0; i < nfaStates.size(); i++) {
@@ -42,13 +28,11 @@ public class NFAtoDFA {
         }
         int n = nfaStates.size();
 
-        // Pre‑compute transitions: for each NFA state, per symbol, target states (as BitSet)
         List<Symbol> alphabet = new ArrayList<>(nfa.getAlphabet().getSymbols());
         int k = alphabet.size();
         Map<Symbol, Integer> symToIdx = new HashMap<>();
         for (int i = 0; i < k; i++) symToIdx.put(alphabet.get(i), i);
 
-        // transNFA[state][symbol] = BitSet of target states
         BitSet[][] transNFA = new BitSet[n][k];
         for (int i = 0; i < n; i++) {
             for (int j = 0; j < k; j++) transNFA[i][j] = new BitSet(n);
@@ -60,7 +44,6 @@ public class NFAtoDFA {
             transNFA[src][sym].set(dst);
         }
 
-        // DFA construction: map BitSet (subset) -> DFA state
         Map<BitSet, State> dfaStateMap = new HashMap<>();
         Queue<BitSet> queue = new ArrayDeque<>();
 
@@ -77,7 +60,6 @@ public class NFAtoDFA {
             BitSet currentSet = queue.poll();
             State currentDfaState = dfaStateMap.get(currentSet);
 
-            // For each symbol, compute the union of target sets
             for (int sym = 0; sym < k; sym++) {
                 BitSet targetSet = new BitSet(n);
                 for (int s = currentSet.nextSetBit(0); s >= 0; s = currentSet.nextSetBit(s + 1)) {
@@ -99,13 +81,6 @@ public class NFAtoDFA {
         return dfa;
     }
 
-    /**
-     * Creates a DFA state from a BitSet of NFA state indices.
-     *
-     * @param subset the subset of NFA states
-     * @param nfaStates list of all NFA states (for lookups)
-     * @return a new DFA state
-     */
     private State createDfaState(BitSet subset, List<State> nfaStates) {
         State newState = new State(dfaStateCounter++);
         boolean isFinal = false;

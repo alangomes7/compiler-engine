@@ -7,34 +7,14 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import models.atomic.Constants;
 
-/**
- * Nondeterministic Finite Automaton with Epsilon Transitions (ε-NFA). Supports transitions that
- * consume no input symbol (epsilon).
- *
- * @author Generated
- * @version 1.0
- */
 public class NFAE extends Automaton {
 
-    /** The symbol used to represent an epsilon transition. */
     private static final String EPSILON = Constants.EPSILON;
 
-    /**
-     * Constructs an ε-NFA for a specific token name.
-     *
-     * @param tokenName the name of the token recognised by this ε-NFA
-     */
     public NFAE(String tokenName) {
         super(tokenName);
     }
 
-    /**
-     * Computes the epsilon-closure of a given state. The epsilon-closure is the set of all states
-     * reachable from the given state using zero or more epsilon transitions.
-     *
-     * @param current the starting state
-     * @return a set containing the closure (always includes {@code current})
-     */
     public Set<State> getEpsilonClosure(State current) {
         Set<State> closure = new HashSet<>();
         closure.add(current);
@@ -66,11 +46,6 @@ public class NFAE extends Automaton {
         return closure;
     }
 
-    /**
-     * Returns a string representation of this ε-NFA.
-     *
-     * @return a formatted string containing alphabet, start/final states, and transitions
-     */
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();

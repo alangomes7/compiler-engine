@@ -11,38 +11,9 @@ import java.util.HashMap;
 import java.util.Map;
 import models.atomic.Constants;
 
-/**
- * Converts an ε‑NFA (NFA with epsilon transitions) to an equivalent NFA without epsilon transitions
- * using a highly optimised, allocation‑free algorithm.
- *
- * <p>The conversion computes epsilon‑closures using primitive arrays and {@link BitSet} for minimal
- * object allocation and maximal performance. Final state information is propagated across
- * epsilon‑reachable states.
- *
- * @author Generated
- * @version 1.0
- */
 public class NFAEtoNFA {
 
-    /**
-     * Converts an ε‑NFA into an equivalent ε‑free NFA.
-     *
-     * <p>The algorithm proceeds as follows:
-     *
-     * <ol>
-     *   <li>Map states to indices for O(1) array access.
-     *   <li>Extract the non‑epsilon alphabet and map symbols to indices.
-     *   <li>Build primitive adjacency arrays for epsilon and non‑epsilon transitions.
-     *   <li>Compute epsilon closures for all states using an iterative DFS stack.
-     *   <li>Create new NFA states, marking final status based on the closure.
-     *   <li>Compute real transitions by applying the closure to each symbol's targets.
-     * </ol>
-     *
-     * @param nfae the ε‑NFA to convert
-     * @return a new NFA with no epsilon transitions (still non‑deterministic)
-     */
     public NFA convert(NFAE nfae) {
-        // 1. Array-ify states for O(1) index access
         State[] oldStates = nfae.getStates().toArray(State[]::new);
         int n = oldStates.length;
 
@@ -51,7 +22,6 @@ public class NFAEtoNFA {
             stateToIdx.put(oldStates[i], i);
         }
 
-        // 2. Extract strictly non-epsilon alphabet for direct array indexing
         Symbol[] alphabet =
                 nfae.getAlphabet().getSymbols().stream()
                         .filter(sym -> !sym.getValue().equals(Constants.EPSILON))
@@ -63,14 +33,12 @@ public class NFAEtoNFA {
             symToIdx.put(alphabet[i], i);
         }
 
-        // 3. Build perfectly sized primitive adjacency arrays (Zero Unboxing & Zero Hashing)
         int[][] epsilons = new int[n][];
         int[] epsCounts = new int[n];
 
         int[][][] symTrans = new int[n][a][];
         int[][] symCounts = new int[n][a];
 
-        // Pass A: Count outgoing transitions to allocate exact array sizes
         for (Transition t : nfae.getTransitions()) {
             int src = stateToIdx.get(t.getSource());
             Symbol sym = t.getSymbol();
@@ -85,7 +53,6 @@ public class NFAEtoNFA {
             }
         }
 
-        // Allocate exact primitive arrays (no ArrayList.grow() overhead)
         for (int i = 0; i < n; i++) {
             epsilons[i] = new int[epsCounts[i]];
             for (int s = 0; s < a; s++) {
@@ -95,11 +62,9 @@ public class NFAEtoNFA {
             }
         }
 
-        // Reset counters to use as insertion pointers
         Arrays.fill(epsCounts, 0);
         for (int i = 0; i < n; i++) Arrays.fill(symCounts[i], 0);
 
-        // Pass B: Populate the primitive arrays
         for (Transition t : nfae.getTransitions()) {
             int src = stateToIdx.get(t.getSource());
             int tgt = stateToIdx.get(t.getTarget());
@@ -115,9 +80,8 @@ public class NFAEtoNFA {
             }
         }
 
-        // 4. Compute Epsilon Closures iteratively (Zero-Object Allocation DFS)
         BitSet[] closures = new BitSet[n];
-        int[] stack = new int[n]; // Primitive stack
+        int[] stack = new int[n];
 
         for (int i = 0; i < n; i++) {
             BitSet closure = new BitSet(n);
@@ -141,7 +105,6 @@ public class NFAEtoNFA {
             }
         }
 
-        // 5. Build New NFA & Core States
         NFA nfa = new NFA(nfae.getTokenName() + "_NFA");
         State[] newStates = new State[n];
 
@@ -167,14 +130,12 @@ public class NFAEtoNFA {
             nfa.addState(ns);
         }
 
-        // 6. Compute Real Transitions (Ultra-fast contiguous memory access)
         BitSet nfaTargets = new BitSet(n);
 
         for (int i = 0; i < n; i++) {
             State src = newStates[i];
             BitSet closureI = closures[i];
 
-            // Loop over array index instead of an Iterator or HashMap
             for (int sIdx = 0; sIdx < a; sIdx++) {
                 nfaTargets.clear();
 
@@ -183,13 +144,11 @@ public class NFAEtoNFA {
 
                     if (jTargets != null) {
                         for (int k = 0; k < jTargets.length; k++) {
-                            // Apply ε-closure of the target using native BitSet OR
                             nfaTargets.or(closures[jTargets[k]]);
                         }
                     }
                 }
 
-                // Append the calculated transitions to the new NFA
                 Symbol sym = alphabet[sIdx];
                 for (int targetIdx = nfaTargets.nextSetBit(0);
                         targetIdx >= 0;

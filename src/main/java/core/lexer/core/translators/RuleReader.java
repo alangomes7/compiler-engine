@@ -12,7 +12,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-/** Reads lexical rule definitions from a file and parses them into {@link Rule} objects. */
 public class RuleReader {
 
     public static List<Rule> readRules(String filePath) {
@@ -30,7 +29,6 @@ public class RuleReader {
         List<String> joinedLines = new ArrayList<>();
         StringBuilder current = new StringBuilder();
 
-        // Join multi-line definitions
         for (String rawLine : lines) {
             String trimmed = rawLine.trim();
             if (trimmed.isEmpty() || trimmed.startsWith("==")) continue;
@@ -62,7 +60,6 @@ public class RuleReader {
         for (String line : joinedLines) {
             String lower = line.toLowerCase();
 
-            // Track sections to determine if characters should be escaped
             if (line.startsWith("#") || (!line.contains(":") && !line.startsWith("@CTX"))) {
                 if (lower.contains("dynamic")
                         || lower.contains("lexical elements")
@@ -83,7 +80,6 @@ public class RuleReader {
                 continue;
             }
 
-            // Skip context rules during standard NFA parsing
             if (line.startsWith("@CTX")) {
                 continue;
             }
@@ -96,7 +92,6 @@ public class RuleReader {
             boolean skip = false;
             boolean isExtendedRule = false;
 
-            // Extract tags
             if (tokenName.startsWith("@")) {
                 String[] tokenParts = tokenName.split("\\s+", 2);
                 if (tokenParts.length == 2) {
@@ -113,7 +108,6 @@ public class RuleReader {
                 isExtendedRule = true;
             }
 
-            // Check for skip directive
             if (rightSide.contains("->")) {
                 String[] split = rightSide.split("->", 2);
                 rightSide = split[0].trim();
@@ -134,18 +128,13 @@ public class RuleReader {
         return rules;
     }
 
-    /**
-     * Parses @CTX lines from the token file and injects them directly into the instantiated Lexer.
-     * Call this immediately after initializing the Lexer.
-     */
     public static void loadContextRulesIntoLexer(Lexer lexer, String filePath) {
         try {
             List<String> lines = Files.readAllLines(Path.of(filePath));
             for (String line : lines) {
                 String trimmed = line.trim();
                 if (trimmed.startsWith("@CTX")) {
-                    // Expected Format: @CTX INC_PRE -> INC_POST AFTER identifier, LOWER, number,
-                    // ...
+
                     String content = trimmed.substring(4).trim();
                     String[] parts = content.split("->");
                     if (parts.length < 2) continue;

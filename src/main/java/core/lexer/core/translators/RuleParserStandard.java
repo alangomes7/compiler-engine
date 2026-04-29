@@ -4,14 +4,6 @@ import core.lexer.core.conversors.ReToNFAE;
 import core.lexer.models.atomic.Rule;
 import core.lexer.models.automata.NFAE;
 
-/**
- * Parser for standard (non‑extended) regular expression rules. Supports concatenation, alternation
- * ('|'), grouping '()', quantifiers ('*', '+', '?'), character classes, and escaped control
- * characters.
- *
- * @author Generated
- * @version 1.1
- */
 public class RuleParserStandard {
 
     private final ReToNFAE generator;
@@ -20,22 +12,10 @@ public class RuleParserStandard {
     private int pos;
     private int length;
 
-    /**
-     * Constructs a standard rule parser with the given NFA-ε generator.
-     *
-     * @param generator the converter used to build NFA-ε fragments
-     */
     public RuleParserStandard(ReToNFAE generator) {
         this.generator = generator;
     }
 
-    /**
-     * Parses a standard (non‑extended) rule into an NFA-ε.
-     *
-     * @param rule the rule to parse (extended flag must be false)
-     * @return the NFA-ε representing the rule's regular expression
-     * @throws RuntimeException if the regex contains syntax errors
-     */
     public NFAE parse(Rule rule) {
         this.input = rule.getRegex().toCharArray();
         this.pos = 0;
@@ -106,19 +86,6 @@ public class RuleParserStandard {
         return nfa;
     }
 
-    /**
-     * Parses a base atom:
-     *
-     * <ul>
-     *   <li>grouped expression (parentheses)
-     *   <li>character class (brackets)
-     *   <li>escaped character (backslash mapped to control chars)
-     *   <li>literal character
-     * </ul>
-     *
-     * @return NFA-ε for the parsed base
-     * @throws RuntimeException on syntax errors
-     */
     private NFAE parseBase() {
         char c = input[pos];
 
@@ -138,7 +105,6 @@ public class RuleParserStandard {
             pos++;
             if (pos >= length) throw new RuntimeException("Dangling escape at pos " + pos);
             char escaped = input[pos++];
-            // Fix: Translate known escape sequences
             String sym =
                     switch (escaped) {
                         case 'n' -> "\n";
@@ -154,12 +120,6 @@ public class RuleParserStandard {
         return generator.symbol(String.valueOf(c));
     }
 
-    /**
-     * Parses a character class, e.g., [abc], [^0-9]. Supports ranges (a-z) and escaping inside the
-     * class.
-     *
-     * @return NFA-ε for the character class
-     */
     private NFAE parseCharacterClass() {
         pos++;
 
@@ -198,18 +158,11 @@ public class RuleParserStandard {
         return result != null ? result : generator.symbol("");
     }
 
-    /**
-     * Reads a single character from the input, correctly mapping escape sequences.
-     *
-     * @return the character read (after unescaping)
-     * @throws RuntimeException if end of input is reached unexpectedly
-     */
     private char readChar() {
         if (input[pos] == '\\') {
             pos++;
             if (pos >= length) throw new RuntimeException("Dangling escape at pos " + pos);
             char c = input[pos++];
-            // Fix: Map the literal character correctly
             return switch (c) {
                 case 'n' -> '\n';
                 case 'r' -> '\r';
