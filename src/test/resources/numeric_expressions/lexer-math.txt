@@ -1,0 +1,47 @@
+# =========================================
+# LEXER - Numeric Expressions Tokens
+# =========================================
+
+# =========================
+# Operators
+# =========================
+@PRI PLUS        : +
+@PRI MINUS       : -
+@PRI MULT        : *
+@PRI DIV         : /
+@PRI EXP         : ^
+
+# =========================
+# Delimiters
+# =========================
+@PRI LPAREN      : (
+@PRI RPAREN      : )
+
+# =========================
+# Explicit Primitive Sets
+# =========================
+@PRI DIGIT       : [0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9]
+@PRI HEX_LOWER   : [a | b | c | d | e | f]
+@PRI HEX_UPPER   : [A | B | C | D | E | F]
+@DER HEX_DIGIT   : [DIGIT | HEX_LOWER | HEX_UPPER]
+
+@PRI OCT_DIGIT   : [0 | 1 | 2 | 3 | 4 | 5 | 6 | 7]
+@PRI BIN_DIGIT   : [0 | 1]
+
+@PRI SPACE       : [ ]
+@PRI TAB         : [\t]
+@PRI DOT         : [.]
+
+# =========================
+# Lexical Elements (Dynamic)
+# =========================
+@DER HEX_NUM     : [0][x | X] HEX_DIGIT+
+@DER OCT_NUM     : [0][o | O] OCT_DIGIT+
+@DER BIN_NUM     : [0][b | B] BIN_DIGIT+
+@DER FLOAT_NUM   : DIGIT* DOT DIGIT+
+@DER INT_NUM     : DIGIT+
+
+@DER number      : HEX_NUM | OCT_NUM | BIN_NUM | FLOAT_NUM | INT_NUM
+
+# Whitespace is ignored.
+@DER WHITESPACE  : (SPACE | TAB)+ -> skip

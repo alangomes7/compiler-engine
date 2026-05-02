@@ -44,4 +44,12 @@ public final class Utils {
                 javafx.embed.swing.SwingFXUtils.fromFXImage(snapshot, null);
         javax.imageio.ImageIO.write(bufferedImage, "png", outputFile);
     }
+
+    public static void createDirectories(String filePath) throws IOException {
+        Path path = Path.of(filePath);
+        Path parentDir = path.getParent();
+        if (parentDir != null && !Files.exists(parentDir)) {
+            Files.createDirectories(parentDir);
+        }
+    }
 }

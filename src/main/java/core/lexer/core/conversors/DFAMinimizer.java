@@ -1,9 +1,5 @@
 package core.lexer.core.conversors;
 
-import core.lexer.models.atomic.State;
-import core.lexer.models.atomic.Symbol;
-import core.lexer.models.atomic.Transition;
-import core.lexer.models.automata.DFA;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -16,15 +12,28 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import core.lexer.models.atomic.State;
+import core.lexer.models.atomic.Symbol;
+import core.lexer.models.atomic.Transition;
+import core.lexer.models.automata.DFA;
+
 public class DFAMinimizer {
+    private static final Logger log = LoggerFactory.getLogger(DFAMinimizer.class);
 
     private int minStateCounter = 0;
 
     public DFA minimize(DFA dfa) {
+        long startTime = System.currentTimeMillis();
         minStateCounter = 0;
 
         List<State> states = new ArrayList<>(dfa.getStates());
         int n = states.size();
+        
+        log.info("Starting DFA minimization for token '{}'. Initial states: {}", dfa.getTokenName(), n);
+
         Map<State, Integer> stateToIdx = new HashMap<>(n);
         for (int i = 0; i < n; i++) stateToIdx.put(states.get(i), i);
 
@@ -67,6 +76,8 @@ public class DFAMinimizer {
                 block[i] = 0;
             }
         }
+
+        log.debug("Partitioned initial states into {} block(s) based on acceptance tokens.", blockCount);
 
         List<BitSet> blocks = new ArrayList<>(blockCount);
         for (int i = 0; i < blockCount; i++) blocks.add(new BitSet(n));
@@ -125,6 +136,8 @@ public class DFAMinimizer {
         }
 
         int numBlocks = blocks.size();
+        log.debug("Partition refinement completed. Stabilized at {} minimized blocks.", numBlocks);
+
         State[] rep = new State[numBlocks];
         int[] repIdx = new int[numBlocks];
         Arrays.fill(repIdx, -1);
@@ -156,11 +169,16 @@ public class DFAMinimizer {
             }
         }
 
-        DFA trimedDfa = trimUnreachableStates(minDfa);
-        return trimedDfa;
+        long duration = System.currentTimeMillis() - startTime;
+        log.info("Minimization computed in {} ms. States reduced from {} to {}.", duration, n, numBlocks);
+
+        return trimUnreachableStates(minDfa);
     }
 
     public DFA trimUnreachableStates(DFA dfa) {
+        int originalSize = dfa.getStates().size();
+        log.debug("Trimming unreachable states from DFA (Current size: {})...", originalSize);
+
         Set<State> reachableStates = new HashSet<>();
         Queue<State> queue = new ArrayDeque<>(dfa.getInitialStates());
         reachableStates.addAll(dfa.getInitialStates());
@@ -191,6 +209,13 @@ public class DFAMinimizer {
             if (reachableStates.contains(t.getSource())) {
                 trimmedDFA.addTransition(t);
             }
+        }
+
+        int newSize = trimmedDFA.getStates().size();
+        if (newSize < originalSize) {
+            log.info("Trimmed {} unreachable states. Final DFA size: {}", (originalSize - newSize), newSize);
+        } else {
+            log.debug("No unreachable states found. Final DFA size remains {}.", newSize);
         }
 
         return trimmedDFA;

@@ -11,4 +11,6 @@ public final class Constants {
     public static final String SKIP_TOKEN = "SKIP";
 
     public static final String OUTPUT_FOLDER = "output/";
+
+    public static final String TEMP_DIR = OUTPUT_FOLDER + "temp/";
 }

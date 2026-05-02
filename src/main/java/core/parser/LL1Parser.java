@@ -58,17 +58,27 @@ public class LL1Parser {
                         lookaheadIndex++;
                     }
                 } else {
+                    // ERROR RECOVERY: Record error, pretend missing terminal was matched (leave
+                    // lookahead as is)
                     recordError("Expected '%s', but found '%s'", currentToken, top.getName());
-                    return new ParseTree(root);
                 }
             } else {
                 List<Production> productions = this.parseTable.getEntry(top, lookahead);
 
                 if (productions == null || productions.isEmpty()) {
+                    // ERROR RECOVERY: Record error, skip unexpected token, push non-terminal back
+                    // to try again
                     recordError(
                             "No rule to derive '%s' with lookahead '%s'",
                             currentToken, top.getName());
-                    return new ParseTree(root);
+
+                    if (currentToken != null && !isEofToken(currentToken)) {
+                        lookaheadIndex++;
+                        stack.push(
+                                currentNode); // Try expanding this non-terminal again with the next
+                        // token
+                    }
+                    continue;
                 }
 
                 Production production = productions.get(0);

@@ -1,7 +1,7 @@
 package ui.core.services;
 
 import core.lexer.models.atomic.Token;
-import core.parser.BacktrackingParser;
+import core.parser.LL1Parser;
 import core.parser.core.FirstFollowTableBuilder;
 import core.parser.core.ParserTableBuilder;
 import core.parser.core.grammar.GrammarClassification;
@@ -67,7 +67,8 @@ public class ParserService {
         TokenFilter tokenFilter = new TokenFilter();
         List<Token> cleanedTokens = tokenFilter.filter(tokens);
 
-        BacktrackingParser parser = new BacktrackingParser(grammar);
+        // BacktrackingParser parser = new BacktrackingParser(grammar);
+        LL1Parser parser = new LL1Parser(grammar, parseTable);
 
         ParseTree parseTree = parser.parse(cleanedTokens);
         return new ParseResult(parseTree, parser.getErrors());

@@ -1,57 +1,123 @@
 package core.lexer.core.conversors;
 
-import core.lexer.models.atomic.State;
-import core.lexer.models.atomic.Symbol;
-import core.lexer.models.atomic.Transition;
-import core.lexer.models.automata.DFA;
-import core.lexer.models.automata.NFA;
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.BitSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import core.lexer.models.atomic.State;
+import core.lexer.models.atomic.Symbol;
+import core.lexer.models.atomic.Transition;
+import core.lexer.models.automata.DFA;
+
 public class NFAtoDFA {
+    private static final Logger log = LoggerFactory.getLogger(NFAtoDFA.class);
 
     private int dfaStateCounter = 0;
 
-    public DFA convert(NFA nfa) {
+    public DFA convertFromDisk(String filepath) {
+        long startTime = System.currentTimeMillis();
         dfaStateCounter = 0;
-        DFA dfa = new DFA(nfa.getTokenName() + "_DFA");
+        String tokenName = "MASTER";
+        List<Symbol> alphabet = new ArrayList<>();
+        List<State> nfaStatesList = new ArrayList<>();
+        Map<Integer, Map<Integer, BitSet>> diskTransNFA = new HashMap<>();
 
-        List<State> nfaStates = new ArrayList<>(nfa.getStates());
-        Map<State, Integer> nfaStateIdx = new HashMap<>();
-        for (int i = 0; i < nfaStates.size(); i++) {
-            nfaStateIdx.put(nfaStates.get(i), i);
+        log.info("Starting NFA disk read and DFA conversion from: {}", filepath);
+
+        try (BufferedReader reader =
+                new BufferedReader(new FileReader(filepath, StandardCharsets.UTF_8))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                String trimmedLine = line.trim();
+
+                if (trimmedLine.isEmpty() || trimmedLine.startsWith("//")) {
+                    continue;
+                }
+
+                if (trimmedLine.startsWith("TOKEN:")) {
+                    tokenName = trimmedLine.substring(6).trim();
+                    log.debug("Parsed TOKEN: {}", tokenName);
+                } else if (trimmedLine.startsWith("ALPHABET:")) {
+                    String[] symbols = trimmedLine.substring(9).split(",");
+                    for (String s : symbols) {
+                        String cleanS = s.trim();
+                        if (!cleanS.isEmpty()) {
+                            String decodedSym =
+                                    new String(
+                                            Base64.getDecoder().decode(cleanS),
+                                            StandardCharsets.UTF_8);
+                            alphabet.add(new Symbol(decodedSym));
+                        }
+                    }
+                    log.debug("Parsed ALPHABET with {} symbols", alphabet.size());
+                } else if (trimmedLine.startsWith("STATE:")) {
+                    String[] parts = trimmedLine.substring(6).split(",", -1);
+                    int id = Integer.parseInt(parts[0].trim());
+                    boolean isInitial = Boolean.parseBoolean(parts[1].trim());
+                    boolean isFinal = Boolean.parseBoolean(parts[2].trim());
+
+                    String token = null;
+                    if (parts.length > 3 && !parts[3].trim().isEmpty()) {
+                        token =
+                                new String(
+                                        Base64.getDecoder().decode(parts[3].trim()),
+                                        StandardCharsets.UTF_8);
+                    }
+
+                    State state = new State(id, isInitial, isFinal);
+                    state.setAcceptedToken(token);
+                    nfaStatesList.add(state);
+                } else if (trimmedLine.startsWith("TRANS:")) {
+                    String[] parts = trimmedLine.substring(6).split(",");
+                    int srcId = Integer.parseInt(parts[0].trim());
+                    int tgtId = Integer.parseInt(parts[1].trim());
+                    int symIdx = Integer.parseInt(parts[2].trim());
+
+                    diskTransNFA
+                            .computeIfAbsent(srcId, k -> new HashMap<>())
+                            .computeIfAbsent(symIdx, k -> new BitSet())
+                            .set(tgtId);
+                }
+            }
+        } catch (Exception e) {
+            log.error("Failed to parse NFA disk file '{}': ", filepath, e);
         }
-        int n = nfaStates.size();
 
-        List<Symbol> alphabet = new ArrayList<>(nfa.getAlphabet().getSymbols());
+        int n = nfaStatesList.size();
         int k = alphabet.size();
-        Map<Symbol, Integer> symToIdx = new HashMap<>();
-        for (int i = 0; i < k; i++) symToIdx.put(alphabet.get(i), i);
 
-        BitSet[][] transNFA = new BitSet[n][k];
+        log.info("Finished disk read. NFA loaded with {} states and {} alphabet symbols.", n, k);
+        log.debug("Starting subset construction for DFA...");
+
+        DFA dfa = new DFA(tokenName + "_DFA");
+
+        Map<Integer, Integer> idToIndex = new HashMap<>();
         for (int i = 0; i < n; i++) {
-            for (int j = 0; j < k; j++) transNFA[i][j] = new BitSet(n);
-        }
-        for (Transition t : nfa.getTransitions()) {
-            int src = nfaStateIdx.get(t.getSource());
-            int sym = symToIdx.get(t.getSymbol());
-            int dst = nfaStateIdx.get(t.getTarget());
-            transNFA[src][sym].set(dst);
+            idToIndex.put(nfaStatesList.get(i).getId(), i);
         }
 
         Map<BitSet, State> dfaStateMap = new HashMap<>();
         Queue<BitSet> queue = new ArrayDeque<>();
 
         BitSet initialSet = new BitSet(n);
-        for (State s : nfa.getInitialStates()) {
-            initialSet.set(nfaStateIdx.get(s));
+        for (State s : nfaStatesList) {
+            if (s.isInitial()) {
+                initialSet.set(idToIndex.get(s.getId()));
+            }
         }
-        State dfaStart = createDfaState(initialSet, nfaStates);
+
+        State dfaStart = createDfaState(initialSet, nfaStatesList);
         dfa.addState(dfaStart);
         dfaStateMap.put(initialSet, dfaStart);
         queue.add(initialSet);
@@ -60,23 +126,43 @@ public class NFAtoDFA {
             BitSet currentSet = queue.poll();
             State currentDfaState = dfaStateMap.get(currentSet);
 
-            for (int sym = 0; sym < k; sym++) {
+            for (int symIdx = 0; symIdx < k; symIdx++) {
                 BitSet targetSet = new BitSet(n);
-                for (int s = currentSet.nextSetBit(0); s >= 0; s = currentSet.nextSetBit(s + 1)) {
-                    targetSet.or(transNFA[s][sym]);
+
+                for (int sIdx = currentSet.nextSetBit(0);
+                        sIdx >= 0;
+                        sIdx = currentSet.nextSetBit(sIdx + 1)) {
+                    int srcId = nfaStatesList.get(sIdx).getId();
+                    Map<Integer, BitSet> srcTrans = diskTransNFA.get(srcId);
+                    if (srcTrans != null) {
+                        BitSet tgts = srcTrans.get(symIdx);
+                        if (tgts != null) {
+                            for (int tId = tgts.nextSetBit(0);
+                                    tId >= 0;
+                                    tId = tgts.nextSetBit(tId + 1)) {
+                                targetSet.set(idToIndex.get(tId));
+                            }
+                        }
+                    }
                 }
+
                 if (targetSet.isEmpty()) continue;
 
                 State dfaTarget = dfaStateMap.get(targetSet);
                 if (dfaTarget == null) {
-                    dfaTarget = createDfaState(targetSet, nfaStates);
+                    dfaTarget = createDfaState(targetSet, nfaStatesList);
                     dfa.addState(dfaTarget);
                     dfaStateMap.put(targetSet, dfaTarget);
                     queue.add(targetSet);
+                    log.debug("Created new DFA State ID {} mapped from NFA subset: {}", dfaTarget.getId(), targetSet);
                 }
-                dfa.addTransition(new Transition(currentDfaState, dfaTarget, alphabet.get(sym)));
+                dfa.addTransition(new Transition(currentDfaState, dfaTarget, alphabet.get(symIdx)));
             }
         }
+
+        long duration = System.currentTimeMillis() - startTime;
+        log.info("Conversion completed in {} ms. Generated DFA '{}' with {} states.", 
+                 duration, dfa.getTokenName(), dfaStateCounter);
 
         return dfa;
     }

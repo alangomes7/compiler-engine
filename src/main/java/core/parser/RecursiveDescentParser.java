@@ -71,6 +71,11 @@ public class RecursiveDescentParser {
             recordError(
                     "No rule to derive '%s' with lookahead '%s'",
                     currentToken, nonTerminal.getName());
+
+            // ERROR RECOVERY: Consume the offending token so the parser doesn't loop infinitely
+            if (currentToken != null && !isEofToken(currentToken)) {
+                lookaheadIndex++;
+            }
             return currentNode;
         }
 
@@ -104,6 +109,8 @@ public class RecursiveDescentParser {
                 lookaheadIndex++;
             }
         } else {
+            // ERROR RECOVERY: Record error, but do not increment lookaheadIndex (pretend it was
+            // matched)
             recordError("Expected '%s', but found '%s'", currentToken, expectedTerminal.getName());
         }
 

@@ -1,0 +1,34 @@
+expression
+    ::= additive-expr
+
+additive-expr
+    ::= multiplicative-expr additive-tail
+
+additive-tail
+    ::= '+' multiplicative-expr additive-tail
+      | '-' multiplicative-expr additive-tail
+      | ε
+
+multiplicative-expr
+    ::= exponential-expr multiplicative-tail
+
+multiplicative-tail
+    ::= '*' exponential-expr multiplicative-tail
+      | '/' exponential-expr multiplicative-tail
+      | ε
+
+exponential-expr
+    ::= unary-expr exponential-tail
+
+exponential-tail
+    ::= '^' exponential-expr
+      | ε
+
+unary-expr
+    ::= '+' unary-expr
+      | '-' unary-expr
+      | primary
+
+primary
+    ::= "number"
+      | '(' expression ')'

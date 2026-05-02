@@ -9,7 +9,6 @@ import core.lexer.models.SymbolTable;
 import core.lexer.models.atomic.Rule;
 import core.lexer.models.atomic.State;
 import core.lexer.models.automata.DFA;
-import core.lexer.models.automata.NFA;
 import core.lexer.models.automata.NFAE;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -96,15 +95,20 @@ public class Lexer {
 
         start = System.nanoTime();
         NFAEtoNFA eConverter = new NFAEtoNFA();
-        NFA masterNFA = eConverter.convert(masterNFAE);
+        String tempFilePath = Constants.TEMP_DIR + "nfa_temp_state.txt";
+        eConverter.convertAndSaveToDisk(masterNFAE, tempFilePath);
         end = System.nanoTime();
-        log.info("2. NFAE Converted to NFA. Time: {} ms", (end - start) / 1_000_000);
+        log.info("2. NFAE Converted to NFA on disk. Time: {} ms", (end - start) / 1_000_000);
 
         start = System.nanoTime();
         NFAtoDFA dfaConverter = new NFAtoDFA();
-        DFA masterDFA = dfaConverter.convert(masterNFA);
+        DFA masterDFA = dfaConverter.convertFromDisk(tempFilePath);
         end = System.nanoTime();
-        log.info("3. NFA converted to DFA. Time: {} ms", (end - start) / 1_000_000);
+        log.info(
+                "3. NFA loaded from disk and converted to DFA. Time: {} ms",
+                (end - start) / 1_000_000);
+
+        // new java.io.File(tempFilePath).delete();
 
         start = System.nanoTime();
         DFAMinimizer minimizer = new DFAMinimizer();

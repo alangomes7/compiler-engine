@@ -1,22 +1,30 @@
 package core.lexer.core.conversors;
 
+import Utils.Utils;
 import core.lexer.models.atomic.State;
 import core.lexer.models.atomic.Symbol;
 import core.lexer.models.atomic.Transition;
-import core.lexer.models.automata.NFA;
 import core.lexer.models.automata.NFAE;
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.BitSet;
 import java.util.HashMap;
 import java.util.Map;
 import models.atomic.Constants;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class NFAEtoNFA {
+    private static final Logger log = LoggerFactory.getLogger(NFAEtoNFA.class);
 
-    public NFA convert(NFAE nfae) {
+    public String convertAndSaveToDisk(NFAE nfae, String filepath) {
         State[] oldStates = nfae.getStates().toArray(State[]::new);
         int n = oldStates.length;
-
+        log.info("old states: " + n);
         Map<State, Integer> stateToIdx = new HashMap<>(n);
         for (int i = 0; i < n; i++) {
             stateToIdx.put(oldStates[i], i);
@@ -27,7 +35,6 @@ public class NFAEtoNFA {
                         .filter(sym -> !sym.getValue().equals(Constants.EPSILON))
                         .toArray(Symbol[]::new);
         int a = alphabet.length;
-
         Map<Symbol, Integer> symToIdx = new HashMap<>(a);
         for (int i = 0; i < a; i++) {
             symToIdx.put(alphabet[i], i);
@@ -35,14 +42,12 @@ public class NFAEtoNFA {
 
         int[][] epsilons = new int[n][];
         int[] epsCounts = new int[n];
-
         int[][][] symTrans = new int[n][a][];
         int[][] symCounts = new int[n][a];
 
         for (Transition t : nfae.getTransitions()) {
             int src = stateToIdx.get(t.getSource());
             Symbol sym = t.getSymbol();
-
             if (sym.getValue().equals(Constants.EPSILON)) {
                 epsCounts[src]++;
             } else {
@@ -69,7 +74,6 @@ public class NFAEtoNFA {
             int src = stateToIdx.get(t.getSource());
             int tgt = stateToIdx.get(t.getTarget());
             Symbol sym = t.getSymbol();
-
             if (sym.getValue().equals(Constants.EPSILON)) {
                 epsilons[src][epsCounts[src]++] = tgt;
             } else {
@@ -82,19 +86,15 @@ public class NFAEtoNFA {
 
         BitSet[] closures = new BitSet[n];
         int[] stack = new int[n];
-
         for (int i = 0; i < n; i++) {
             BitSet closure = new BitSet(n);
             closure.set(i);
             closures[i] = closure;
-
             int top = 0;
             stack[top++] = i;
-
             while (top > 0) {
                 int curr = stack[--top];
                 int[] eTargets = epsilons[curr];
-
                 for (int j = 0; j < eTargets.length; j++) {
                     int next = eTargets[j];
                     if (!closure.get(next)) {
@@ -105,59 +105,101 @@ public class NFAEtoNFA {
             }
         }
 
-        NFA nfa = new NFA(nfae.getTokenName() + "_NFA");
-        State[] newStates = new State[n];
+        log.info("total new states writing on disk: {} => {} | alphabet size: {}", n, n * a, a);
 
-        for (int i = 0; i < n; i++) {
-            State old = oldStates[i];
-            boolean isFinal = false;
-            String token = null;
+        try {
+            Utils.createDirectories(filepath);
 
-            BitSet closure = closures[i];
-            for (int s = closure.nextSetBit(0); s >= 0; s = closure.nextSetBit(s + 1)) {
-                State st = oldStates[s];
-                if (st.isFinal()) {
-                    isFinal = true;
-                    if (token == null && st.getAcceptedToken() != null) {
-                        token = st.getAcceptedToken();
-                    }
+            try (BufferedWriter writer =
+                    new BufferedWriter(new FileWriter(filepath, StandardCharsets.UTF_8))) {
+                writer.write("TOKEN:" + nfae.getTokenName() + "\n");
+
+                writer.write("ALPHABET:");
+                for (int i = 0; i < a; i++) {
+                    String safeSym =
+                            Base64.getEncoder()
+                                    .encodeToString(
+                                            alphabet[i]
+                                                    .getValue()
+                                                    .getBytes(StandardCharsets.UTF_8));
+                    writer.write(safeSym + (i == a - 1 ? "" : ","));
                 }
-            }
+                writer.write("\n");
 
-            State ns = new State(old.getId(), old.isInitial(), isFinal);
-            ns.setAcceptedToken(token);
-            newStates[i] = ns;
-            nfa.addState(ns);
-        }
+                writer.write("// FORMAT: STATE:ID,isInitial,isFinal,Base64_Token\n");
+                State[] newStates = new State[n];
+                for (int i = 0; i < n; i++) {
+                    State old = oldStates[i];
+                    boolean isFinal = false;
+                    String token = null;
+                    BitSet closure = closures[i];
+                    for (int s = closure.nextSetBit(0); s >= 0; s = closure.nextSetBit(s + 1)) {
+                        State st = oldStates[s];
+                        if (st.isFinal()) {
+                            isFinal = true;
+                            if (token == null && st.getAcceptedToken() != null) {
+                                token = st.getAcceptedToken();
+                            }
+                        }
+                    }
 
-        BitSet nfaTargets = new BitSet(n);
+                    State ns = new State(old.getId(), old.isInitial(), isFinal);
+                    ns.setAcceptedToken(token);
+                    newStates[i] = ns;
 
-        for (int i = 0; i < n; i++) {
-            State src = newStates[i];
-            BitSet closureI = closures[i];
+                    String safeToken =
+                            (token == null)
+                                    ? ""
+                                    : Base64.getEncoder()
+                                            .encodeToString(token.getBytes(StandardCharsets.UTF_8));
 
-            for (int sIdx = 0; sIdx < a; sIdx++) {
-                nfaTargets.clear();
+                    writer.write(
+                            "STATE:"
+                                    + ns.getId()
+                                    + ","
+                                    + ns.isInitial()
+                                    + ","
+                                    + ns.isFinal()
+                                    + ","
+                                    + safeToken
+                                    + "\n");
+                }
 
-                for (int j = closureI.nextSetBit(0); j >= 0; j = closureI.nextSetBit(j + 1)) {
-                    int[] jTargets = symTrans[j][sIdx];
-
-                    if (jTargets != null) {
-                        for (int k = 0; k < jTargets.length; k++) {
-                            nfaTargets.or(closures[jTargets[k]]);
+                BitSet nfaTargets = new BitSet(n);
+                for (int i = 0; i < n; i++) {
+                    State src = newStates[i];
+                    BitSet closureI = closures[i];
+                    for (int sIdx = 0; sIdx < a; sIdx++) {
+                        nfaTargets.clear();
+                        for (int j = closureI.nextSetBit(0);
+                                j >= 0;
+                                j = closureI.nextSetBit(j + 1)) {
+                            int[] jTargets = symTrans[j][sIdx];
+                            if (jTargets != null) {
+                                for (int k = 0; k < jTargets.length; k++) {
+                                    nfaTargets.or(closures[jTargets[k]]);
+                                }
+                            }
+                        }
+                        for (int targetIdx = nfaTargets.nextSetBit(0);
+                                targetIdx >= 0;
+                                targetIdx = nfaTargets.nextSetBit(targetIdx + 1)) {
+                            writer.write(
+                                    "TRANS:"
+                                            + src.getId()
+                                            + ","
+                                            + newStates[targetIdx].getId()
+                                            + ","
+                                            + sIdx
+                                            + "\n");
                         }
                     }
                 }
-
-                Symbol sym = alphabet[sIdx];
-                for (int targetIdx = nfaTargets.nextSetBit(0);
-                        targetIdx >= 0;
-                        targetIdx = nfaTargets.nextSetBit(targetIdx + 1)) {
-                    nfa.addTransition(new Transition(src, newStates[targetIdx], sym));
-                }
             }
+        } catch (IOException e) {
+            log.error("Failed to save NFA to disk: ", e);
         }
 
-        return nfa;
+        return filepath;
     }
 }
