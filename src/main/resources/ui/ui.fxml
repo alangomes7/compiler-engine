@@ -70,6 +70,7 @@
                                     <TextArea fx:id="consoleArea" editable="false" style="-fx-font-family: monospace;" VBox.vgrow="ALWAYS" />
                                     <HBox spacing="10">
                                        <children>
+                                          <ComboBox fx:id="logModeComboBox" prefWidth="80" prefHeight="15"/>
                                           <Button fx:id="saveConsoleLogBtn" onAction="#handleSaveConsoleLog" text="Save Console Log" />
                                           <Button fx:id="clearConsoleLogBtn" onAction="#handleClearConsoleLog" text="Clear Console Log" />
                                        </children>

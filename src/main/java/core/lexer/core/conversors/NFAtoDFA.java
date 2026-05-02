@@ -1,5 +1,9 @@
 package core.lexer.core.conversors;
 
+import core.lexer.models.atomic.State;
+import core.lexer.models.atomic.Symbol;
+import core.lexer.models.atomic.Transition;
+import core.lexer.models.automata.DFA;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.nio.charset.StandardCharsets;
@@ -11,14 +15,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import core.lexer.models.atomic.State;
-import core.lexer.models.atomic.Symbol;
-import core.lexer.models.atomic.Transition;
-import core.lexer.models.automata.DFA;
 
 public class NFAtoDFA {
     private static final Logger log = LoggerFactory.getLogger(NFAtoDFA.class);
@@ -154,15 +152,21 @@ public class NFAtoDFA {
                     dfa.addState(dfaTarget);
                     dfaStateMap.put(targetSet, dfaTarget);
                     queue.add(targetSet);
-                    log.debug("Created new DFA State ID {} mapped from NFA subset: {}", dfaTarget.getId(), targetSet);
+                    log.debug(
+                            "Created new DFA State ID {} mapped from NFA subset: {}",
+                            dfaTarget.getId(),
+                            targetSet);
                 }
                 dfa.addTransition(new Transition(currentDfaState, dfaTarget, alphabet.get(symIdx)));
             }
         }
 
         long duration = System.currentTimeMillis() - startTime;
-        log.info("Conversion completed in {} ms. Generated DFA '{}' with {} states.", 
-                 duration, dfa.getTokenName(), dfaStateCounter);
+        log.info(
+                "Conversion completed in {} ms. Generated DFA '{}' with {} states.",
+                duration,
+                dfa.getTokenName(),
+                dfaStateCounter);
 
         return dfa;
     }

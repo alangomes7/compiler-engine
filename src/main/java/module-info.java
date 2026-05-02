@@ -6,6 +6,7 @@ module compiler.engine {
     requires guru.nidi.graphviz;
     requires org.slf4j;
     requires static lombok;
+    requires ch.qos.logback.classic;
 
     opens ui to
             javafx.fxml;

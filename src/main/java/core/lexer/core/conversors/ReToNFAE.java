@@ -1,18 +1,16 @@
 package core.lexer.core.conversors;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import core.lexer.models.atomic.State;
 import core.lexer.models.atomic.Symbol;
 import core.lexer.models.atomic.Transition;
 import core.lexer.models.automata.NFAE;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
 import models.atomic.Constants;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ReToNFAE {
     private static final Logger log = LoggerFactory.getLogger(ReToNFAE.class);
@@ -41,8 +39,12 @@ public class ReToNFAE {
         nfa.addState(start);
         nfa.addState(accept);
         nfa.addTransition(new Transition(start, accept, new Symbol(sym)));
-        
-        log.debug("Created symbol NFAE for '{}' (States: {} -> {})", sym, start.getId(), accept.getId());
+
+        log.debug(
+                "Created symbol NFAE for '{}' (States: {} -> {})",
+                sym,
+                start.getId(),
+                accept.getId());
         return nfa;
     }
 
@@ -62,7 +64,7 @@ public class ReToNFAE {
                 result.addTransition(new Transition(af, bi, EPSILON));
             }
         }
-        
+
         log.debug("Concatenated NFAEs. Resulting state count: {}", result.getStates().size());
         return result;
     }
@@ -94,7 +96,7 @@ public class ReToNFAE {
             bf.setFinalState(false);
             result.addTransition(new Transition(bf, accept, EPSILON));
         }
-        
+
         log.debug("Unioned NFAEs. Resulting state count: {}", result.getStates().size());
         return result;
     }
@@ -122,7 +124,7 @@ public class ReToNFAE {
         }
 
         result.addTransition(new Transition(start, accept, EPSILON));
-        
+
         log.debug("Applied Kleene Star (*). Resulting state count: {}", result.getStates().size());
         return result;
     }
@@ -147,7 +149,7 @@ public class ReToNFAE {
         }
 
         result.addTransition(new Transition(start, accept, EPSILON));
-        
+
         log.debug("Applied Optional (?). Resulting state count: {}", result.getStates().size());
         return result;
     }
@@ -180,7 +182,8 @@ public class ReToNFAE {
         for (State f : result.getFinalStates()) {
             f.setAcceptedToken(tokenName);
         }
-        log.info("Registered Token NFAE '{}' with {} states.", tokenName, result.getStates().size());
+        log.info(
+                "Registered Token NFAE '{}' with {} states.", tokenName, result.getStates().size());
         return result;
     }
 
@@ -201,14 +204,20 @@ public class ReToNFAE {
         }
 
         long duration = System.currentTimeMillis() - startTime;
-        log.info("Master Scanner built in {} ms. Total NFAE States: {}", duration, master.getStates().size());
+        log.info(
+                "Master Scanner built in {} ms. Total NFAE States: {}",
+                duration,
+                master.getStates().size());
         return master;
     }
 
     public void addSkipPattern(String tokenName, NFAE nfa) {
         NFAE named = nameToken(Constants.SKIP_TOKEN, nfa);
         skipPatterns.add(named);
-        log.debug("Added skip pattern for original definition '{}'. Total skip patterns: {}", tokenName, skipPatterns.size());
+        log.debug(
+                "Added skip pattern for original definition '{}'. Total skip patterns: {}",
+                tokenName,
+                skipPatterns.size());
     }
 
     public List<NFAE> getSkipPatterns() {

@@ -1,11 +1,16 @@
 package ui;
 
-import core.lexer.models.atomic.Token;
-import core.parser.models.atomic.Symbol;
 import java.io.PrintStream;
 import java.net.URL;
 import java.util.ResourceBundle;
 import java.util.Set;
+
+import org.slf4j.LoggerFactory;
+
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.LoggerContext;
+import core.lexer.models.atomic.Token;
+import core.parser.models.atomic.Symbol;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.Button;
@@ -17,6 +22,7 @@ import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextArea;
 import javafx.scene.layout.VBox;
+import javafx.util.converter.FloatStringConverter;
 import lombok.Getter;
 import ui.core.controllers.UiStateController;
 import ui.core.handlers.ExecutionHandler;
@@ -72,6 +78,7 @@ public class Ui implements Initializable {
     @FXML private TextArea validatorOutputArea;
 
     @FXML private ComboBox<String> userModeComboBox;
+    @FXML private ComboBox<String> logModeComboBox;
     @FXML private TabPane mainTabPane;
     @FXML private Tab consoleTab;
     @FXML private Tab outputTab;
@@ -185,6 +192,25 @@ public class Ui implements Initializable {
                             refreshTextOutputs();
                         });
         userModeComboBox.setValue("Client");
+        logModeComboBox.getItems().addAll("TRACE", "DEBUG", "INFO", "WARN", "ERROR");
+        
+        logModeComboBox
+        .valueProperty()
+        .addListener(
+            (obs, oldVal, newVal) -> {
+                LoggerContext loggerContext =
+                (LoggerContext) LoggerFactory.getILoggerFactory();
+                
+                ch.qos.logback.classic.Logger rootLogger =
+                loggerContext.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
+                
+                rootLogger.setLevel(Level.toLevel(newVal.toUpperCase()));
+                
+                System.out.println("Runtime log level preference set to: " + newVal);
+            });
+            logModeComboBox.setValue("INFO");
+            clearConsoleLogBtn.setDisable(false);
+            saveConsoleLogBtn.setDisable(false);
     }
 
     private void updateTabVisibility(String mode) {
