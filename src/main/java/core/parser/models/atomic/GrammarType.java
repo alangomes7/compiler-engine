@@ -1,7 +1,6 @@
 package core.parser.models.atomic;
 
 public enum GrammarType {
-
     TYPE_0_UNRESTRICTED("Type-0 Unrestricted Grammar (Recursively Enumerable)"),
 
     TYPE_1_CONTEXT_SENSITIVE("Type-1 Context-Sensitive Grammar (CSG)"),

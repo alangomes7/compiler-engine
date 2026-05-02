@@ -61,8 +61,7 @@ public class LL1Parser {
                     recordError("Expected '%s', but found '%s'", currentToken, top.getName());
                     return new ParseTree(root);
                 }
-            }
-            else {
+            } else {
                 List<Production> productions = this.parseTable.getEntry(top, lookahead);
 
                 if (productions == null || productions.isEmpty()) {

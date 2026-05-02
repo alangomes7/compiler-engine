@@ -116,6 +116,7 @@ public class Lexer {
         log.info("Total pipeline time: {} ms\n", (System.nanoTime() - totalStart) / 1_000_000);
     }
 
+    @SuppressWarnings("unchecked")
     private void buildFastTables() {
         this.dfaStates = new ArrayList<>(masterAutomaton.getStates());
         this.dfaStateToIdx = new HashMap<>();

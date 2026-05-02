@@ -45,6 +45,16 @@ public class VisualizationHandler {
             return;
         }
 
+        boolean hasErrors = !state.getCurrentParseResult().errors.isEmpty();
+        boolean isDeveloper = "Developer".equals(ui.getUserModeComboBox().getValue());
+
+        if (hasErrors && !isDeveloper) {
+            ui.getOutputArea()
+                    .setText(
+                            "Partial derivation tree (due to errors) is only available in Developer mode.");
+            return;
+        }
+
         ui.getTaskExecutor()
                 .execute(
                         "Generating Input Tree...",

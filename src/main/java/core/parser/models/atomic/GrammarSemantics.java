@@ -1,7 +1,6 @@
 package core.parser.models.atomic;
 
 public enum GrammarSemantics {
-
     LL1_DETERMINISTIC("Unambiguous, Deterministic, Free of Left-Recursion"),
 
     CONTAINS_CONFLICTS("Contains Conflicts"),

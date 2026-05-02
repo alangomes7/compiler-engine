@@ -1,7 +1,6 @@
 package core.parser.models.atomic;
 
 public enum ParserAlgorithm {
-
     LL1("LL(1)", "Top-Down, 1 symbol lookahead"),
 
     LR0("LR(0)", "Bottom-Up, 0 symbol lookahead"),

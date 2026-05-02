@@ -9,6 +9,7 @@ import java.util.Set;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.Button;
+import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
@@ -70,8 +71,16 @@ public class Ui implements Initializable {
     @Getter @FXML private TextArea automataDetailsArea;
     @FXML private TextArea validatorOutputArea;
 
+    @FXML private ComboBox<String> userModeComboBox;
     @FXML private TabPane mainTabPane;
     @FXML private Tab consoleTab;
+    @FXML private Tab outputTab;
+    @FXML private Tab lexerViewerTab;
+    @FXML private Tab validatorTab;
+    @FXML private Tab symbolTableTab;
+    @FXML private Tab firstFollowTab;
+    @FXML private Tab parseTableTab;
+    @FXML private Tab syntaxTreeTab;
     @FXML private TableView<Token> symbolTableViewer;
     @FXML private TableColumn<Token, Integer> symbolTableLineColumn;
     @FXML private TableColumn<Token, Integer> symbolTableColColumn;
@@ -117,11 +126,6 @@ public class Ui implements Initializable {
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         // 1. Basic UI Setup
-        javafx.application.Platform.runLater(
-                () -> {
-                    ((javafx.stage.Stage) consoleArea.getScene().getWindow()).setMaximized(true);
-                });
-
         PrintStream ps = new PrintStream(new UiUtils.TextAreaOutputStream(consoleArea), true);
         System.setOut(ps);
         System.setErr(ps);
@@ -171,6 +175,67 @@ public class Ui implements Initializable {
         cancelOperationBtn.setDisable(true);
         cancelOperationBtn.setVisible(false);
         stateController.updateUIState();
+
+        userModeComboBox.getItems().addAll("Client", "Developer");
+        userModeComboBox
+                .valueProperty()
+                .addListener(
+                        (obs, oldVal, newVal) -> {
+                            updateTabVisibility(newVal);
+                            refreshTextOutputs();
+                        });
+        userModeComboBox.setValue("Client");
+    }
+
+    private void updateTabVisibility(String mode) {
+        mainTabPane.getTabs().clear();
+
+        if ("Client".equals(mode)) {
+            mainTabPane.getTabs().addAll(outputTab, validatorTab);
+        } else {
+            mainTabPane
+                    .getTabs()
+                    .addAll(
+                            consoleTab,
+                            outputTab,
+                            lexerViewerTab,
+                            validatorTab,
+                            symbolTableTab,
+                            firstFollowTab,
+                            parseTableTab,
+                            syntaxTreeTab);
+        }
+    }
+
+    public void refreshTextOutputs() {
+        String mode = userModeComboBox.getValue();
+        boolean isDeveloper = "Developer".equals(mode);
+
+        if (analysisState.isHasValidationData()) {
+            if (isDeveloper) {
+                validatorOutputArea.setText(
+                        analysisState.getValidationClassificationReport()
+                                + "\n"
+                                + analysisState.getValidationCompatibilityReport());
+            } else {
+                validatorOutputArea.setText(analysisState.getValidationClassificationReport());
+            }
+        }
+
+        if (analysisState.getCurrentParseResult() != null) {
+            boolean hasErrors = !analysisState.getCurrentParseResult().errors.isEmpty();
+            StringBuilder sb = new StringBuilder(analysisState.getSyntaxBaseOutput());
+
+            if (isDeveloper || !hasErrors) {
+                sb.append(analysisState.getSyntaxTreeOutput());
+            }
+            outputArea.setText(sb.toString());
+
+            if (!isDeveloper && hasErrors && analysisState.isHasInputTree()) {
+                inputTreeContainer.setCenter(null);
+                analysisState.setHasInputTree(false);
+            }
+        }
     }
 
     public BackgroundTaskExecutor getTaskExecutor() {
@@ -311,6 +376,8 @@ public class Ui implements Initializable {
     @FXML
     private void handleClearValidation() {
         validatorOutputArea.clear();
+        analysisState.setValidationClassificationReport("");
+        analysisState.setValidationCompatibilityReport("");
         analysisState.setHasValidationData(false);
         stateController.updateUIState();
     }

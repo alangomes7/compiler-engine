@@ -44,10 +44,10 @@ public class GrammarClassification {
         if (errors != null && errors.hasErrors()) {
             sb.append("\n    Conflicts:\n");
             for (String lrError : errors.getLeftRecursionDetails()) {
-                sb.append("      - ❌ ").append(lrError).append("\n");
+                sb.append("      - ").append(lrError).append("\n");
             }
             for (String cpError : errors.getCommonPrefixDetails()) {
-                sb.append("      - ❌ ").append(cpError).append("\n");
+                sb.append("      - ").append(cpError).append("\n");
             }
         }
         sb.append("}\n");

@@ -166,36 +166,32 @@ public class ExecutionHandler {
                         },
                         result -> {
                             state.setCurrentParseResult(result);
-
                             ui.getFirstFollowTable()
                                     .getItems()
                                     .setAll(ui.getParserService().getGrammar().getNonTerminals());
                             ui.getParserTableManager().populate(state.getCurrentParseTable());
-
                             state.setHasFirstFollowData(true);
                             state.setHasParseTableData(true);
 
                             if (result.errors.isEmpty()) {
-                                ui.getOutputArea()
-                                        .setText(
-                                                "Syntax Analysis Completed Successfully.\nNo errors found.");
+                                state.setSyntaxBaseOutput(
+                                        "Syntax Analysis Completed Successfully.\nNo errors found.");
                                 state.setParseRunSuccess(true);
                             } else {
-                                ui.getOutputArea()
-                                        .setText(
-                                                "Syntax Analysis Completed with Errors:\n"
-                                                        + String.join("\n", result.errors));
+                                state.setSyntaxBaseOutput(
+                                        "Syntax Analysis Completed with Errors:\n"
+                                                + String.join("\n", result.errors));
                                 state.setParseRunSuccess(false);
                             }
 
                             if (result.tree != null) {
-                                ui.getOutputArea()
-                                        .setText(
-                                                ui.getOutputArea().getText()
-                                                        + "\nParser tree: \n"
-                                                        + result.tree.toString());
+                                state.setSyntaxTreeOutput(
+                                        "\nParser tree: \n" + result.tree.toString());
+                            } else {
+                                state.setSyntaxTreeOutput("");
                             }
 
+                            ui.refreshTextOutputs(); // Dynamically update the UI
                             stateController.updateUIState();
                         },
                         err -> {
@@ -208,24 +204,51 @@ public class ExecutionHandler {
     public void handleValidateCompatibility() {
         ui.getTaskExecutor()
                 .execute(
-                        "Validating Grammar...",
+                        "Validating Grammar & Compatibility...",
                         log -> {
+                            core.parser.core.grammar.GrammarClassification classification;
                             if (state.getCurrentParseTable() == null) {
                                 log.accept("Building temporary Parse table for validation...");
                                 FirstFollowTable ffTable =
                                         ui.getParserService().buildFirstFollowTable();
-                                return ui.getParserService()
-                                        .classifyGrammarWithParserTable(
-                                                ui.getParserService()
-                                                        .buildParseTable(
-                                                                ffTable, Collections.emptyList()));
+                                classification =
+                                        ui.getParserService()
+                                                .classifyGrammarWithParserTable(
+                                                        ui.getParserService()
+                                                                .buildParseTable(
+                                                                        ffTable,
+                                                                        java.util.Collections
+                                                                                .emptyList()));
+                            } else {
+                                classification =
+                                        ui.getParserService()
+                                                .classifyGrammarWithParserTable(
+                                                        state.getCurrentParseTable());
                             }
-                            return ui.getParserService()
-                                    .classifyGrammarWithParserTable(state.getCurrentParseTable());
+
+                            log.accept("Checking Grammar-Lexer compatibility...");
+                            String compatibilityReport =
+                                    "Cannot validate Lexer compatibility: Lexer token file not loaded.\n";
+                            String tokenPath = state.getTokenFilePath();
+
+                            if (tokenPath != null && !tokenPath.isEmpty()) {
+                                java.util.List<core.lexer.models.atomic.Rule> lexerRules =
+                                        core.lexer.core.translators.RuleReader.readRules(tokenPath);
+                                compatibilityReport =
+                                        core.validator.GrammarLexerCompatibility.validate(
+                                                ui.getParserService().getGrammar(), lexerRules);
+                            }
+
+                            // Return an array instead of a single string
+                            return new String[] {classification.toString(), compatibilityReport};
                         },
-                        classification -> {
-                            ui.getValidatorOutputArea().setText(classification.toString());
+                        result -> {
+                            String[] reports = (String[]) result;
+                            state.setValidationClassificationReport(reports[0]);
+                            state.setValidationCompatibilityReport(reports[1]);
                             state.setHasValidationData(true);
+
+                            ui.refreshTextOutputs(); // Dynamically update the UI
                             stateController.updateUIState();
                         },
                         err -> ui.getOutputArea().setText("Validation Error: " + err.getMessage()));

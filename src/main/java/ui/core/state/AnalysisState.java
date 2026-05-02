@@ -10,48 +10,33 @@ import ui.core.services.ParserService.ParseResult;
 public class AnalysisState {
 
     private boolean tokenLoaded = false;
-
     private boolean grammarLoaded = false;
-
     private boolean lexerRunSuccess = false;
-
     private boolean parseRunSuccess = false;
-
     private boolean hasSymbolTableData = false;
-
     private boolean hasFirstFollowData = false;
-
     private boolean hasParseTableData = false;
-
     private boolean hasGrammarTree = false;
-
     private boolean hasInputTree = false;
-
     private boolean hasValidationData = false;
-
     private boolean isProgrammaticChange = false;
-
     private boolean lexerNeedsRebuild = true;
-
     private String tokenFilePath;
-
     private String grammarFilePath;
-
     private FirstFollowTable currentFirstFollowTable;
-
     private ParseTable currentParseTable;
-
     private ParseResult currentParseResult;
-
     private DFA currentAutomaton;
+    private String validationClassificationReport = "";
+    private String validationCompatibilityReport = "";
+    private String syntaxBaseOutput = "";
+    private String syntaxTreeOutput = "";
 
     public void resetAnalysisData() {
-        // Reset computed results
         currentFirstFollowTable = null;
         currentParseTable = null;
         currentParseResult = null;
         currentAutomaton = null;
-
         lexerRunSuccess = false;
         parseRunSuccess = false;
         hasSymbolTableData = false;
@@ -60,8 +45,12 @@ public class AnalysisState {
         hasGrammarTree = false;
         hasInputTree = false;
         hasValidationData = false;
-
         lexerNeedsRebuild = true;
+
+        validationClassificationReport = "";
+        validationCompatibilityReport = "";
+        syntaxBaseOutput = "";
+        syntaxTreeOutput = "";
     }
 
     public void resetAll() {

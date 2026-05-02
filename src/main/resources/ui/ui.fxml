@@ -5,6 +5,7 @@
 <?import javafx.scene.layout.*?>
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.ProgressIndicator?>
 <?import javafx.scene.control.ScrollPane?>
@@ -24,6 +25,12 @@
          <padding>
             <Insets bottom="10" left="10" right="10" top="10" />
          </padding>
+         <HBox alignment="CENTER_RIGHT" spacing="10">
+            <children>
+               <Label text="User Mode:" />
+               <ComboBox fx:id="userModeComboBox" prefWidth="120" />
+            </children>
+         </HBox>
          <children>
             <HBox alignment="CENTER_LEFT" spacing="10">
                <children>
@@ -71,7 +78,7 @@
                               </VBox>
                            </content>
                         </Tab>
-                        <Tab text="Output">
+                        <Tab fx:id="outputTab" text="Output">
                            <content>
                               <VBox spacing="10">
                                  <padding>
@@ -89,7 +96,7 @@
                               </VBox>
                            </content>
                         </Tab>
-                        <Tab text="Lexer Viewer">
+                        <Tab fx:id="lexerViewerTab" text="Lexer Viewer">
                            <content>
                               <VBox spacing="10">
                                  <padding>
@@ -147,7 +154,7 @@
                               </VBox>
                            </content>
                         </Tab>
-                        <Tab text="Validator (Lexer ↔ Parser)">
+                        <Tab fx:id="validatorTab" text="Validator (Lexer ↔ Parser)">
                            <content>
                               <VBox spacing="10">
                                  <padding>
@@ -170,7 +177,7 @@
                               </VBox>
                            </content>
                         </Tab>
-                        <Tab text="Symbol Table">
+                        <Tab fx:id="symbolTableTab" text="Symbol Table">
                            <content>
                               <VBox spacing="10">
                                  <padding>
@@ -189,7 +196,7 @@
                               </VBox>
                            </content>
                         </Tab>
-                        <Tab text="First &amp; Follow Sets">
+                        <Tab fx:id="firstFollowTab" text="First &amp; Follow Sets">
                            <content>
                               <VBox spacing="10">
                                  <padding>
@@ -207,7 +214,7 @@
                               </VBox>
                            </content>
                         </Tab>
-                        <Tab text="Parse Table">
+                        <Tab fx:id="parseTableTab" text="Parse Table">
                            <content>
                               <VBox spacing="10">
                                  <padding>
@@ -223,7 +230,7 @@
                               </VBox>
                            </content>
                         </Tab>
-                        <Tab text="Syntax Tree Viewer">
+                        <Tab fx:id="syntaxTreeTab" text="Syntax Tree Viewer">
                            <content>
                               <VBox spacing="10">
                                  <padding>

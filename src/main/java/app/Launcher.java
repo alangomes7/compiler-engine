@@ -11,6 +11,7 @@ public class Launcher extends Application {
     public void start(Stage stage) throws Exception {
         Parent root = FXMLLoader.load(getClass().getResource("/ui/ui.fxml"));
         stage.setScene(new Scene(root));
+        stage.setMaximized(true);
         stage.show();
     }
 
