@@ -10,6 +10,7 @@ import java.util.ResourceBundle;
 import java.util.Set;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
+import javafx.scene.control.ProgressIndicator;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
@@ -71,6 +72,8 @@ public class Ui implements Initializable {
     @FXML private Label tokenFileLabel;
     @FXML private Label grammarFileLabel;
     @FXML private Label inputFileLabel;
+    @FXML private Label cursorPositionLabel;
+    @FXML private Label parserModeLabel;
     @Getter @FXML private TextArea automataDetailsArea;
     @FXML private TextArea validatorOutputArea;
 
@@ -103,6 +106,7 @@ public class Ui implements Initializable {
     @FXML private javafx.scene.layout.BorderPane inputTreeContainer;
 
     @FXML private VBox loadingOverlay;
+    @FXML private ProgressIndicator mainSpinner;
     @FXML private Label loadingLabel;
     @FXML private Label loadingTimeLabel;
 
@@ -213,6 +217,10 @@ public class Ui implements Initializable {
 
         parserComboBox.getItems().addAll("LL(1)", "Recursive Descent", "Backtracking");
         parserComboBox.setValue("Backtracking");
+
+        inputArea.caretPositionProperty().addListener((obs, oldVal, newVal) -> {
+        updateCursorPosition();
+    });
     }
 
     private void updateTabVisibility(String mode) {
@@ -242,6 +250,31 @@ public class Ui implements Initializable {
         exportCsvBtn.setVisible(!isClient);
         generateReportBtn.setVisible(!isClient);
     }
+
+    private void updateCursorPosition() {
+    int caretPos = inputArea.getCaretPosition();
+    String text = inputArea.getText();
+
+    if (text == null || text.isEmpty() || caretPos < 0) {
+        cursorPositionLabel.setText("  Line: 1, Col: 1");
+        return;
+    }
+
+    // Prevent OutOfBounds if the caret is somehow beyond the text length
+    caretPos = Math.min(caretPos, text.length());
+
+    // Extract text up to the current cursor position
+    String textBeforeCaret = text.substring(0, caretPos);
+    
+    // Line number is the number of newlines + 1
+    int line = textBeforeCaret.split("\n", -1).length;
+    
+    // Column number is the distance from the last newline to the caret
+    int lastNewLineIndex = textBeforeCaret.lastIndexOf('\n');
+    int col = caretPos - lastNewLineIndex;
+
+    cursorPositionLabel.setText(String.format("  Line: %d, Col: %d", line, col));
+}
 
     public void refreshTextOutputs() {
         String mode = userModeComboBox.getValue();

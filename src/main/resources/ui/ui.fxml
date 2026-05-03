@@ -52,12 +52,17 @@
             </HBox>
             <SplitPane dividerPositions="0.5" orientation="VERTICAL" VBox.vgrow="ALWAYS">
                <items>
-                  <HBox spacing="0" VBox.vgrow="ALWAYS">
+                  <VBox spacing="5" VBox.vgrow="ALWAYS">
                      <children>
-                        <TextArea fx:id="lineNumbersArea" editable="false" prefWidth="50" style="-fx-font-family: monospace; -fx-control-inner-background: #e8e8e8; -fx-text-fill: #555555;" />
-                        <TextArea fx:id="inputArea" promptText="Load a .txt file or paste source code here..." style="-fx-font-family: monospace;" HBox.hgrow="ALWAYS" />
+                        <HBox spacing="0" VBox.vgrow="ALWAYS">
+                           <children>
+                              <TextArea fx:id="lineNumbersArea" editable="false" prefWidth="50" style="-fx-font-family: monospace; -fx-control-inner-background: #e8e8e8; -fx-text-fill: #555555;" />
+                              <TextArea fx:id="inputArea" promptText="Load a .txt file or paste source code here..." style="-fx-font-family: monospace;" HBox.hgrow="ALWAYS" />
+                           </children>
+                        </HBox>
+                        <Label fx:id="cursorPositionLabel" text="Line: 0, Col: 0" style="-fx-font-size: 11px; -fx-text-fill: gray;" />
                      </children>
-                  </HBox>
+                  </VBox>
                   <TabPane fx:id="mainTabPane" tabClosingPolicy="UNAVAILABLE" VBox.vgrow="ALWAYS">
                      <tabs>
                         <Tab fx:id="consoleTab" text="Console Log">
@@ -70,7 +75,7 @@
                                     <TextArea fx:id="consoleArea" editable="false" style="-fx-font-family: monospace;" VBox.vgrow="ALWAYS" />
                                     <HBox spacing="10">
                                        <children>
-                                          <ComboBox fx:id="logModeComboBox" prefWidth="80" prefHeight="15"/>
+                                          <ComboBox fx:id="logModeComboBox" prefWidth="80" prefHeight="15" />
                                           <Button fx:id="saveConsoleLogBtn" onAction="#handleSaveConsoleLog" text="Save Console Log" />
                                           <Button fx:id="clearConsoleLogBtn" onAction="#handleClearConsoleLog" text="Clear Console Log" />
                                        </children>
@@ -301,7 +306,7 @@
                   <Button fx:id="runLexerBtn" onAction="#handleRunLexer" style="-fx-font-weight: bold;" text="4. Run Lexer Analysis" />
                   <Button fx:id="runSyntaxBtn" onAction="#handleRunSyntaxAnalysis" style="-fx-font-weight: bold;" text="5. Run Syntax Analysis" />
                   <Label fx:id="parserModeLabel" style="-fx-background-color: #245834; -fx-text-fill: white; -fx-font-weight: bold;" text="Parser:" />
-                  <ComboBox fx:id="parserComboBox"/>
+                  <ComboBox fx:id="parserComboBox" />
                   <Button fx:id="clearTablesBtn" onAction="#handleClearTables" style="-fx-text-fill: red;" text="Clear Tables" />
                   <Button fx:id="exportCsvBtn" onAction="#handleExportCSV" text="Export Tables (.csv)" />
                   <Button fx:id="generateReportBtn" onAction="#handleGenerateFullReport" text="Generate Full Report" />
