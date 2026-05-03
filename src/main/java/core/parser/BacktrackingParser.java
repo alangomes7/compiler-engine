@@ -3,19 +3,22 @@ package core.parser;
 import core.lexer.models.atomic.Token;
 import core.parser.models.Grammar;
 import core.parser.models.Production;
+import core.parser.models.atomic.ParserError;
 import core.parser.models.atomic.Symbol;
 import core.parser.models.tree.Node;
 import core.parser.models.tree.ParseTree;
 import core.parser.utils.TokenFilter;
+
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+
 import models.atomic.Constants;
 
 public class BacktrackingParser {
     private final Grammar grammar;
-    private final List<String> errors;
+    private final List<ParserError> errors;
 
     private List<Token> tokens;
     private int lookaheadIndex;
@@ -30,42 +33,89 @@ public class BacktrackingParser {
 
     public ParseTree parse(List<Token> rawTokens) {
         this.errors.clear();
-        this.lookaheadIndex = 0;
-        this.maxLookaheadIndex = 0;
-        this.expectedAtMax.clear();
-
         TokenFilter tokenFilter = new TokenFilter();
-        this.tokens = tokenFilter.filter(rawTokens);
+        
+        List<Token> workingTokens = new ArrayList<>(tokenFilter.filter(rawTokens));
+        Node bestRoot = null;
 
-        Node root = parseSymbol(grammar.getStartSymbol());
+        while (true) {
+            this.tokens = workingTokens;
+            this.lookaheadIndex = 0;
+            this.maxLookaheadIndex = 0;
+            this.expectedAtMax.clear();
 
-        if (root == null
-                || (lookaheadIndex < tokens.size() && !isEofToken(tokens.get(lookaheadIndex)))) {
-            Token failToken =
-                    (maxLookaheadIndex < tokens.size()) ? tokens.get(maxLookaheadIndex) : null;
+            Node root = parseSymbol(grammar.getStartSymbol());
+            boolean parseSuccess = (root != null);
 
-            String failLexeme = (failToken != null) ? failToken.getLexeme() : "EOF";
-            String failType = (failToken != null) ? failToken.getType() : "EOF";
-            int line = (failToken != null) ? failToken.getLine() : -1;
-            int col = (failToken != null) ? failToken.getCol() : -1;
+            if (parseSuccess && lookaheadIndex < workingTokens.size()) {
+                Token t = workingTokens.get(lookaheadIndex);
+                if (!isEofToken(t)) {
+                    parseSuccess = false;
+                    if (lookaheadIndex >= maxLookaheadIndex) {
+                        maxLookaheadIndex = lookaheadIndex;
+                        expectedAtMax.clear();
+                        expectedAtMax.add("EOF");
+                    }
+                }
+            }
 
+            if (parseSuccess) {
+                if (bestRoot == null) bestRoot = root;
+                break;
+            }
+
+            Token failToken = (maxLookaheadIndex < workingTokens.size()) ? workingTokens.get(maxLookaheadIndex) : null;
+            
+            if (failToken == null || isEofToken(failToken)) {
+                if (errors.isEmpty()) {
+                    int line = (failToken != null) ? failToken.getLine() : -1;
+                    int col = (failToken != null) ? failToken.getCol() : -1;
+                    String expected = String.join(", ", expectedAtMax);
+                    String msg = String.format("Syntax Error at token 'EOF'. Expected one of: [%s]", expected);
+                    
+                    if (!isDuplicateError(line, col, msg)) {
+                        errors.add(new ParserError(line, col, msg));
+                    }
+                }
+                break;
+            }
+
+            int line = failToken.getLine();
+            int col = failToken.getCol();
+            String failLexeme = failToken.getLexeme();
+            String failType = failToken.getType();
             String expected = String.join(", ", expectedAtMax);
 
-            errors.add(
-                    String.format(
-                            "Syntax Error at line %d:%d. Deepest parse reached token '%s' (Type: %s).\nExpected one of: [%s]",
-                            line, col, failLexeme, failType, expected));
+            String message = String.format("Syntax Error at token '%s' (Type: %s). Expected one of: [%s]", failLexeme, failType, expected);
+            
+            if (!isDuplicateError(line, col, message)) {
+                errors.add(new ParserError(line, col, message));
+            }
 
-            return root != null ? new ParseTree(root) : null;
+            workingTokens.remove(maxLookaheadIndex);
+
+            if (workingTokens.isEmpty()) {
+                break;
+            }
         }
 
-        return new ParseTree(root);
+        return new ParseTree(bestRoot != null ? bestRoot : new Node(grammar.getStartSymbol()));
+    }
+
+    private boolean isDuplicateError(int line, int col, String message) {
+        for (ParserError e : errors) {
+            if (e.getLine() == line && e.getCol() == col && e.getMessage().equals(message)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private Node parseSymbol(Symbol symbol) {
         if (symbol.equals(Symbol.EPSILON)) {
             return new Node(Symbol.EPSILON);
         }
+
         if (symbol.isTerminal() || symbol.equals(Symbol.EOF)) {
             return matchTerminal(symbol);
         } else {
@@ -78,6 +128,8 @@ public class BacktrackingParser {
         int savedIndex = this.lookaheadIndex;
 
         for (Production production : productions) {
+            this.lookaheadIndex = savedIndex;
+
             Node currentNode = new Node(nonTerminal);
             boolean matchSuccess = true;
 
@@ -96,21 +148,28 @@ public class BacktrackingParser {
 
             if (matchSuccess) {
                 return currentNode;
-            } else {
-                this.lookaheadIndex = savedIndex;
             }
         }
+
         return null;
     }
 
     private Node matchTerminal(Symbol expectedTerminal) {
         Token currentToken = (lookaheadIndex < tokens.size()) ? tokens.get(lookaheadIndex) : null;
+
         Symbol lookahead = resolveLookahead(currentToken);
 
         if (expectedTerminal.equals(lookahead)) {
             Node node = new Node(expectedTerminal);
-            if (currentToken != null) node.setLexeme(currentToken.getLexeme());
-            if (!expectedTerminal.equals(Symbol.EOF)) lookaheadIndex++;
+
+            if (currentToken != null) {
+                node.setLexeme(currentToken.getLexeme());
+            }
+
+            if (!expectedTerminal.equals(Symbol.EOF)) {
+                lookaheadIndex++;
+            }
+
             return node;
         }
 
@@ -132,6 +191,7 @@ public class BacktrackingParser {
         String tokenType = token.getType();
 
         String normalizedType = tokenType;
+
         if ("comment".equals(tokenType)) normalizedType = "#";
         else if ("NEWLINE_CH".equals(tokenType)) normalizedType = "newline";
         else if (tokenType != null && tokenType.endsWith("_NUM")) normalizedType = "number";
@@ -163,7 +223,7 @@ public class BacktrackingParser {
         return token.getLexeme().equals(Constants.EOF) || token.getType().equals("EOF");
     }
 
-    public List<String> getErrors() {
+    public List<ParserError> getErrors() {
         return new ArrayList<>(errors);
     }
 }

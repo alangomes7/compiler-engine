@@ -212,7 +212,7 @@ public class ReToNFAE {
     }
 
     public void addSkipPattern(String tokenName, NFAE nfa) {
-        NFAE named = nameToken(Constants.SKIP_TOKEN, nfa);
+        NFAE named = nameToken(Constants.SKIP, nfa);
         skipPatterns.add(named);
         log.debug(
                 "Added skip pattern for original definition '{}'. Total skip patterns: {}",

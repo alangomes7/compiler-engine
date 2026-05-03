@@ -6,6 +6,7 @@ import core.lexer.core.conversors.NFAtoDFA;
 import core.lexer.core.conversors.ReToNFAE;
 import core.lexer.core.translators.RuleParser;
 import core.lexer.models.SymbolTable;
+import core.lexer.models.atomic.LexerError;
 import core.lexer.models.atomic.Rule;
 import core.lexer.models.atomic.State;
 import core.lexer.models.automata.DFA;
@@ -39,6 +40,8 @@ public class Lexer {
 
     private final Map<String, ContextRule> contextRules = new HashMap<>();
 
+    private final List<LexerError> errors;
+
     public Lexer(List<Rule> rules) {
         this.rules = rules;
         log.info("--- Building Scanner For: {} Tokens ---", rules.size());
@@ -46,6 +49,7 @@ public class Lexer {
         this.symbolTable = new SymbolTable();
         this.dynamicTokens = new HashSet<>();
         this.skipTokens = new HashSet<>();
+        this.errors = new ArrayList<>();
 
         categorizeRules();
         buildScanner();
@@ -61,7 +65,7 @@ public class Lexer {
                 dynamicTokens.add(rule.getTokenType());
             }
         }
-        skipTokens.add(Constants.SKIP_TOKEN);
+        skipTokens.add(Constants.SKIP);
     }
 
     private void buildScanner() {
@@ -173,6 +177,7 @@ public class Lexer {
 
     public String scan(String input) {
         this.symbolTable.clearTable();
+        this.errors.clear();
         log.info("Scanning input...");
 
         char[] chars = input.toCharArray();
@@ -259,11 +264,13 @@ public class Lexer {
                 }
 
                 String malformedChunk = new String(chars, errorStart, currentIndex - errorStart);
+                String errorMessage = "Invalid sequence '" + malformedChunk + "'";
                 log.error(
                         "[{}, {}]: Lexical Error: Invalid sequence '{}'",
                         errorLine,
                         errorCol,
                         malformedChunk);
+                this.errors.add(new LexerError(errorLine, errorCol, errorMessage));
             }
         }
 
@@ -293,6 +300,10 @@ public class Lexer {
         }
 
         return rawTokenType;
+    }
+
+    public List<LexerError> getErrors() {
+        return new ArrayList<>(errors);
     }
 
     public static class ContextRule {

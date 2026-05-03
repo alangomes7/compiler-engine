@@ -1,16 +1,20 @@
 package ui.core.handlers;
 
+import core.lexer.models.atomic.LexerError;
 import core.lexer.models.atomic.Token;
 import core.lexer.models.automata.DFA;
 import core.parser.models.FirstFollowTable;
 import core.parser.models.ParseTable;
+import core.parser.models.atomic.ParserError;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import models.atomic.Constants;
 import ui.Ui;
 import ui.core.controllers.UiStateController;
 import ui.core.graph.automata.AutomataVisualizer;
 import ui.core.graph.automata.InteractiveAutomataView;
+import ui.core.services.LexerService.LexerResult;
 import ui.core.state.AnalysisState;
 
 public class ExecutionHandler {
@@ -63,25 +67,37 @@ public class ExecutionHandler {
                             AutomataVisualizer.exportToImage(automaton, "lexer_automata.png");
 
                             log.accept("Scanning input...");
-                            String scanResult = ui.getLexerService().scan(input);
+                            LexerResult scanResult = ui.getLexerService().scan(input);
 
                             return new Object[] {automaton, scanResult};
                         },
                         result -> {
                             Object[] res = (Object[]) result;
                             DFA automaton = (DFA) res[0];
-                            String scanResult = (String) res[1];
+                            LexerResult scanResult = (LexerResult) res[1];
 
                             state.setCurrentAutomaton(automaton);
                             ui.getAutomataDetailsArea().setText(automaton.toString());
                             ui.getInteractiveGraphContainer()
                                     .setCenter(new InteractiveAutomataView(automaton));
 
-                            ui.getOutputArea().setText(scanResult);
+                            // 2. Format the output to include errors if they exist
+                            if (scanResult.errors != null && !scanResult.errors.isEmpty()) {
+                                String errorText =
+                                        scanResult.errors.stream()
+                                                .map(LexerError::toString)
+                                                .collect(java.util.stream.Collectors.joining("\n"));
+                                ui.getOutputArea()
+                                        .setText(
+                                                "Lexical Analysis Completed with Errors:\n"
+                                                        + errorText);
+                            } else {
+                                ui.getOutputArea().setText(scanResult.output);
+                            }
+
                             ui.getSymbolTableViewer()
                                     .getItems()
                                     .setAll(ui.getLexerService().getSymbolTable());
-
                             state.setHasSymbolTableData(true);
                             state.setLexerRunSuccess(true);
                             state.setLexerNeedsRebuild(false);
@@ -104,7 +120,21 @@ public class ExecutionHandler {
                             return ui.getLexerService().scan(input);
                         },
                         result -> {
-                            ui.getOutputArea().setText(result);
+                            LexerResult scanResult = (LexerResult) result;
+
+                            if (scanResult.errors != null && !scanResult.errors.isEmpty()) {
+                                String errorText =
+                                        scanResult.errors.stream()
+                                                .map(LexerError::toString)
+                                                .collect(java.util.stream.Collectors.joining("\n"));
+                                ui.getOutputArea()
+                                        .setText(
+                                                "Lexical Analysis Completed with Errors:\n"
+                                                        + errorText);
+                            } else {
+                                ui.getOutputArea().setText(scanResult.output);
+                            }
+
                             ui.getSymbolTableViewer()
                                     .getItems()
                                     .setAll(ui.getLexerService().getSymbolTable());
@@ -120,6 +150,8 @@ public class ExecutionHandler {
     }
 
     public void handleRunSyntaxAnalysis() {
+        String selectedAlgorithm = ui.getParserComboBox().getValue();
+
         ui.getTaskExecutor()
                 .execute(
                         "Running Syntax Analysis...",
@@ -140,7 +172,7 @@ public class ExecutionHandler {
                                 state.setCurrentParseTable(parseTable);
                             }
 
-                            log.accept("Preparing Token Stream...");
+                            log.accept("Parsing tokens using: " + selectedAlgorithm);
                             List<Token> tokenStream =
                                     new ArrayList<>(ui.getLexerService().getSymbolTable());
 
@@ -158,11 +190,13 @@ public class ExecutionHandler {
                                                 ? 1
                                                 : tokenStream.get(tokenStream.size() - 1).getCol()
                                                         + 1;
-                                tokenStream.add(new Token("$", "$", lastLine, lastCol));
+                                tokenStream.add(
+                                        new Token(Constants.EOF, Constants.EOF, lastLine, lastCol));
                             }
 
                             log.accept("Parsing tokens...");
-                            return ui.getParserService().parseTokens(parseTable, tokenStream);
+                            return ui.getParserService()
+                                    .parseTokens(selectedAlgorithm, parseTable, tokenStream);
                         },
                         result -> {
                             state.setCurrentParseResult(result);
@@ -173,14 +207,23 @@ public class ExecutionHandler {
                             state.setHasFirstFollowData(true);
                             state.setHasParseTableData(true);
 
+                            // 3. Display the parser used in the final output[cite: 3]
                             if (result.errors.isEmpty()) {
                                 state.setSyntaxBaseOutput(
-                                        "Syntax Analysis Completed Successfully.\nNo errors found.");
+                                        String.format(
+                                                "Syntax Analysis using [%s] Completed Successfully.\nNo errors found.",
+                                                result.parserUsed));
                                 state.setParseRunSuccess(true);
                             } else {
+                                String errorText =
+                                        result.errors.stream()
+                                                .map(ParserError::toString)
+                                                .collect(java.util.stream.Collectors.joining("\n"));
+
                                 state.setSyntaxBaseOutput(
-                                        "Syntax Analysis Completed with Errors:\n"
-                                                + String.join("\n", result.errors));
+                                        String.format(
+                                                "Syntax Analysis using [%s] Completed with Errors:\n%s",
+                                                result.parserUsed, errorText));
                                 state.setParseRunSuccess(false);
                             }
 
@@ -191,7 +234,7 @@ public class ExecutionHandler {
                                 state.setSyntaxTreeOutput("");
                             }
 
-                            ui.refreshTextOutputs(); // Dynamically update the UI
+                            ui.refreshTextOutputs();
                             stateController.updateUIState();
                         },
                         err -> {

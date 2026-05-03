@@ -17,6 +17,7 @@ import java.util.Map;
 import models.atomic.Constants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import ui.util.UiUtils;
 
 public class NFAEtoNFA {
     private static final Logger log = LoggerFactory.getLogger(NFAEtoNFA.class);
@@ -129,6 +130,7 @@ public class NFAEtoNFA {
                 writer.write("// FORMAT: STATE:ID,isInitial,isFinal,Base64_Token\n");
                 State[] newStates = new State[n];
                 for (int i = 0; i < n; i++) {
+                    UiUtils.checkCancelled();
                     State old = oldStates[i];
                     boolean isFinal = false;
                     String token = null;
@@ -167,6 +169,7 @@ public class NFAEtoNFA {
 
                 BitSet nfaTargets = new BitSet(n);
                 for (int i = 0; i < n; i++) {
+                    UiUtils.checkCancelled();
                     State src = newStates[i];
                     BitSet closureI = closures[i];
                     for (int sIdx = 0; sIdx < a; sIdx++) {

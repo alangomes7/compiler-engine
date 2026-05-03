@@ -1,16 +1,13 @@
 package ui;
 
-import java.io.PrintStream;
-import java.net.URL;
-import java.util.ResourceBundle;
-import java.util.Set;
-
-import org.slf4j.LoggerFactory;
-
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.LoggerContext;
 import core.lexer.models.atomic.Token;
 import core.parser.models.atomic.Symbol;
+import java.io.PrintStream;
+import java.net.URL;
+import java.util.ResourceBundle;
+import java.util.Set;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.Button;
@@ -22,8 +19,8 @@ import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextArea;
 import javafx.scene.layout.VBox;
-import javafx.util.converter.FloatStringConverter;
 import lombok.Getter;
+import org.slf4j.LoggerFactory;
 import ui.core.controllers.UiStateController;
 import ui.core.handlers.ExecutionHandler;
 import ui.core.handlers.ExportHandler;
@@ -77,6 +74,7 @@ public class Ui implements Initializable {
     @Getter @FXML private TextArea automataDetailsArea;
     @FXML private TextArea validatorOutputArea;
 
+    @FXML private ComboBox<String> parserComboBox;
     @FXML private ComboBox<String> userModeComboBox;
     @FXML private ComboBox<String> logModeComboBox;
     @FXML private TabPane mainTabPane;
@@ -189,28 +187,32 @@ public class Ui implements Initializable {
                 .addListener(
                         (obs, oldVal, newVal) -> {
                             updateTabVisibility(newVal);
+                            updateButtonsVisibility(newVal);
                             refreshTextOutputs();
                         });
         userModeComboBox.setValue("Client");
         logModeComboBox.getItems().addAll("TRACE", "DEBUG", "INFO", "WARN", "ERROR");
-        
+
         logModeComboBox
-        .valueProperty()
-        .addListener(
-            (obs, oldVal, newVal) -> {
-                LoggerContext loggerContext =
-                (LoggerContext) LoggerFactory.getILoggerFactory();
-                
-                ch.qos.logback.classic.Logger rootLogger =
-                loggerContext.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
-                
-                rootLogger.setLevel(Level.toLevel(newVal.toUpperCase()));
-                
-                System.out.println("Runtime log level preference set to: " + newVal);
-            });
-            logModeComboBox.setValue("INFO");
-            clearConsoleLogBtn.setDisable(false);
-            saveConsoleLogBtn.setDisable(false);
+                .valueProperty()
+                .addListener(
+                        (obs, oldVal, newVal) -> {
+                            LoggerContext loggerContext =
+                                    (LoggerContext) LoggerFactory.getILoggerFactory();
+
+                            ch.qos.logback.classic.Logger rootLogger =
+                                    loggerContext.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
+
+                            rootLogger.setLevel(Level.toLevel(newVal.toUpperCase()));
+
+                            System.out.println("Runtime log level preference set to: " + newVal);
+                        });
+        logModeComboBox.setValue("INFO");
+        clearConsoleLogBtn.setDisable(false);
+        saveConsoleLogBtn.setDisable(false);
+
+        parserComboBox.getItems().addAll("LL(1)", "Recursive Descent", "Backtracking");
+        parserComboBox.setValue("Backtracking");
     }
 
     private void updateTabVisibility(String mode) {
@@ -231,6 +233,14 @@ public class Ui implements Initializable {
                             parseTableTab,
                             syntaxTreeTab);
         }
+    }
+
+    private void updateButtonsVisibility(String mode) {
+        boolean isClient = "Client".equals(mode);
+
+        clearTablesBtn.setVisible(!isClient);
+        exportCsvBtn.setVisible(!isClient);
+        generateReportBtn.setVisible(!isClient);
     }
 
     public void refreshTextOutputs() {

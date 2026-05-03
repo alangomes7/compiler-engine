@@ -85,7 +85,7 @@
             <artifactId>javafx-maven-plugin</artifactId>
             <version>0.0.8</version>
             <configuration>
-               <mainClass>compiler.engine/app.Launcher</mainClass>
+               <mainClass>compiler.engine/app.Main</mainClass>
             </configuration>
          </plugin>
          <!-- Shade -->

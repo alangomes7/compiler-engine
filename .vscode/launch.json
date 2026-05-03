@@ -1,24 +1,13 @@
 {
-  "type": "java",
-  "name": "Run / Debug JavaFX",
-  "request": "launch",
-  "mainClass": "app.Launcher",
-  "projectName": "compiler-engine",
-  "preLaunchTask": "Maven: Run JavaFX",
+  "version": "0.2.0",
   "configurations": [
     {
       "type": "java",
-      "name": "Launcher",
-      "request": "launch",
-      "mainClass": "compiler.engine/app.Launcher",
-      "projectName": "compiler-engine"
-    },
-    {
-      "type": "java",
-      "name": "Main",
+      "name": "Debug JavaFX",
       "request": "launch",
       "mainClass": "compiler.engine/app.Main",
-      "projectName": "compiler-engine"
+      "projectName": "compiler-engine",
+      "console": "internalConsole" 
     }
   ]
 }

@@ -27,7 +27,7 @@ public class ExportHandler {
         if (state.getCurrentAutomaton() == null) return;
         try {
             String fileName =
-                    UiUtils.timestampFileName(Constants.OUTPUT_FOLDER + "automata", "png", true);
+                    UiUtils.timestampFileName(Constants.OUTPUT_DIR + "automata", "png", true);
             AutomataVisualizer.exportToImage(state.getCurrentAutomaton(), fileName);
             ui.getOutputArea().setText("Automata image exported natively as: " + fileName);
         } catch (Exception e) {
@@ -49,7 +49,7 @@ public class ExportHandler {
 
     private void exportTreeSnapshot(InteractiveTreeView view, String baseName) {
         try {
-            String fullPath = Constants.OUTPUT_FOLDER + baseName + ".png";
+            String fullPath = Constants.OUTPUT_DIR + baseName + ".png";
             File file =
                     FileService.saveStringToFile(
                             ui.getInputArea().getScene().getWindow(), "", fullPath, "*.png");
@@ -64,7 +64,7 @@ public class ExportHandler {
     }
 
     public void handleExportCSV() {
-        String outputFolder = Constants.OUTPUT_FOLDER;
+        String outputFolder = Constants.OUTPUT_DIR;
         try {
             if (state.isHasSymbolTableData()) {
                 SymbolTableManager.exportSymbolTableCsv(
@@ -96,7 +96,7 @@ public class ExportHandler {
                     FileService.saveStringToFile(
                             ui.getInputArea().getScene().getWindow(),
                             dotFormat,
-                            Constants.OUTPUT_FOLDER + "automata.dot",
+                            Constants.OUTPUT_DIR + "automata.dot",
                             "*.dot",
                             "*.txt");
             if (file != null) {
@@ -122,7 +122,7 @@ public class ExportHandler {
     private void saveTextArea(
             javafx.scene.control.TextArea area, String baseName, String extension) {
         try {
-            String fullPath = Constants.OUTPUT_FOLDER + baseName + ".txt";
+            String fullPath = Constants.OUTPUT_DIR + baseName + ".txt";
             File file =
                     FileService.saveStringToFile(
                             area.getScene().getWindow(), area.getText(), fullPath, extension);
@@ -152,9 +152,9 @@ public class ExportHandler {
             FileService.saveStringToFile(
                     ui.getInputArea().getScene().getWindow(),
                     report.toString(),
-                    Constants.OUTPUT_FOLDER + "full_report.txt",
+                    Constants.OUTPUT_DIR + "full_report.txt",
                     "*.txt");
-            ui.getOutputArea().setText("Full report generated in " + Constants.OUTPUT_FOLDER);
+            ui.getOutputArea().setText("Full report generated in " + Constants.OUTPUT_DIR);
         } catch (IOException e) {
             ui.getOutputArea().setText("Report generation failed: " + e.getMessage());
         }

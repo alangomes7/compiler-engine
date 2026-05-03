@@ -1,7 +1,9 @@
 package ui.core.services;
 
 import core.lexer.models.atomic.Token;
+import core.parser.BacktrackingParser;
 import core.parser.LL1Parser;
+import core.parser.RecursiveDescentParser;
 import core.parser.core.FirstFollowTableBuilder;
 import core.parser.core.ParserTableBuilder;
 import core.parser.core.grammar.GrammarClassification;
@@ -11,6 +13,7 @@ import core.parser.models.FirstFollowTable;
 import core.parser.models.Grammar;
 import core.parser.models.ParseTable;
 import core.parser.models.Production;
+import core.parser.models.atomic.ParserError;
 import core.parser.models.atomic.Symbol;
 import core.parser.models.tree.Node;
 import core.parser.models.tree.ParseTree;
@@ -61,17 +64,35 @@ public class ParserService {
                 .build();
     }
 
-    public ParseResult parseTokens(ParseTable parseTable, List<Token> tokens) {
+    public ParseResult parseTokens(String algorithm, ParseTable parseTable, List<Token> tokens) {
         if (grammar == null) throw new IllegalStateException("Grammar not loaded");
 
         TokenFilter tokenFilter = new TokenFilter();
         List<Token> cleanedTokens = tokenFilter.filter(tokens);
 
-        // BacktrackingParser parser = new BacktrackingParser(grammar);
-        LL1Parser parser = new LL1Parser(grammar, parseTable);
+        ParseTree parseTree;
+        List<ParserError> errors;
 
-        ParseTree parseTree = parser.parse(cleanedTokens);
-        return new ParseResult(parseTree, parser.getErrors());
+        switch (algorithm) {
+            case "Recursive Descent":
+                RecursiveDescentParser rdParser = new RecursiveDescentParser(grammar, parseTable);
+                parseTree = rdParser.parse(cleanedTokens);
+                errors = rdParser.getErrors();
+                break;
+            case "Backtracking":
+                BacktrackingParser btParser = new core.parser.BacktrackingParser(grammar);
+                parseTree = btParser.parse(cleanedTokens);
+                errors = btParser.getErrors();
+                break;
+            case "LL(1)":
+            default:
+                LL1Parser ll1Parser = new LL1Parser(grammar, parseTable);
+                parseTree = ll1Parser.parse(cleanedTokens);
+                errors = ll1Parser.getErrors();
+                break;
+        }
+
+        return new ParseResult(parseTree, errors, algorithm);
     }
 
     public ParseTree buildFullGrammarTree() {
@@ -100,12 +121,13 @@ public class ParserService {
 
     public static class ParseResult {
         public final ParseTree tree;
+        public final List<ParserError> errors;
+        public final String parserUsed;
 
-        public final List<String> errors;
-
-        public ParseResult(ParseTree tree, List<String> errors) {
+        public ParseResult(ParseTree tree, List<ParserError> errors, String parserUsed) {
             this.tree = tree;
             this.errors = errors;
+            this.parserUsed = parserUsed;
         }
     }
 }

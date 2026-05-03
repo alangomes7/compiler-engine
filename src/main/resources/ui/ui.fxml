@@ -296,11 +296,12 @@
                   </TabPane>
                </items>
             </SplitPane>
-            <!-- Main action buttons row with Cancel button -->
             <HBox alignment="CENTER_LEFT" spacing="10">
                <children>
                   <Button fx:id="runLexerBtn" onAction="#handleRunLexer" style="-fx-font-weight: bold;" text="4. Run Lexer Analysis" />
                   <Button fx:id="runSyntaxBtn" onAction="#handleRunSyntaxAnalysis" style="-fx-font-weight: bold;" text="5. Run Syntax Analysis" />
+                  <Label fx:id="parserModeLabel" style="-fx-background-color: #245834; -fx-text-fill: white; -fx-font-weight: bold;" text="Parser:" />
+                  <ComboBox fx:id="parserComboBox"/>
                   <Button fx:id="clearTablesBtn" onAction="#handleClearTables" style="-fx-text-fill: red;" text="Clear Tables" />
                   <Button fx:id="exportCsvBtn" onAction="#handleExportCSV" text="Export Tables (.csv)" />
                   <Button fx:id="generateReportBtn" onAction="#handleGenerateFullReport" text="Generate Full Report" />
@@ -309,7 +310,6 @@
             </HBox>
          </children>
       </VBox>
-      <!-- Loading Overlay -->
       <VBox fx:id="loadingOverlay" alignment="CENTER" spacing="15" style="-fx-background-color: rgba(0, 0, 0, 0.6);" visible="false">
          <children>
             <ProgressIndicator fx:id="mainSpinner" />

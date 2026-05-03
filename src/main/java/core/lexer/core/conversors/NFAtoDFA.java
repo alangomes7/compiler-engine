@@ -17,6 +17,7 @@ import java.util.Map;
 import java.util.Queue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import ui.util.UiUtils;
 
 public class NFAtoDFA {
     private static final Logger log = LoggerFactory.getLogger(NFAtoDFA.class);
@@ -130,6 +131,7 @@ public class NFAtoDFA {
                 for (int sIdx = currentSet.nextSetBit(0);
                         sIdx >= 0;
                         sIdx = currentSet.nextSetBit(sIdx + 1)) {
+                    UiUtils.checkCancelled();
                     int srcId = nfaStatesList.get(sIdx).getId();
                     Map<Integer, BitSet> srcTrans = diskTransNFA.get(srcId);
                     if (srcTrans != null) {

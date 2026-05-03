@@ -17,6 +17,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import ui.util.UiUtils;
 
 public class DFAMinimizer {
     private static final Logger log = LoggerFactory.getLogger(DFAMinimizer.class);
@@ -66,6 +67,7 @@ public class DFAMinimizer {
         Map<String, Integer> tokenBlock = new HashMap<>();
         int blockCount = 1;
         for (int i = 0; i < n; i++) {
+            UiUtils.checkCancelled();
             State s = states.get(i);
             if (s.isFinal()) {
                 String token = s.getAcceptedToken() != null ? s.getAcceptedToken() : "";

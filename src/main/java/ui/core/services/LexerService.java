@@ -2,6 +2,7 @@ package ui.core.services;
 
 import core.lexer.Lexer;
 import core.lexer.core.translators.RuleReader;
+import core.lexer.models.atomic.LexerError;
 import core.lexer.models.atomic.Rule;
 import core.lexer.models.atomic.Token;
 import core.lexer.models.automata.DFA;
@@ -32,10 +33,14 @@ public class LexerService {
         return this.lexer.getMasterAutomaton();
     }
 
-    public String scan(String input) {
+    public LexerResult scan(String input) {
         if (lexer == null) throw new IllegalStateException("Lexer not initialized");
         lexer.getSymbolTable().clearTable();
-        return lexer.scan(input);
+
+        String output = lexer.scan(input);
+        List<LexerError> errors = lexer.getErrors();
+
+        return new LexerResult(output, errors);
     }
 
     public List<Token> getSymbolTable() {
@@ -44,5 +49,15 @@ public class LexerService {
 
     public boolean isInitialized() {
         return lexer != null;
+    }
+
+    public static class LexerResult {
+        public final String output;
+        public final List<LexerError> errors;
+
+        public LexerResult(String output, List<LexerError> errors) {
+            this.output = output;
+            this.errors = errors;
+        }
     }
 }

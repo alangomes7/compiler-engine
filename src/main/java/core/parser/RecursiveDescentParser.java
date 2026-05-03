@@ -4,6 +4,7 @@ import core.lexer.models.atomic.Token;
 import core.parser.models.Grammar;
 import core.parser.models.ParseTable;
 import core.parser.models.Production;
+import core.parser.models.atomic.ParserError;
 import core.parser.models.atomic.Symbol;
 import core.parser.models.tree.Node;
 import core.parser.models.tree.ParseTree;
@@ -15,7 +16,7 @@ import models.atomic.Constants;
 public class RecursiveDescentParser {
     private final Grammar grammar;
     private final ParseTable parseTable;
-    private final List<String> errors;
+    private final List<ParserError> errors;
 
     private List<Token> tokens;
     private int lookaheadIndex;
@@ -35,12 +36,17 @@ public class RecursiveDescentParser {
 
         Node root = parseNonTerminal(grammar.getStartSymbol());
 
+        matchTerminal(Symbol.EOF);
+
         if (lookaheadIndex < tokens.size()) {
             Token remaining = tokens.get(lookaheadIndex);
             if (remaining != null && !isEofToken(remaining)) {
                 errors.add(
-                        "Syntax Error: Unexpected tokens after program end. Found: "
-                                + remaining.getLexeme());
+                        new ParserError(
+                                remaining.getLine(),
+                                remaining.getCol(),
+                                "Unexpected tokens after program end. Found: "
+                                        + remaining.getLexeme()));
             }
         }
 
@@ -72,7 +78,6 @@ public class RecursiveDescentParser {
                     "No rule to derive '%s' with lookahead '%s'",
                     currentToken, nonTerminal.getName());
 
-            // ERROR RECOVERY: Consume the offending token so the parser doesn't loop infinitely
             if (currentToken != null && !isEofToken(currentToken)) {
                 lookaheadIndex++;
             }
@@ -109,8 +114,6 @@ public class RecursiveDescentParser {
                 lookaheadIndex++;
             }
         } else {
-            // ERROR RECOVERY: Record error, but do not increment lookaheadIndex (pretend it was
-            // matched)
             recordError("Expected '%s', but found '%s'", currentToken, expectedTerminal.getName());
         }
 
@@ -161,21 +164,20 @@ public class RecursiveDescentParser {
         return new Symbol(tokenType != null ? tokenType : lexeme, true);
     }
 
-    private void recordError(String messageTemplate, Token currentToken, String expectedOrDerived) {
-        int line = (currentToken != null) ? currentToken.getLine() : 0;
-        int col = (currentToken != null) ? currentToken.getCol() : 0;
-        String found = (currentToken != null) ? currentToken.getLexeme() : "EOF";
-
-        String detail = String.format(messageTemplate, expectedOrDerived, found);
-        errors.add(String.format("Syntax Error at line %d:%d: %s", line, col, detail));
-    }
-
     private boolean isEofToken(Token token) {
         if (token.getLexeme() == null) return false;
         return token.getLexeme().equals(Constants.EOF) || token.getType().equals("EOF");
     }
 
-    public List<String> getErrors() {
+    private void recordError(String messageTemplate, Token currentToken, String expectedOrDerived) {
+        int line = (currentToken != null) ? currentToken.getLine() : 0;
+        int col = (currentToken != null) ? currentToken.getCol() : 0;
+        String found = (currentToken != null) ? currentToken.getLexeme() : "EOF";
+        String detail = String.format(messageTemplate, expectedOrDerived, found);
+        errors.add(new ParserError(line, col, detail));
+    }
+
+    public List<ParserError> getErrors() {
         return new ArrayList<>(errors);
     }
 }

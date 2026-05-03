@@ -1,3 +1,10 @@
+program
+    ::= expression program-tail
+
+program-tail
+    ::= expression program-tail
+      | ε
+
 expression
     ::= additive-expr
 

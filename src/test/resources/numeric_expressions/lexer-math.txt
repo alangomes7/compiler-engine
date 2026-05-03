@@ -32,6 +32,8 @@
 @PRI TAB         : [\t]
 @PRI DOT         : [.]
 
+@PRI NEWLINE_CH  : [\r | \n]
+
 # =========================
 # Lexical Elements (Dynamic)
 # =========================
@@ -44,4 +46,4 @@
 @DER number      : HEX_NUM | OCT_NUM | BIN_NUM | FLOAT_NUM | INT_NUM
 
 # Whitespace is ignored.
-@DER WHITESPACE  : (SPACE | TAB)+ -> skip
+@DER WHITESPACE  : (SPACE | TAB | NEWLINE_CH)+ -> skip

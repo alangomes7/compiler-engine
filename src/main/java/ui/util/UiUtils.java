@@ -8,10 +8,15 @@ import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import javafx.application.Platform;
 import javafx.scene.control.TextArea;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class UiUtils {
 
+    private static final Logger log = LoggerFactory.getLogger(UiUtils.class);
+
     public static class TextAreaOutputStream extends OutputStream {
+
         private final TextArea console;
         private final StringBuilder buffer = new StringBuilder();
 
@@ -41,7 +46,7 @@ public class UiUtils {
             Platform.runLater(
                     () -> {
                         console.appendText(text);
-                        console.setScrollTop(Double.MAX_VALUE);
+                        console.positionCaret(console.getLength());
                     });
         }
     }
@@ -78,5 +83,11 @@ public class UiUtils {
             fileName = ts + "_" + baseName + "." + extension;
         }
         return fileName;
+    }
+
+    public static void checkCancelled() {
+        if (Thread.currentThread().isInterrupted()) {
+            log.error("Operation cancelled by user.");
+        }
     }
 }

@@ -125,19 +125,15 @@ public class BackgroundTaskExecutor {
 
             if (currentThread != null) {
                 currentThread.interrupt();
-                currentThread = null;
             }
 
-            if (currentTimer != null) {
-                Platform.runLater(
-                        () -> {
-                            currentTimer.stop();
-                            currentTimer = null;
-                        });
-            }
+            Platform.runLater(
+                    () -> {
+                        loadingLabel.setText("Cancelling... Waiting for process to stop.");
+                        cancelButton.setDisable(true);
+                    });
 
-            Platform.runLater(this::finishOperation);
-            appendLog("⚠️ Operation cancelled by user.");
+            appendLog("  Cancellation requested by user. Terminating background task...");
         }
     }
 
@@ -160,7 +156,7 @@ public class BackgroundTaskExecutor {
                     if (!isCancelled.get()) {
                         String time = getDisplayTimestamp();
                         consoleArea.appendText("[" + time + "] " + message + "\n");
-                        consoleArea.setScrollTop(Double.MAX_VALUE);
+                        consoleArea.positionCaret(consoleArea.getLength());
                         if (loadingOverlay.isVisible()) {
                             loadingLabel.setText(message);
                         }

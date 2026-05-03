@@ -4,6 +4,7 @@ import core.lexer.models.atomic.Token;
 import core.parser.models.Grammar;
 import core.parser.models.ParseTable;
 import core.parser.models.Production;
+import core.parser.models.atomic.ParserError;
 import core.parser.models.atomic.Symbol;
 import core.parser.models.tree.Node;
 import core.parser.models.tree.ParseTree;
@@ -16,7 +17,7 @@ import models.atomic.Constants;
 public class LL1Parser {
     private final Grammar grammar;
     private final ParseTable parseTable;
-    private final List<String> errors;
+    private final List<ParserError> errors;
 
     public LL1Parser(Grammar grammar, ParseTable parseTable) {
         this.grammar = grammar;
@@ -58,25 +59,19 @@ public class LL1Parser {
                         lookaheadIndex++;
                     }
                 } else {
-                    // ERROR RECOVERY: Record error, pretend missing terminal was matched (leave
-                    // lookahead as is)
                     recordError("Expected '%s', but found '%s'", currentToken, top.getName());
                 }
             } else {
                 List<Production> productions = this.parseTable.getEntry(top, lookahead);
 
                 if (productions == null || productions.isEmpty()) {
-                    // ERROR RECOVERY: Record error, skip unexpected token, push non-terminal back
-                    // to try again
                     recordError(
                             "No rule to derive '%s' with lookahead '%s'",
                             currentToken, top.getName());
 
                     if (currentToken != null && !isEofToken(currentToken)) {
                         lookaheadIndex++;
-                        stack.push(
-                                currentNode); // Try expanding this non-terminal again with the next
-                        // token
+                        stack.push(currentNode);
                     }
                     continue;
                 }
@@ -101,8 +96,11 @@ public class LL1Parser {
             Token remaining = tokens.get(lookaheadIndex);
             if (remaining != null && !isEofToken(remaining)) {
                 errors.add(
-                        "Syntax Error: Unexpected tokens after program end. Found: "
-                                + remaining.getLexeme());
+                        new ParserError(
+                                remaining.getLine(),
+                                remaining.getCol(),
+                                "Unexpected tokens after program end. Found: "
+                                        + remaining.getLexeme()));
             }
         }
 
@@ -153,21 +151,20 @@ public class LL1Parser {
         return new Symbol(tokenType != null ? tokenType : lexeme, true);
     }
 
-    private void recordError(String messageTemplate, Token currentToken, String expectedOrDerived) {
-        int line = (currentToken != null) ? currentToken.getLine() : 0;
-        int col = (currentToken != null) ? currentToken.getCol() : 0;
-        String found = (currentToken != null) ? currentToken.getLexeme() : "EOF";
-
-        String detail = String.format(messageTemplate, expectedOrDerived, found);
-        errors.add(String.format("Syntax Error at line %d:%d: %s", line, col, detail));
-    }
-
     private boolean isEofToken(Token token) {
         if (token.getLexeme() == null) return false;
         return token.getLexeme().equals(Constants.EOF) || token.getType().equals("EOF");
     }
 
-    public List<String> getErrors() {
+    private void recordError(String messageTemplate, Token currentToken, String expectedOrDerived) {
+        int line = (currentToken != null) ? currentToken.getLine() : 0;
+        int col = (currentToken != null) ? currentToken.getCol() : 0;
+        String found = (currentToken != null) ? currentToken.getLexeme() : "EOF";
+        String detail = String.format(messageTemplate, expectedOrDerived, found);
+        errors.add(new ParserError(line, col, detail));
+    }
+
+    public List<ParserError> getErrors() {
         return new ArrayList<>(errors);
     }
 }
