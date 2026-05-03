@@ -10,10 +10,10 @@ import java.util.ResourceBundle;
 import java.util.Set;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
-import javafx.scene.control.ProgressIndicator;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
+import javafx.scene.control.ProgressIndicator;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
 import javafx.scene.control.TableColumn;
@@ -218,9 +218,12 @@ public class Ui implements Initializable {
         parserComboBox.getItems().addAll("LL(1)", "Recursive Descent", "Backtracking");
         parserComboBox.setValue("Backtracking");
 
-        inputArea.caretPositionProperty().addListener((obs, oldVal, newVal) -> {
-        updateCursorPosition();
-    });
+        inputArea
+                .caretPositionProperty()
+                .addListener(
+                        (obs, oldVal, newVal) -> {
+                            updateCursorPosition();
+                        });
     }
 
     private void updateTabVisibility(String mode) {
@@ -252,24 +255,24 @@ public class Ui implements Initializable {
     }
 
     private void updateCursorPosition() {
-    int caretPos = inputArea.getCaretPosition();
-    String text = inputArea.getText();
+        int caretPos = inputArea.getCaretPosition();
+        String text = inputArea.getText();
 
-    if (text == null || text.isEmpty() || caretPos < 0) {
-        cursorPositionLabel.setText("  Line: 1, Col: 1");
-        return;
+        if (text == null || text.isEmpty() || caretPos < 0) {
+            cursorPositionLabel.setText("  Line: 1, Col: 1");
+            return;
+        }
+
+        caretPos = Math.min(caretPos, text.length());
+        String textBeforeCaret = text.substring(0, caretPos);
+
+        int line = textBeforeCaret.split("\n", -1).length;
+
+        int lastNewLineIndex = textBeforeCaret.lastIndexOf('\n');
+        int col = caretPos - lastNewLineIndex;
+
+        cursorPositionLabel.setText(String.format("  Line: %d, Col: %d", line, col));
     }
-
-    caretPos = Math.min(caretPos, text.length());
-    String textBeforeCaret = text.substring(0, caretPos);
-    
-    int line = textBeforeCaret.split("\n", -1).length;
-    
-    int lastNewLineIndex = textBeforeCaret.lastIndexOf('\n');
-    int col = caretPos - lastNewLineIndex;
-
-    cursorPositionLabel.setText(String.format("  Line: %d, Col: %d", line, col));
-}
 
     public void refreshTextOutputs() {
         String mode = userModeComboBox.getValue();

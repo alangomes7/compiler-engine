@@ -8,12 +8,10 @@ import core.parser.models.atomic.Symbol;
 import core.parser.models.tree.Node;
 import core.parser.models.tree.ParseTree;
 import core.parser.utils.TokenFilter;
-
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-
 import models.atomic.Constants;
 
 public class BacktrackingParser {
@@ -34,7 +32,7 @@ public class BacktrackingParser {
     public ParseTree parse(List<Token> rawTokens) {
         this.errors.clear();
         TokenFilter tokenFilter = new TokenFilter();
-        
+
         List<Token> workingTokens = new ArrayList<>(tokenFilter.filter(rawTokens));
         Node bestRoot = null;
 
@@ -64,15 +62,21 @@ public class BacktrackingParser {
                 break;
             }
 
-            Token failToken = (maxLookaheadIndex < workingTokens.size()) ? workingTokens.get(maxLookaheadIndex) : null;
-            
+            Token failToken =
+                    (maxLookaheadIndex < workingTokens.size())
+                            ? workingTokens.get(maxLookaheadIndex)
+                            : null;
+
             if (failToken == null || isEofToken(failToken)) {
                 if (errors.isEmpty()) {
                     int line = (failToken != null) ? failToken.getLine() : 0;
                     int col = (failToken != null) ? failToken.getCol() : 0;
                     String expected = String.join(", ", expectedAtMax);
-                    String msg = String.format("Syntax Error at [%d, %d]: Expected one of: [%s], but found EOF", line, col, expected);
-                    
+                    String msg =
+                            String.format(
+                                    "Syntax Error at [%d, %d]: Expected one of: [%s], but found EOF",
+                                    line, col, expected);
+
                     if (!isDuplicateError(line, col, msg)) {
                         errors.add(new ParserError(line, col, msg));
                     }
@@ -86,8 +90,11 @@ public class BacktrackingParser {
             String failType = failToken.getType();
             String expected = String.join(", ", expectedAtMax);
 
-            String message = String.format("Syntax Error at [%d, %d]: Expected one of: [%s], but found '%s' (Type: %s)", line, col, expected, failLexeme, failType);
-            
+            String message =
+                    String.format(
+                            "Syntax Error at [%d, %d]: Expected one of: [%s], but found '%s' (Type: %s)",
+                            line, col, expected, failLexeme, failType);
+
             if (!isDuplicateError(line, col, message)) {
                 errors.add(new ParserError(line, col, message));
             }
