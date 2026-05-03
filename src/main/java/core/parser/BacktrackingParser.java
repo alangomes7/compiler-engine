@@ -68,10 +68,10 @@ public class BacktrackingParser {
             
             if (failToken == null || isEofToken(failToken)) {
                 if (errors.isEmpty()) {
-                    int line = (failToken != null) ? failToken.getLine() : -1;
-                    int col = (failToken != null) ? failToken.getCol() : -1;
+                    int line = (failToken != null) ? failToken.getLine() : 0;
+                    int col = (failToken != null) ? failToken.getCol() : 0;
                     String expected = String.join(", ", expectedAtMax);
-                    String msg = String.format("Syntax Error at token 'EOF'. Expected one of: [%s]", expected);
+                    String msg = String.format("Syntax Error at [%d, %d]: Expected one of: [%s], but found EOF", line, col, expected);
                     
                     if (!isDuplicateError(line, col, msg)) {
                         errors.add(new ParserError(line, col, msg));
@@ -86,7 +86,7 @@ public class BacktrackingParser {
             String failType = failToken.getType();
             String expected = String.join(", ", expectedAtMax);
 
-            String message = String.format("Syntax Error at token '%s' (Type: %s). Expected one of: [%s]", failLexeme, failType, expected);
+            String message = String.format("Syntax Error at [%d, %d]: Expected one of: [%s], but found '%s' (Type: %s)", line, col, expected, failLexeme, failType);
             
             if (!isDuplicateError(line, col, message)) {
                 errors.add(new ParserError(line, col, message));

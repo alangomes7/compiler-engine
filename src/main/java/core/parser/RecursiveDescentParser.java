@@ -45,8 +45,8 @@ public class RecursiveDescentParser {
                         new ParserError(
                                 remaining.getLine(),
                                 remaining.getCol(),
-                                "Unexpected tokens after program end. Found: "
-                                        + remaining.getLexeme()));
+                                String.format("Syntax Error at [%d, %d]: Unexpected tokens after program end. Found: '%s'", 
+                                        remaining.getLine(), remaining.getCol(), remaining.getLexeme())));
             }
         }
 
@@ -173,7 +173,7 @@ public class RecursiveDescentParser {
         int line = (currentToken != null) ? currentToken.getLine() : 0;
         int col = (currentToken != null) ? currentToken.getCol() : 0;
         String found = (currentToken != null) ? currentToken.getLexeme() : "EOF";
-        String detail = String.format(messageTemplate, expectedOrDerived, found);
+        String detail = String.format("Syntax Error at [%d, %d]: " + messageTemplate, line, col, expectedOrDerived, found);
         errors.add(new ParserError(line, col, detail));
     }
 
