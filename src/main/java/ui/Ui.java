@@ -260,16 +260,11 @@ public class Ui implements Initializable {
         return;
     }
 
-    // Prevent OutOfBounds if the caret is somehow beyond the text length
     caretPos = Math.min(caretPos, text.length());
-
-    // Extract text up to the current cursor position
     String textBeforeCaret = text.substring(0, caretPos);
     
-    // Line number is the number of newlines + 1
     int line = textBeforeCaret.split("\n", -1).length;
     
-    // Column number is the distance from the last newline to the caret
     int lastNewLineIndex = textBeforeCaret.lastIndexOf('\n');
     int col = caretPos - lastNewLineIndex;
 
@@ -412,7 +407,6 @@ public class Ui implements Initializable {
 
     @FXML
     private void handleClearTables() {
-        // Cancel any running operation first
         if (taskExecutor != null) {
             taskExecutor.cancelCurrentTask();
         }
