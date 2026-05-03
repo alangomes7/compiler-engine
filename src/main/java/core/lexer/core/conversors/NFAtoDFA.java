@@ -15,6 +15,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
+import java.util.concurrent.CancellationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ui.util.UiUtils;
@@ -24,7 +25,7 @@ public class NFAtoDFA {
 
     private int dfaStateCounter = 0;
 
-    public DFA convertFromDisk(String filepath) {
+    public DFA convertFromDisk(String filepath) throws CancellationException {
         long startTime = System.currentTimeMillis();
         dfaStateCounter = 0;
         String tokenName = "MASTER";

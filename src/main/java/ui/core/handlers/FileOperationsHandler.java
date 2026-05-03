@@ -50,7 +50,7 @@ public class FileOperationsHandler {
         state.setHasGrammarTree(false);
         state.setHasInputTree(false);
         state.setCurrentAutomaton(null);
-        state.setLexerNeedsRebuild(true); // Mark that lexer needs to be rebuilt
+        state.setLexerNeedsRebuild(true);
         stateController.updateUIState();
     }
 
@@ -100,9 +100,9 @@ public class FileOperationsHandler {
 
         try {
             String content = FileService.readFileContent(file);
-            state.setProgrammaticChange(
-                    true); // Prevent the change listener from wiping analysis state
+            state.setProgrammaticChange(true);
             ui.getInputArea().setText(content);
+            ui.getInputFileLabel().setText(file.getName());
             state.setProgrammaticChange(false);
             ui.getOutputArea().setText("Input file loaded successfully.");
         } catch (Exception ex) {

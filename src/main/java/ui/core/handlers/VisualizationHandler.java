@@ -4,6 +4,7 @@ import ui.Ui;
 import ui.core.controllers.UiStateController;
 import ui.core.graph.tree.InteractiveTreeView;
 import ui.core.state.AnalysisState;
+import ui.util.UiUtils;
 
 public class VisualizationHandler {
     private final Ui ui;
@@ -26,9 +27,9 @@ public class VisualizationHandler {
                                 ui.getGrammarTreeContainer()
                                         .setCenter(new InteractiveTreeView(tree.getRoot()));
                                 state.setHasGrammarTree(true);
-                                ui.getOutputArea().setText("Grammar tree generated successfully.");
+                                setOutputAndLog("Grammar tree generated successfully.");
                             } else {
-                                ui.getOutputArea().setText("Failed to generate grammar tree.");
+                                setOutputAndLog("Failed to generate grammar tree.");
                             }
                             stateController.updateUIState();
                         },
@@ -41,7 +42,7 @@ public class VisualizationHandler {
 
     public void handleGenerateInputTree() {
         if (state.getCurrentParseResult() == null || state.getCurrentParseResult().tree == null) {
-            ui.getOutputArea().setText("No parse tree available. Run syntax analysis first.");
+            setOutputAndLog("No parse tree available. Run syntax analysis first.");
             return;
         }
 
@@ -63,7 +64,7 @@ public class VisualizationHandler {
                             ui.getInputTreeContainer()
                                     .setCenter(new InteractiveTreeView(tree.getRoot()));
                             state.setHasInputTree(true);
-                            ui.getOutputArea().setText("Input tree generated successfully.");
+                            setOutputAndLog("Input tree generated successfully.");
                             stateController.updateUIState();
                         },
                         err ->
@@ -76,14 +77,22 @@ public class VisualizationHandler {
     public void handleClearGrammarTree() {
         ui.getGrammarTreeContainer().setCenter(null);
         state.setHasGrammarTree(false);
-        ui.getOutputArea().setText("Grammar tree cleared.");
+        setOutputAndLog("Grammar tree cleared.");
         stateController.updateUIState();
     }
 
     public void handleClearInputTree() {
         ui.getInputTreeContainer().setCenter(null);
         state.setHasInputTree(false);
-        ui.getOutputArea().setText("Input tree cleared.");
+        setOutputAndLog("Input tree cleared.");
         stateController.updateUIState();
+    }
+
+    public void setOutputAndLog(String text) {
+        ui.getOutputArea().setText(text);
+
+        String time = UiUtils.getDisplayTimestamp();
+        ui.getConsoleArea().appendText("[" + time + "] [OUTPUT] " + text + "\n");
+        ui.getConsoleArea().positionCaret(ui.getConsoleArea().getLength());
     }
 }

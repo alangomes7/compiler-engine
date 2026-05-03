@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
+import java.util.concurrent.CancellationException;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,7 +25,7 @@ public class DFAMinimizer {
 
     private int minStateCounter = 0;
 
-    public DFA minimize(DFA dfa) {
+    public DFA minimize(DFA dfa) throws CancellationException {
         long startTime = System.currentTimeMillis();
         minStateCounter = 0;
 

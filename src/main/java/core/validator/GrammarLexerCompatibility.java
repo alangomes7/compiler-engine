@@ -37,7 +37,6 @@ public class GrammarLexerCompatibility {
         for (Symbol terminal : grammar.getTerminals()) {
             String tName = terminal.getName();
 
-            // Skip built-in and internal epsilon/EOF markers
             if (tName.equals("ε")
                     || tName.equals("$")
                     || tName.equals("EPSILON")
@@ -45,7 +44,6 @@ public class GrammarLexerCompatibility {
                 continue;
             }
 
-            // Check LL1Parser normalizations
             if (tName.equals("#") || tName.equals("comment")) {
                 if (!tokenTypes.contains("comment") && !tokenTypes.contains("#")) {
                     warnings.add(
@@ -78,10 +76,7 @@ public class GrammarLexerCompatibility {
                 continue;
             }
 
-            // Standard match check: Verify if it's explicitly a token type, or potentially matched
-            // by regex
             if (!tokenTypes.contains(tName)) {
-                // Heuristic: Try to see if any rule regex could literally match this terminal
                 boolean possibleLiteralMatch = false;
                 for (Rule r : lexerRules) {
                     String cleanRegex = r.getRegex().replace("\\", "");

@@ -6,6 +6,7 @@ import java.io.OutputStream;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+import java.util.concurrent.CancellationException;
 import javafx.application.Platform;
 import javafx.scene.control.TextArea;
 import org.slf4j.Logger;
@@ -85,9 +86,10 @@ public class UiUtils {
         return fileName;
     }
 
-    public static void checkCancelled() {
+    public static void checkCancelled() throws CancellationException {
         if (Thread.currentThread().isInterrupted()) {
-            log.error("Operation cancelled by user.");
+            log.warn("Operation cancelled by user.");
+            throw new CancellationException("Thread interrupted");
         }
     }
 }

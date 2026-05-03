@@ -4,47 +4,32 @@ import core.lexer.models.atomic.Token;
 import core.parser.models.Grammar;
 import core.parser.models.ParseTable;
 import core.parser.models.Production;
-import core.parser.models.atomic.ParserError;
 import core.parser.models.atomic.Symbol;
 import core.parser.models.tree.Node;
-import core.parser.models.tree.ParseTree;
-import core.parser.utils.TokenFilter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Stack;
-import models.atomic.Constants;
 
-public class LL1Parser {
-    private final Grammar grammar;
+public class LL1Parser extends Parser {
     private final ParseTable parseTable;
-    private final List<ParserError> errors;
 
     public LL1Parser(Grammar grammar, ParseTable parseTable) {
-        this.grammar = grammar;
+        super(grammar);
         this.parseTable = parseTable;
-        this.errors = new ArrayList<>();
     }
 
-    public ParseTree parse(List<Token> rawTokens) {
-        errors.clear();
+    @Override
+    protected Node parseCore() {
         Stack<Node> stack = new Stack<>();
-
-        TokenFilter tokenFilter = new TokenFilter();
-        List<Token> tokens = tokenFilter.filter(rawTokens);
-
         Node root = new Node(grammar.getStartSymbol());
         stack.push(new Node(Symbol.EOF));
         stack.push(root);
-
-        int lookaheadIndex = 0;
 
         while (!stack.isEmpty()) {
             Node currentNode = stack.pop();
             Symbol top = currentNode.getSymbol();
 
-            if (top.equals(Symbol.EPSILON)) {
-                continue;
-            }
+            if (top.equals(Symbol.EPSILON)) continue;
 
             Token currentToken =
                     (lookaheadIndex < tokens.size()) ? tokens.get(lookaheadIndex) : null;
@@ -52,12 +37,8 @@ public class LL1Parser {
 
             if (top.isTerminal() || top.equals(Symbol.EOF)) {
                 if (top.equals(lookahead)) {
-                    if (currentToken != null) {
-                        currentNode.setLexeme(currentToken.getLexeme());
-                    }
-                    if (!top.equals(Symbol.EOF)) {
-                        lookaheadIndex++;
-                    }
+                    if (currentToken != null) currentNode.setLexeme(currentToken.getLexeme());
+                    if (!top.equals(Symbol.EOF)) lookaheadIndex++;
                 } else {
                     recordError("Expected '%s', but found '%s'", currentToken, top.getName());
                 }
@@ -78,8 +59,8 @@ public class LL1Parser {
 
                 Production production = productions.get(0);
                 List<Symbol> rhs = production.getRhs();
-
                 List<Node> children = new ArrayList<>();
+
                 for (Symbol s : rhs) {
                     Node child = new Node(s);
                     currentNode.addChild(child);
@@ -91,89 +72,6 @@ public class LL1Parser {
                 }
             }
         }
-
-        if (lookaheadIndex < tokens.size()) {
-            Token remaining = tokens.get(lookaheadIndex);
-            if (remaining != null && !isEofToken(remaining)) {
-                errors.add(
-                        new ParserError(
-                                remaining.getLine(),
-                                remaining.getCol(),
-                                String.format(
-                                        "Syntax Error at [%d, %d]: Unexpected tokens after program end. Found: '%s'",
-                                        remaining.getLine(),
-                                        remaining.getCol(),
-                                        remaining.getLexeme())));
-            }
-        }
-
-        return new ParseTree(root);
-    }
-
-    private Symbol resolveLookahead(Token token) {
-        if (token == null) {
-            return Symbol.EOF;
-        }
-
-        String lexeme = token.getLexeme();
-        String tokenType = token.getType();
-
-        String normalizedType = tokenType;
-        if ("comment".equals(tokenType)) {
-            normalizedType = "#";
-        } else if ("NEWLINE_CH".equals(tokenType)) {
-            normalizedType = "newline";
-        } else if (tokenType != null && tokenType.endsWith("_NUM")) {
-            normalizedType = "number";
-        } else if ("DIGIT".equals(tokenType)) {
-            normalizedType = "number";
-        } else if ("LOWER".equals(tokenType) || "UPPER".equals(tokenType)) {
-            normalizedType = "identifier";
-        } else if ("INC_PRE".equals(tokenType)) {
-            normalizedType = "++_pre";
-        } else if ("DEC_PRE".equals(tokenType)) {
-            normalizedType = "--_pre";
-        } else if ("INC_POST".equals(tokenType)) {
-            normalizedType = "++_post";
-        } else if ("DEC_POST".equals(tokenType)) {
-            normalizedType = "--_post";
-        }
-
-        for (Symbol terminal : grammar.getTerminals()) {
-            if (terminal.getName().equals(normalizedType)) {
-                return terminal;
-            }
-        }
-
-        for (Symbol terminal : grammar.getTerminals()) {
-            if (terminal.getName().equals(lexeme)) {
-                return terminal;
-            }
-        }
-
-        return new Symbol(tokenType != null ? tokenType : lexeme, true);
-    }
-
-    private boolean isEofToken(Token token) {
-        if (token.getLexeme() == null) return false;
-        return token.getLexeme().equals(Constants.EOF) || token.getType().equals("EOF");
-    }
-
-    private void recordError(String messageTemplate, Token currentToken, String expectedOrDerived) {
-        int line = (currentToken != null) ? currentToken.getLine() : 0;
-        int col = (currentToken != null) ? currentToken.getCol() : 0;
-        String found = (currentToken != null) ? currentToken.getLexeme() : "EOF";
-        String detail =
-                String.format(
-                        "Syntax Error at [%d, %d]: " + messageTemplate,
-                        line,
-                        col,
-                        expectedOrDerived,
-                        found);
-        errors.add(new ParserError(line, col, detail));
-    }
-
-    public List<ParserError> getErrors() {
-        return new ArrayList<>(errors);
+        return root;
     }
 }

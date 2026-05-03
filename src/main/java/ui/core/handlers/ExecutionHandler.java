@@ -1,15 +1,22 @@
 package ui.core.handlers;
 
+import core.lexer.core.translators.RuleReader;
 import core.lexer.models.atomic.LexerError;
+import core.lexer.models.atomic.Rule;
 import core.lexer.models.atomic.Token;
 import core.lexer.models.automata.DFA;
+import core.parser.core.grammar.GrammarClassification;
 import core.parser.models.FirstFollowTable;
 import core.parser.models.ParseTable;
 import core.parser.models.atomic.ParserError;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.function.Consumer;
 import models.atomic.Constants;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import ui.Ui;
 import ui.core.controllers.UiStateController;
 import ui.core.graph.automata.AutomataVisualizer;
@@ -18,6 +25,7 @@ import ui.core.services.LexerService.LexerResult;
 import ui.core.state.AnalysisState;
 
 public class ExecutionHandler {
+    private static final Logger log = LoggerFactory.getLogger(ExecutionHandler.class);
     private final Ui ui;
     private final AnalysisState state;
     private final UiStateController stateController;
@@ -26,6 +34,21 @@ public class ExecutionHandler {
         this.ui = ui;
         this.state = state;
         this.stateController = stateController;
+    }
+
+    private <T> T trackServiceTime(
+            String serviceName, Consumer<String> logCallback, Callable<T> task) throws Exception {
+        boolean isDevMode = "Developer".equals(ui.getUserModeComboBox().getValue());
+        long start = System.currentTimeMillis();
+
+        T result = task.call();
+
+        long duration = System.currentTimeMillis() - start;
+        if (isDevMode) {
+            logCallback.accept("[DEV] " + serviceName + " execution time: " + duration + " ms");
+        }
+
+        return result;
     }
 
     public void handleRunLexer() {
@@ -53,22 +76,42 @@ public class ExecutionHandler {
         ui.getTaskExecutor()
                 .execute(
                         "Building Lexer...",
-                        log -> {
-                            log.accept("Reading token rules from: " + tokenFilePath);
+                        logCallback -> {
+                            logCallback.accept("Reading token rules from: " + tokenFilePath);
                             DFA automaton = null;
+                            LexerResult scanResult = null;
                             try {
-                                automaton = ui.getLexerService().buildLexer(tokenFilePath, log);
+                                automaton =
+                                        trackServiceTime(
+                                                "LexerService.buildLexer",
+                                                logCallback,
+                                                () ->
+                                                        ui.getLexerService()
+                                                                .buildLexer(
+                                                                        tokenFilePath,
+                                                                        logCallback));
+
+                                logCallback.accept("Creating Lexer Automaton Image...");
+
+                                DFA finalAutomaton = automaton;
+                                trackServiceTime(
+                                        "AutomataVisualizer.exportToImage",
+                                        logCallback,
+                                        () -> {
+                                            AutomataVisualizer.exportToImage(
+                                                    finalAutomaton, "lexer_automata.png");
+                                            return null;
+                                        });
+
+                                logCallback.accept("Scanning input...");
+                                scanResult =
+                                        trackServiceTime(
+                                                "LexerService.scan",
+                                                logCallback,
+                                                () -> ui.getLexerService().scan(input));
                             } catch (Exception ex) {
-                                System.getLogger(ExecutionHandler.class.getName())
-                                        .log(System.Logger.Level.ERROR, (String) null, ex);
+                                log.error(ex.getMessage());
                             }
-
-                            log.accept("Creating Lexer Automaton Image...");
-                            AutomataVisualizer.exportToImage(automaton, "lexer_automata.png");
-
-                            log.accept("Scanning input...");
-                            LexerResult scanResult = ui.getLexerService().scan(input);
-
                             return new Object[] {automaton, scanResult};
                         },
                         result -> {
@@ -81,7 +124,6 @@ public class ExecutionHandler {
                             ui.getInteractiveGraphContainer()
                                     .setCenter(new InteractiveAutomataView(automaton));
 
-                            // 2. Format the output to include errors if they exist
                             if (scanResult.errors != null && !scanResult.errors.isEmpty()) {
                                 String errorText =
                                         scanResult.errors.stream()
@@ -115,9 +157,19 @@ public class ExecutionHandler {
         ui.getTaskExecutor()
                 .execute(
                         "Running Lexer...",
-                        log -> {
-                            log.accept("Scanning input...");
-                            return ui.getLexerService().scan(input);
+                        logCallback -> {
+                            logCallback.accept("Scanning input...");
+                            LexerResult result = null;
+                            try {
+                                result =
+                                        trackServiceTime(
+                                                "LexerService.scan",
+                                                logCallback,
+                                                () -> ui.getLexerService().scan(input));
+                            } catch (Exception e) {
+                                log.error(e.getMessage());
+                            }
+                            return result;
                         },
                         result -> {
                             LexerResult scanResult = (LexerResult) result;
@@ -155,24 +207,46 @@ public class ExecutionHandler {
         ui.getTaskExecutor()
                 .execute(
                         "Running Syntax Analysis...",
-                        log -> {
+                        logCallback -> {
                             FirstFollowTable ffTable = state.getCurrentFirstFollowTable();
                             if (ffTable == null) {
-                                log.accept("Building First/Follow tables...");
-                                ffTable = ui.getParserService().buildFirstFollowTable();
+                                logCallback.accept("Building First/Follow tables...");
+                                try {
+                                    ffTable =
+                                            trackServiceTime(
+                                                    "ParserService.buildFirstFollowTable",
+                                                    logCallback,
+                                                    () ->
+                                                            ui.getParserService()
+                                                                    .buildFirstFollowTable());
+                                } catch (Exception e) {
+                                    logCallback.accept("Error: " + e.getMessage());
+                                }
                                 state.setCurrentFirstFollowTable(ffTable);
                             }
 
                             ParseTable parseTable = state.getCurrentParseTable();
                             if (parseTable == null) {
-                                log.accept("Building Parse Table...");
-                                parseTable =
-                                        ui.getParserService()
-                                                .buildParseTable(ffTable, Collections.emptyList());
+                                logCallback.accept("Building Parse Table...");
+                                FirstFollowTable finalFfTable = ffTable;
+                                try {
+                                    parseTable =
+                                            trackServiceTime(
+                                                    "ParserService.buildParseTable",
+                                                    logCallback,
+                                                    () ->
+                                                            ui.getParserService()
+                                                                    .buildParseTable(
+                                                                            finalFfTable,
+                                                                            Collections
+                                                                                    .emptyList()));
+                                } catch (Exception e) {
+                                    logCallback.accept("Error: " + e.getMessage());
+                                }
                                 state.setCurrentParseTable(parseTable);
                             }
 
-                            log.accept("Parsing tokens using: " + selectedAlgorithm);
+                            logCallback.accept("Parsing tokens using: " + selectedAlgorithm);
                             List<Token> tokenStream =
                                     new ArrayList<>(ui.getLexerService().getSymbolTable());
 
@@ -194,9 +268,25 @@ public class ExecutionHandler {
                                         new Token(Constants.EOF, Constants.EOF, lastLine, lastCol));
                             }
 
-                            log.accept("Parsing tokens...");
-                            return ui.getParserService()
-                                    .parseTokens(selectedAlgorithm, parseTable, tokenStream);
+                            logCallback.accept("Parsing tokens...");
+                            ParseTable finalParseTable = parseTable;
+                            try {
+                                return trackServiceTime(
+                                        "ParserService.parseTokens",
+                                        logCallback,
+                                        () ->
+                                                ui.getParserService()
+                                                        .parseTokens(
+                                                                selectedAlgorithm,
+                                                                finalParseTable,
+                                                                tokenStream));
+                            } catch (Exception ex) {
+                                System.getLogger(ExecutionHandler.class.getName())
+                                        .log(System.Logger.Level.ERROR, (String) null, ex);
+
+                                throw new RuntimeException(
+                                        "Syntax analysis failed: " + ex.getMessage(), ex);
+                            }
                         },
                         result -> {
                             state.setCurrentParseResult(result);
@@ -207,7 +297,6 @@ public class ExecutionHandler {
                             state.setHasFirstFollowData(true);
                             state.setHasParseTableData(true);
 
-                            // 3. Display the parser used in the final output[cite: 3]
                             if (result.errors.isEmpty()) {
                                 state.setSyntaxBaseOutput(
                                         String.format(
@@ -248,41 +337,81 @@ public class ExecutionHandler {
         ui.getTaskExecutor()
                 .execute(
                         "Validating Grammar & Compatibility...",
-                        log -> {
-                            core.parser.core.grammar.GrammarClassification classification;
-                            if (state.getCurrentParseTable() == null) {
-                                log.accept("Building temporary Parse table for validation...");
-                                FirstFollowTable ffTable =
-                                        ui.getParserService().buildFirstFollowTable();
-                                classification =
-                                        ui.getParserService()
-                                                .classifyGrammarWithParserTable(
-                                                        ui.getParserService()
-                                                                .buildParseTable(
-                                                                        ffTable,
-                                                                        java.util.Collections
-                                                                                .emptyList()));
-                            } else {
-                                classification =
-                                        ui.getParserService()
-                                                .classifyGrammarWithParserTable(
-                                                        state.getCurrentParseTable());
-                            }
+                        logCallback -> {
+                            GrammarClassification classification = new GrammarClassification();
+                            String compatibilityReport = "";
 
-                            log.accept("Checking Grammar-Lexer compatibility...");
-                            String compatibilityReport =
-                                    "Cannot validate Lexer compatibility: Lexer token file not loaded.\n";
-                            String tokenPath = state.getTokenFilePath();
+                            try {
+                                if (state.getCurrentParseTable() == null) {
+                                    logCallback.accept(
+                                            "Building temporary Parse table for validation...");
 
-                            if (tokenPath != null && !tokenPath.isEmpty()) {
-                                java.util.List<core.lexer.models.atomic.Rule> lexerRules =
-                                        core.lexer.core.translators.RuleReader.readRules(tokenPath);
+                                    FirstFollowTable ffTable =
+                                            trackServiceTime(
+                                                    "ParserService.buildFirstFollowTable",
+                                                    logCallback,
+                                                    () ->
+                                                            ui.getParserService()
+                                                                    .buildFirstFollowTable());
+
+                                    ParseTable tempParseTable =
+                                            trackServiceTime(
+                                                    "ParserService.buildParseTable",
+                                                    logCallback,
+                                                    () ->
+                                                            ui.getParserService()
+                                                                    .buildParseTable(
+                                                                            ffTable,
+                                                                            java.util.Collections
+                                                                                    .emptyList()));
+
+                                    classification =
+                                            trackServiceTime(
+                                                    "ParserService.classifyGrammar",
+                                                    logCallback,
+                                                    () ->
+                                                            ui.getParserService()
+                                                                    .classifyGrammarWithParserTable(
+                                                                            tempParseTable));
+                                } else {
+                                    classification =
+                                            trackServiceTime(
+                                                    "ParserService.classifyGrammar",
+                                                    logCallback,
+                                                    () ->
+                                                            ui.getParserService()
+                                                                    .classifyGrammarWithParserTable(
+                                                                            state
+                                                                                    .getCurrentParseTable()));
+                                }
+
+                                logCallback.accept("Checking Grammar-Lexer compatibility...");
                                 compatibilityReport =
-                                        core.validator.GrammarLexerCompatibility.validate(
-                                                ui.getParserService().getGrammar(), lexerRules);
+                                        "Cannot validate Lexer compatibility: Lexer token file not loaded.\n";
+                                String tokenPath = state.getTokenFilePath();
+
+                                if (tokenPath != null && !tokenPath.isEmpty()) {
+                                    java.util.List<Rule> lexerRules =
+                                            trackServiceTime(
+                                                    "RuleReader.readRules",
+                                                    logCallback,
+                                                    () -> RuleReader.readRules(tokenPath));
+
+                                    compatibilityReport =
+                                            trackServiceTime(
+                                                    "GrammarLexerCompatibility.validate",
+                                                    logCallback,
+                                                    () ->
+                                                            core.validator.GrammarLexerCompatibility
+                                                                    .validate(
+                                                                            ui.getParserService()
+                                                                                    .getGrammar(),
+                                                                            lexerRules));
+                                }
+                            } catch (Exception e) {
+                                log.error(e.getMessage());
                             }
 
-                            // Return an array instead of a single string
                             return new String[] {classification.toString(), compatibilityReport};
                         },
                         result -> {
@@ -291,7 +420,7 @@ public class ExecutionHandler {
                             state.setValidationCompatibilityReport(reports[1]);
                             state.setHasValidationData(true);
 
-                            ui.refreshTextOutputs(); // Dynamically update the UI
+                            ui.refreshTextOutputs();
                             stateController.updateUIState();
                         },
                         err -> ui.getOutputArea().setText("Validation Error: " + err.getMessage()));

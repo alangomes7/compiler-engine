@@ -134,7 +134,6 @@ public class Ui implements Initializable {
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
-        // 1. Basic UI Setup
         PrintStream ps = new PrintStream(new UiUtils.TextAreaOutputStream(consoleArea), true);
         System.setOut(ps);
         System.setErr(ps);
@@ -177,6 +176,7 @@ public class Ui implements Initializable {
                             if (!analysisState.isProgrammaticChange() && !newVal.equals(oldVal)) {
                                 stateController.invalidateInputState();
                                 outputArea.setText("⚠️ Input changed. Please run Lexer again.");
+                                inputFileLabel.setText("user input");
                             }
                         });
 

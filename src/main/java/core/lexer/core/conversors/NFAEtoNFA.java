@@ -14,6 +14,7 @@ import java.util.Base64;
 import java.util.BitSet;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.CancellationException;
 import models.atomic.Constants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,7 +23,7 @@ import ui.util.UiUtils;
 public class NFAEtoNFA {
     private static final Logger log = LoggerFactory.getLogger(NFAEtoNFA.class);
 
-    public String convertAndSaveToDisk(NFAE nfae, String filepath) {
+    public String convertAndSaveToDisk(NFAE nfae, String filepath) throws CancellationException {
         State[] oldStates = nfae.getStates().toArray(State[]::new);
         int n = oldStates.length;
         log.info("old states: " + n);

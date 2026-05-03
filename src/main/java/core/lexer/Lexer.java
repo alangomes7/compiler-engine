@@ -18,6 +18,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CancellationException;
 import models.atomic.Constants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -68,7 +69,8 @@ public class Lexer {
         skipTokens.add(Constants.SKIP);
     }
 
-    private void buildScanner() {
+    private void buildScanner() throws CancellationException {
+
         log.info("--- Building Scanner Pipeline ---");
         long totalStart = System.nanoTime();
         long start, end;
